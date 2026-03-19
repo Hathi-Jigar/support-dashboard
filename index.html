@@ -563,33 +563,28 @@ async function closeIssue(){
   // Save meta first
   await saveMeta();
   try{
-    // Close the issue
-    await fetch(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues/${currentBug.number}`,{
-      method:'PATCH',
-      headers:{'Authorization':`token ${getToken()}`,'Content-Type':'application/json'},
-      body:JSON.stringify({state:'closed'})
-    });
-    // Add 🔒 Closed from Support label
-    await fetch(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues/${currentBug.number}/labels`,{
-      method:'POST',
-      headers:{'Authorization':`token ${getToken()}`,'Content-Type':'application/json'},
-      body:JSON.stringify({labels:['🔒 Closed from Support']})
-    });
-    // Remove 🔵 Open label if present
-    try{
-      await fetch(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues/${currentBug.number}/labels/${encodeURIComponent('🔵 Open')}`,{
-        method:'DELETE',
-        headers:{'Authorization':`token ${getToken()}`}
-      });
-    }catch(e){}
+    // 1. Close the issue + set final labels in one call
+    // Build new label set: remove 🔵 Open, add 🔒 Closed from Support
+    const newLabels=currentBug.labels.filter(l=>l!=='🔵 Open');
+    if(!newLabels.includes('🔒 Closed from Support'))newLabels.push('🔒 Closed from Support');
+
+    // Close issue and set labels in parallel
+    await Promise.all([
+      fetch(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues/${currentBug.number}`,{
+        method:'PATCH',
+        headers:{'Authorization':`token ${getToken()}`,'Content-Type':'application/json'},
+        body:JSON.stringify({state:'closed',labels:newLabels})
+      }),
+    ]);
+
     currentBug.state='closed';
     currentBug.closed_at=new Date().toISOString();
-    currentBug.labels=[...currentBug.labels.filter(l=>l!=='🔵 Open'),'🔒 Closed from Support'];
+    currentBug.labels=newLabels;
     renderTable();
     updateStats();
     renderDetail(currentBug);
-    showToast('Bug closed successfully','success');
-  }catch(e){showToast('Failed to close','error')}
+    showToast('Bug closed — label updated to 🔒 Closed from Support','success');
+  }catch(e){showToast('Failed to close: '+e.message,'error')}
   showLoading(false);
 }
 
