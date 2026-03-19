@@ -195,13 +195,14 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
         <th>Organisation</th>
         <th>Platform</th>
         <th>Version</th>
+        <th>Reported By</th>
         <th>Reported</th>
         <th>TAT</th>
         <th>Handled By</th>
       </tr>
     </thead>
     <tbody id="bugTableBody">
-      <tr><td colspan="9"><div class="empty-state"><div class="icon">🔄</div><div class="title">Loading bugs...</div></div></td></tr>
+      <tr><td colspan="10"><div class="empty-state"><div class="icon">🔄</div><div class="title">Loading bugs...</div></div></td></tr>
     </tbody>
   </table>
 </div>
@@ -222,6 +223,18 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
         <div class="dp-field">
           <div class="dp-label">Issue</div>
           <div class="dp-value" id="dpIssueLink"></div>
+        </div>
+        <div class="dp-field">
+          <div class="dp-label">Reported By</div>
+          <div class="dp-value" id="dpReportedBy" style="font-weight:600"></div>
+        </div>
+        <div class="dp-field" id="dpEmailField">
+          <div class="dp-label">Email</div>
+          <div class="dp-value" id="dpEmail"></div>
+        </div>
+        <div class="dp-field">
+          <div class="dp-label">Phone Number</div>
+          <input class="dp-input" id="dpPhone" placeholder="Phone number (manual entry)">
         </div>
         <div class="dp-field">
           <div class="dp-label">Report Date</div>
@@ -379,6 +392,7 @@ async function loadIssues(){
       const meta=await loadMeta(issue.number);
       const screenshot=extractScreenshot(issue.body||'');
       const description=cleanDescription(issue.body||'');
+      const gleap=extractGleapFields(issue.body||'');
       return{
         number:issue.number,
         title:cleanTitle(issue.title),
@@ -390,7 +404,20 @@ async function loadIssues(){
         body:issue.body||'',
         screenshot,
         description,
-        ...meta
+        // Gleap auto-extracted (read-only)
+        reportedBy:gleap.reportedBy,
+        email:gleap.email,
+        gleapLink:gleap.gleapLink,
+        // Use Gleap values as defaults, support meta overrides
+        platform:meta.platform||gleap.gleapPlatform,
+        version:meta.version||gleap.gleapVersion,
+        // Support meta fields
+        org:meta.org,
+        userName:meta.userName,
+        phone:meta.phone||'',
+        solution:meta.solution,
+        handledBy:meta.handledBy,
+        commentId:meta.commentId
       };
     }));
 
@@ -398,7 +425,7 @@ async function loadIssues(){
     updateStats();
     renderTable();
   }catch(e){
-    document.getElementById('bugTableBody').innerHTML=`<tr><td colspan="9"><div class="empty-state"><div class="icon">⚠️</div><div class="title">Failed to load — check access key</div></div></td></tr>`;
+    document.getElementById('bugTableBody').innerHTML=`<tr><td colspan="10"><div class="empty-state"><div class="icon">⚠️</div><div class="title">Failed to load — check access key</div></div></td></tr>`;
   }
 }
 
@@ -413,13 +440,49 @@ function extractScreenshot(body){
 }
 
 function cleanDescription(body){
-  // Remove image URLs and clean up
-  return body.replace(/https:\/\/staticfiles\.gleap\.io[^\s)]+/g,'[screenshot]').replace(/!\[.*?\]\(.*?\)/g,'').trim();
+  // Extract just the Description field content
+  const descMatch=body.match(/\*\*Description:\*\*\s*([\s\S]*?)(?=##|$)/);
+  if(descMatch)return descMatch[1].trim();
+  return body.replace(/https:\/\/staticfiles\.gleap\.io[^\s)]+/g,'').replace(/!\[.*?\]\(.*?\)/g,'').replace(/##\s*Info[\s\S]*$/,'').trim();
+}
+
+// Auto-extract fields from Gleap issue body
+function extractGleapFields(body){
+  const fields={reportedBy:'',email:'',gleapPlatform:'',gleapVersion:'',gleapLink:''};
+
+  // Reported by: **Reported by:** Name [(email)](mailto:email)
+  const reportMatch=body.match(/\*\*Reported by:\*\*\s*([^(\[]+)/);
+  if(reportMatch)fields.reportedBy=reportMatch[1].trim();
+
+  // Email from mailto link
+  const emailMatch=body.match(/\[([\w.%+-]+@[\w.-]+\.\w+)\]\(mailto:/);
+  if(emailMatch)fields.email=emailMatch[1];
+
+  // Platform from systemName or sdkType
+  const sysMatch=body.match(/\*\*systemName:\*\*\s*(\w+)/);
+  if(sysMatch){
+    const sys=sysMatch[1].toLowerCase();
+    if(sys==='android')fields.gleapPlatform='Android';
+    else if(sys==='ios')fields.gleapPlatform='iOS';
+  }
+  // Check for web via sdkType
+  const sdkMatch=body.match(/\*\*sdkType:\*\*\s*(\w+)/);
+  if(sdkMatch&&sdkMatch[1].toLowerCase()==='javascript')fields.gleapPlatform='Web';
+
+  // Version from releaseVersionNumber
+  const verMatch=body.match(/\*\*releaseVersionNumber:\*\*\s*([\d.]+)/);
+  if(verMatch)fields.gleapVersion=verMatch[1];
+
+  // Gleap ticket link
+  const linkMatch=body.match(/\[Open ticket in Gleap\]\((https:\/\/app\.gleap\.io[^\s)]+)\)/);
+  if(linkMatch)fields.gleapLink=linkMatch[1];
+
+  return fields;
 }
 
 // Load support meta from issue comments
 async function loadMeta(issueNumber){
-  const defaults={org:'',userName:'',platform:'',version:'',solution:'',handledBy:''};
+  const defaults={org:'',userName:'',phone:'',platform:'',version:'',solution:'',handledBy:''};
   try{
     const res=await ghGet(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues/${issueNumber}/comments?per_page=100`);
     if(!res.ok)return defaults;
@@ -433,6 +496,7 @@ async function loadMeta(issueNumber){
       const val=valParts.join(':').trim();
       if(key.trim()==='Organisation')meta.org=val;
       if(key.trim()==='User')meta.userName=val;
+      if(key.trim()==='Phone')meta.phone=val;
       if(key.trim()==='Platform')meta.platform=val;
       if(key.trim()==='Version')meta.version=val;
       if(key.trim()==='Solution')meta.solution=val;
@@ -448,6 +512,7 @@ async function saveMeta(){
   showLoading(true);
   const org=document.getElementById('dpOrg').value;
   const userName=document.getElementById('dpUserName').value.trim();
+  const phone=document.getElementById('dpPhone').value.trim();
   const platform=document.getElementById('dpPlatform').value;
   const version=document.getElementById('dpVersion').value.trim();
   const solution=document.getElementById('dpSolution').value.trim();
@@ -456,6 +521,7 @@ async function saveMeta(){
   const body=`${META_TAG}
 Organisation: ${org}
 User: ${userName}
+Phone: ${phone}
 Platform: ${platform}
 Version: ${version}
 Solution: ${solution}
@@ -479,7 +545,7 @@ Handled By: ${handledBy}`;
       if(res.ok){const d=await res.json();currentBug.commentId=d.id}
     }
     // Update local data
-    currentBug.org=org;currentBug.userName=userName;currentBug.platform=platform;
+    currentBug.org=org;currentBug.userName=userName;currentBug.phone=phone;currentBug.platform=platform;
     currentBug.version=version;currentBug.solution=solution;currentBug.handledBy=handledBy;
     renderTable();
     showToast('Saved successfully','success');
@@ -570,7 +636,7 @@ function renderTable(){
   if(searchQuery)filtered=filtered.filter(b=>b.title.toLowerCase().includes(searchQuery.toLowerCase()));
 
   if(filtered.length===0){
-    tbody.innerHTML=`<tr><td colspan="9"><div class="empty-state"><div class="icon">🔍</div><div class="title">No bugs found</div></div></td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="10"><div class="empty-state"><div class="icon">🔍</div><div class="title">No bugs found</div></div></td></tr>`;
     return;
   }
 
@@ -588,6 +654,7 @@ function renderTable(){
       <td style="font-size:12px;color:var(--sub)">${b.org||'<span style="color:var(--muted)">—</span>'}</td>
       <td>${b.platform?`<span class="platform-badge">${b.platform}</span>`:'<span style="color:var(--muted)">—</span>'}</td>
       <td style="font-size:12px;color:var(--sub)">${b.version||'<span style="color:var(--muted)">—</span>'}</td>
+      <td style="font-size:12px;color:var(--sub)">${b.reportedBy||'<span style="color:var(--muted)">—</span>'}</td>
       <td style="font-size:12px;color:var(--sub)">${formatDate(b.created_at)}</td>
       <td><span class="${tatCls}">${tat}</span></td>
       <td>${b.handledBy?`<div class="handler"><strong>${b.handledBy}</strong></div>`:'<span style="color:var(--muted)">—</span>'}</td>
@@ -620,7 +687,11 @@ function renderDetail(bug){
   badge.textContent=isOpen?'🔵 Open':'🔒 Closed';
   badge.className=`badge ${isOpen?'badge-open':'badge-closed'}`;
 
-  document.getElementById('dpIssueLink').innerHTML=`<a href="${bug.html_url}" target="_blank" style="color:var(--brand);text-decoration:none">${bug.html_url}</a>`;
+  document.getElementById('dpIssueLink').innerHTML=`<a href="${bug.html_url}" target="_blank" style="color:var(--brand);text-decoration:none">${bug.html_url}</a>`+
+    (bug.gleapLink?` &nbsp;·&nbsp; <a href="${bug.gleapLink}" target="_blank" style="color:var(--sub);text-decoration:none;font-size:12px">Open in Gleap</a>`:'');
+  document.getElementById('dpReportedBy').textContent=bug.reportedBy||'Unknown';
+  document.getElementById('dpEmail').innerHTML=bug.email?`<a href="mailto:${bug.email}" style="color:var(--brand);text-decoration:none">${bug.email}</a>`:'<span style="color:var(--muted)">Not available</span>';
+  document.getElementById('dpEmailField').style.display=bug.email?'':'none';
   document.getElementById('dpReportDate').textContent=formatDateFull(bug.created_at);
 
   if(bug.closed_at){
@@ -651,9 +722,10 @@ function renderDetail(bug){
     document.getElementById('dpScreenshotField').style.display='none';
   }
 
-  // Support fields
+  // Support fields — auto-populate from Gleap where available
   populateOrgDropdown(bug.org);
-  document.getElementById('dpUserName').value=bug.userName||'';
+  document.getElementById('dpUserName').value=bug.userName||bug.reportedBy||'';
+  document.getElementById('dpPhone').value=bug.phone||'';
   document.getElementById('dpPlatform').value=bug.platform||'';
   document.getElementById('dpVersion').value=bug.version||'';
   document.getElementById('dpSolution').value=bug.solution||'';
@@ -666,6 +738,7 @@ function renderDetail(bug){
   const editable=isOpen;
   document.getElementById('dpOrg').disabled=!editable;
   document.getElementById('dpUserName').disabled=!editable;
+  document.getElementById('dpPhone').disabled=!editable;
   document.getElementById('dpPlatform').disabled=!editable;
   document.getElementById('dpVersion').disabled=!editable;
   document.getElementById('dpSolution').disabled=!editable;
