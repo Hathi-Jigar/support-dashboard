@@ -456,8 +456,8 @@ function extractGleapFields(body){
   const reportMatch=body.match(/\*\*Reported by:\*\*\s*([^(\[]+)/);
   if(reportMatch)fields.reportedBy=reportMatch[1].trim();
 
-  // Email from mailto link
-  const emailMatch=body.match(/\[([\w.%+-]+@[\w.-]+\.\w+)\]\(mailto:/);
+  // Email from mailto link — handles [(email)](mailto:email) and [email](mailto:email)
+  const emailMatch=body.match(/\[?\(?([\w.%+-]+@[\w.-]+\.\w+)\)?\]?\(mailto:/);
   if(emailMatch)fields.email=emailMatch[1];
 
   // Platform from systemName or sdkType
