@@ -514,8 +514,22 @@ async function loadMeta(issueNumber){
     const res=await ghGet(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues/${issueNumber}/comments?per_page=100`);
     if(!res.ok)return defaults;
     const comments=await res.json();
+    // First check for Gleap auto-fetched contact details
+    const gleapContact=comments.find(c=>c.body&&c.body.includes('<!-- GLEAP-CONTACT -->'));
+    if(gleapContact){
+      const gcLines=gleapContact.body.split('\n');
+      gcLines.forEach(line=>{
+        const phoneMatch=line.match(/\*\*Phone:\*\*\s*(.+)/);
+        if(phoneMatch&&phoneMatch[1].trim()!=='N/A')defaults.phone=phoneMatch[1].trim();
+      });
+    }
+
+    // Then check for support meta (overrides Gleap contact if present)
     const metaComment=comments.find(c=>c.body&&c.body.includes(META_TAG));
-    if(!metaComment)return defaults;
+    if(!metaComment){
+      // Return defaults with Gleap phone if found
+      return defaults;
+    }
     const lines=metaComment.body.split('\n');
     const meta={...defaults,commentId:metaComment.id};
     lines.forEach(line=>{
@@ -523,12 +537,14 @@ async function loadMeta(issueNumber){
       const val=valParts.join(':').trim();
       if(key.trim()==='Organisation')meta.org=val;
       if(key.trim()==='User')meta.userName=val;
-      if(key.trim()==='Phone')meta.phone=val;
+      if(key.trim()==='Phone'&&val)meta.phone=val;
       if(key.trim()==='Platform')meta.platform=val;
       if(key.trim()==='Version')meta.version=val;
       if(key.trim()==='Solution')meta.solution=val;
       if(key.trim()==='Handled By')meta.handledBy=val;
     });
+    // If support meta has no phone but Gleap contact does, keep it
+    if(!meta.phone)meta.phone=defaults.phone;
     return meta;
   }catch(e){return defaults}
 }
