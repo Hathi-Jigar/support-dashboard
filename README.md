@@ -50,8 +50,7 @@ When support closes a bug from the dashboard:
 | Label | Meaning | Set by |
 |-------|---------|--------|
 | `🔵 Open` | Bug is open and unresolved | Auto (Gleap workflow) |
-| `🔒 Closed from Support` | Bug closed by support team via dashboard | Dashboard (on close) |
-| `🔒 Closed through Gleap` | Bug closed directly in Gleap | Gleap workflow |
+| `🔒 Closed from Support` | Bug closed (via dashboard or Gleap) | Dashboard / Gleap workflow |
 | `Gleap` | Bug originated from Gleap | Auto (Gleap workflow) |
 | `Bug` | Issue type is a bug | Auto (Gleap workflow) |
 
