@@ -53,7 +53,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 
 /* Table */
 .table-wrap{padding:0 28px 28px;overflow-x:auto}
-.table{width:100%;border-collapse:collapse;background:var(--white);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--border);min-width:900px}
+.table{width:100%;border-collapse:collapse;background:var(--white);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--border);min-width:1200px}
 .table th{background:var(--bg);padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap}
 .table td{padding:12px 14px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:top}
 .table tr:last-child td{border-bottom:none}
@@ -143,6 +143,29 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .loading{position:fixed;inset:0;background:rgba(255,255,255,.8);display:none;align-items:center;justify-content:center;z-index:500;font-size:14px;color:var(--sub)}
 .loading.show{display:flex}
 
+/* Inline edit cells */
+.inline-cell{position:relative;min-width:80px}
+.inline-val{cursor:pointer;padding:2px 4px;border-radius:4px;transition:background .1s;font-size:12px;color:var(--sub)}
+.inline-val:hover{background:#EEF2FF}
+.inline-val.editable{border-bottom:1px dashed var(--border)}
+.inline-val.editable:hover{border-bottom-color:var(--brand);color:var(--brand)}
+.inline-input{width:100%;padding:4px 6px;border:1.5px solid var(--brand);border-radius:4px;font-size:12px;font-family:inherit;outline:none;background:var(--white);color:var(--text)}
+.inline-select{padding:3px 4px;border:1.5px solid var(--brand);border-radius:4px;font-size:12px;font-family:inherit;outline:none;background:var(--white);color:var(--text);width:100%}
+.inline-actions{display:flex;gap:3px;margin-top:3px}
+.inline-save{background:var(--brand);color:white;border:none;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit}
+.inline-cancel{background:var(--bg);color:var(--sub);border:1px solid var(--border);padding:2px 8px;border-radius:3px;font-size:10px;cursor:pointer;font-family:inherit}
+
+/* Description cell */
+.desc-cell{max-width:180px;font-size:12px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.desc-cell:hover{color:var(--text)}
+.solution-cell{max-width:160px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.solution-cell.empty{color:var(--muted);font-style:italic}
+.solution-cell.filled{color:var(--text)}
+
+/* View button */
+.view-btn{background:none;border:1px solid var(--border);padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;cursor:pointer;color:var(--sub);font-family:inherit;white-space:nowrap;margin-left:4px}
+.view-btn:hover{border-color:var(--brand);color:var(--brand)}
+
 @media(max-width:768px){
   .header,.stats-bar,.filter-bar,.table-wrap{padding-left:16px;padding-right:16px}
   .detail-panel{width:100%}
@@ -191,6 +214,8 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
       <tr>
         <th>#</th>
         <th>Bug</th>
+        <th>Issue Description</th>
+        <th>Solution</th>
         <th>Status</th>
         <th>Organisation</th>
         <th>Platform</th>
@@ -204,7 +229,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
       </tr>
     </thead>
     <tbody id="bugTableBody">
-      <tr><td colspan="12"><div class="empty-state"><div class="icon">🔄</div><div class="title">Loading bugs...</div></div></td></tr>
+      <tr><td colspan="14"><div class="empty-state"><div class="icon">🔄</div><div class="title">Loading bugs...</div></div></td></tr>
     </tbody>
   </table>
 </div>
@@ -427,7 +452,7 @@ async function loadIssues(){
     updateStats();
     renderTable();
   }catch(e){
-    document.getElementById('bugTableBody').innerHTML=`<tr><td colspan="12"><div class="empty-state"><div class="icon">⚠️</div><div class="title">Failed to load — check access key</div></div></td></tr>`;
+    document.getElementById('bugTableBody').innerHTML=`<tr><td colspan="14"><div class="empty-state"><div class="icon">⚠️</div><div class="title">Failed to load — check access key</div></div></td></tr>`;
   }
 }
 
@@ -648,7 +673,7 @@ function renderTable(){
   if(searchQuery)filtered=filtered.filter(b=>b.title.toLowerCase().includes(searchQuery.toLowerCase()));
 
   if(filtered.length===0){
-    tbody.innerHTML=`<tr><td colspan="12"><div class="empty-state"><div class="icon">🔍</div><div class="title">No bugs found</div></div></td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="14"><div class="empty-state"><div class="icon">🔍</div><div class="title">No bugs found</div></div></td></tr>`;
     return;
   }
 
@@ -658,17 +683,22 @@ function renderTable(){
     const badgeText=isOpen?'🔵 Open':'🔒 Closed';
     const tat=isOpen?tatSince(b.created_at):b.closed_at?formatDuration(new Date(b.closed_at)-new Date(b.created_at)):'—';
     const tatCls=isOpen&&daysSince(b.created_at)>3?'tat-cell overdue':'tat-cell';
+    const esc=s=>(s||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    const shortDesc=(b.description||'').substring(0,80);
+    const shortSol=(b.solution||'').substring(0,60);
 
-    return`<tr class="clickable" onclick="openDetail(${b.number})">
+    return`<tr>
       <td><span class="bug-id">#${b.number}</span></td>
-      <td><div class="bug-title">${b.title}</div></td>
+      <td><div class="bug-title">${b.title}</div><button class="view-btn" onclick="openDetail(${b.number})">View</button></td>
+      <td><div class="desc-cell" title="${esc(b.description)}" onclick="openDetail(${b.number})">${shortDesc||'<span style="color:var(--muted)">—</span>'}${b.description&&b.description.length>80?'…':''}</div></td>
+      <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'solution')" title="Click to edit">${shortSol?`<span class="solution-cell filled">${shortSol}${b.solution.length>60?'…':''}</span>`:'<span class="solution-cell empty">Add solution</span>'}</div>`:`<div class="solution-cell ${b.solution?'filled':'empty'}">${shortSol||'—'}${b.solution&&b.solution.length>60?'…':''}</div>`}</td>
       <td><span class="badge ${badgeCls}">${badgeText}</span></td>
-      <td style="font-size:12px;color:var(--sub)">${b.org||'<span style="color:var(--muted)">—</span>'}</td>
-      <td>${b.platform?`<span class="platform-badge">${b.platform}</span>`:'<span style="color:var(--muted)">—</span>'}</td>
-      <td style="font-size:12px;color:var(--sub)">${b.version||'<span style="color:var(--muted)">—</span>'}</td>
+      <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'org')">${b.org||'<span style="color:var(--muted)">Add org</span>'}</div>`:`<span style="font-size:12px;color:var(--sub)">${b.org||'—'}</span>`}</td>
+      <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'platform')">${b.platform?`<span class="platform-badge">${b.platform}</span>`:'<span style="color:var(--muted)">Set</span>'}</div>`:`${b.platform?`<span class="platform-badge">${b.platform}</span>`:'<span style="color:var(--muted)">—</span>'}`}</td>
+      <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'version')">${b.version||'<span style="color:var(--muted)">Set</span>'}</div>`:`<span style="font-size:12px;color:var(--sub)">${b.version||'—'}</span>`}</td>
       <td style="font-size:12px;color:var(--sub)">${b.reportedBy||'<span style="color:var(--muted)">—</span>'}</td>
       <td style="font-size:12px;color:var(--sub)">${b.email?`<a href="mailto:${b.email}" onclick="event.stopPropagation()" style="color:var(--brand);text-decoration:none">${b.email}</a>`:'<span style="color:var(--muted)">—</span>'}</td>
-      <td style="font-size:12px;color:var(--sub)">${b.phone||'<span style="color:var(--muted)">—</span>'}</td>
+      <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'phone')">${b.phone||'<span style="color:var(--muted)">Add</span>'}</div>`:`<span style="font-size:12px;color:var(--sub)">${b.phone||'—'}</span>`}</td>
       <td style="font-size:12px;color:var(--sub)">${formatDate(b.created_at)}</td>
       <td><span class="${tatCls}">${tat}</span></td>
       <td>${b.handledBy?`<div class="handler"><strong>${b.handledBy}</strong></div>`:'<span style="color:var(--muted)">—</span>'}</td>
@@ -795,6 +825,148 @@ function showToast(msg,type=''){
   setTimeout(()=>t.classList.remove('show'),3000);
 }
 function showLoading(show){document.getElementById('loading').classList.toggle('show',show)}
+
+// === INLINE EDIT ===
+let inlineEditingCell=null;
+
+function inlineEdit(number,field){
+  const bug=allBugs.find(b=>b.number===number);
+  if(!bug||bug.state==='closed')return;
+
+  // Close any existing inline edit
+  if(inlineEditingCell){renderTable();inlineEditingCell=null;}
+
+  // Find the clicked cell
+  const rows=document.querySelectorAll('#bugTableBody tr');
+  let targetRow=null;
+  rows.forEach(r=>{
+    const idCell=r.querySelector('.bug-id');
+    if(idCell&&idCell.textContent===`#${number}`)targetRow=r;
+  });
+  if(!targetRow)return;
+
+  // Column index mapping (0-based)
+  const colMap={solution:3,org:5,platform:6,version:7,phone:10};
+  const colIdx=colMap[field];
+  if(colIdx===undefined)return;
+  const cell=targetRow.cells[colIdx];
+  if(!cell)return;
+  inlineEditingCell=cell;
+
+  let html='';
+  if(field==='org'){
+    const opts=orgList.map(o=>`<option value="${o}" ${o===bug.org?'selected':''}>${o}</option>`).join('');
+    html=`<select class="inline-select" onchange="inlineSave(${number},'org',this.value)">
+      <option value="">— Select —</option>${opts}
+      <option value="__add_new__">+ Add New</option>
+    </select>`;
+  }else if(field==='platform'){
+    html=`<select class="inline-select" onchange="inlineSave(${number},'platform',this.value)">
+      <option value="">— Select —</option>
+      <option value="Android" ${bug.platform==='Android'?'selected':''}>Android</option>
+      <option value="iOS" ${bug.platform==='iOS'?'selected':''}>iOS</option>
+      <option value="Web" ${bug.platform==='Web'?'selected':''}>Web</option>
+    </select>`;
+  }else if(field==='solution'){
+    html=`<textarea class="inline-input" rows="2" style="min-height:50px;resize:vertical" id="inlineSolInput">${bug.solution||''}</textarea>
+    <div class="inline-actions">
+      <button class="inline-save" onclick="inlineSave(${number},'solution',document.getElementById('inlineSolInput').value)">Save</button>
+      <button class="inline-cancel" onclick="renderTable()">Cancel</button>
+    </div>`;
+  }else{
+    const val=bug[field]||'';
+    const placeholder=field==='version'?'e.g. 3.8.1':field==='phone'?'+91...':'';
+    html=`<input class="inline-input" value="${val.replace(/"/g,'&quot;')}" placeholder="${placeholder}"
+      onkeydown="if(event.key==='Enter')inlineSave(${number},'${field}',this.value);if(event.key==='Escape')renderTable();"
+      autofocus>
+    <div class="inline-actions">
+      <button class="inline-save" onclick="inlineSave(${number},'${field}',this.previousElementSibling.previousElementSibling.value)">Save</button>
+      <button class="inline-cancel" onclick="renderTable()">Cancel</button>
+    </div>`;
+  }
+  cell.innerHTML=html;
+
+  // Focus
+  const inp=cell.querySelector('input,textarea,select');
+  if(inp)inp.focus();
+
+  // Handle org "Add New"
+  const sel=cell.querySelector('select');
+  if(sel&&field==='org'){
+    sel.addEventListener('change',function(){
+      if(this.value==='__add_new__'){
+        cell.innerHTML=`<input class="inline-input" placeholder="New org name" id="inlineNewOrg" autofocus
+          onkeydown="if(event.key==='Enter')inlineAddOrg(${number})">
+        <div class="inline-actions">
+          <button class="inline-save" onclick="inlineAddOrg(${number})">Add</button>
+          <button class="inline-cancel" onclick="renderTable()">Cancel</button>
+        </div>`;
+        document.getElementById('inlineNewOrg').focus();
+      }
+    });
+  }
+}
+
+async function inlineAddOrg(number){
+  const input=document.getElementById('inlineNewOrg');
+  const val=input?input.value.trim():'';
+  if(!val){showToast('Enter org name','error');return}
+  if(!orgList.includes(val)){
+    orgList.push(val);orgList.sort();
+    await saveConfig();
+  }
+  await inlineSave(number,'org',val);
+}
+
+async function inlineSave(number,field,value){
+  const bug=allBugs.find(b=>b.number===number);
+  if(!bug)return;
+  inlineEditingCell=null;
+
+  // Update local data
+  bug[field]=value;
+  bug.handledBy=getName();
+
+  // Save to GitHub
+  currentBug=bug;
+  showLoading(true);
+  const org=bug.org||'';
+  const userName=bug.userName||bug.reportedBy||'';
+  const phone=bug.phone||'';
+  const platform=bug.platform||'';
+  const version=bug.version||'';
+  const solution=bug.solution||'';
+  const handledBy=getName();
+
+  const body=`${META_TAG}
+Organisation: ${org}
+User: ${userName}
+Phone: ${phone}
+Platform: ${platform}
+Version: ${version}
+Solution: ${solution}
+Handled By: ${handledBy}`;
+
+  try{
+    if(bug.commentId){
+      await fetch(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues/comments/${bug.commentId}`,{
+        method:'PATCH',
+        headers:{'Authorization':`token ${getToken()}`,'Content-Type':'application/json'},
+        body:JSON.stringify({body})
+      });
+    }else{
+      const res=await fetch(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues/${bug.number}/comments`,{
+        method:'POST',
+        headers:{'Authorization':`token ${getToken()}`,'Content-Type':'application/json'},
+        body:JSON.stringify({body})
+      });
+      if(res.ok){const d=await res.json();bug.commentId=d.id}
+    }
+    showToast(`${field} updated`,'success');
+  }catch(e){showToast('Failed to save','error')}
+  showLoading(false);
+  renderTable();
+}
 
 checkSetup();
 </script>
