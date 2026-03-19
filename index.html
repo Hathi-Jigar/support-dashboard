@@ -196,13 +196,15 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
         <th>Platform</th>
         <th>Version</th>
         <th>Reported By</th>
+        <th>Email</th>
+        <th>Phone</th>
         <th>Reported</th>
         <th>TAT</th>
         <th>Handled By</th>
       </tr>
     </thead>
     <tbody id="bugTableBody">
-      <tr><td colspan="10"><div class="empty-state"><div class="icon">🔄</div><div class="title">Loading bugs...</div></div></td></tr>
+      <tr><td colspan="12"><div class="empty-state"><div class="icon">🔄</div><div class="title">Loading bugs...</div></div></td></tr>
     </tbody>
   </table>
 </div>
@@ -425,7 +427,7 @@ async function loadIssues(){
     updateStats();
     renderTable();
   }catch(e){
-    document.getElementById('bugTableBody').innerHTML=`<tr><td colspan="10"><div class="empty-state"><div class="icon">⚠️</div><div class="title">Failed to load — check access key</div></div></td></tr>`;
+    document.getElementById('bugTableBody').innerHTML=`<tr><td colspan="12"><div class="empty-state"><div class="icon">⚠️</div><div class="title">Failed to load — check access key</div></div></td></tr>`;
   }
 }
 
@@ -561,13 +563,28 @@ async function closeIssue(){
   // Save meta first
   await saveMeta();
   try{
+    // Close the issue
     await fetch(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues/${currentBug.number}`,{
       method:'PATCH',
       headers:{'Authorization':`token ${getToken()}`,'Content-Type':'application/json'},
       body:JSON.stringify({state:'closed'})
     });
+    // Add 🔒 Closed from Support label
+    await fetch(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues/${currentBug.number}/labels`,{
+      method:'POST',
+      headers:{'Authorization':`token ${getToken()}`,'Content-Type':'application/json'},
+      body:JSON.stringify({labels:['🔒 Closed from Support']})
+    });
+    // Remove 🔵 Open label if present
+    try{
+      await fetch(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues/${currentBug.number}/labels/${encodeURIComponent('🔵 Open')}`,{
+        method:'DELETE',
+        headers:{'Authorization':`token ${getToken()}`}
+      });
+    }catch(e){}
     currentBug.state='closed';
     currentBug.closed_at=new Date().toISOString();
+    currentBug.labels=[...currentBug.labels.filter(l=>l!=='🔵 Open'),'🔒 Closed from Support'];
     renderTable();
     updateStats();
     renderDetail(currentBug);
@@ -636,7 +653,7 @@ function renderTable(){
   if(searchQuery)filtered=filtered.filter(b=>b.title.toLowerCase().includes(searchQuery.toLowerCase()));
 
   if(filtered.length===0){
-    tbody.innerHTML=`<tr><td colspan="10"><div class="empty-state"><div class="icon">🔍</div><div class="title">No bugs found</div></div></td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="12"><div class="empty-state"><div class="icon">🔍</div><div class="title">No bugs found</div></div></td></tr>`;
     return;
   }
 
@@ -655,6 +672,8 @@ function renderTable(){
       <td>${b.platform?`<span class="platform-badge">${b.platform}</span>`:'<span style="color:var(--muted)">—</span>'}</td>
       <td style="font-size:12px;color:var(--sub)">${b.version||'<span style="color:var(--muted)">—</span>'}</td>
       <td style="font-size:12px;color:var(--sub)">${b.reportedBy||'<span style="color:var(--muted)">—</span>'}</td>
+      <td style="font-size:12px;color:var(--sub)">${b.email?`<a href="mailto:${b.email}" onclick="event.stopPropagation()" style="color:var(--brand);text-decoration:none">${b.email}</a>`:'<span style="color:var(--muted)">—</span>'}</td>
+      <td style="font-size:12px;color:var(--sub)">${b.phone||'<span style="color:var(--muted)">—</span>'}</td>
       <td style="font-size:12px;color:var(--sub)">${formatDate(b.created_at)}</td>
       <td><span class="${tatCls}">${tat}</span></td>
       <td>${b.handledBy?`<div class="handler"><strong>${b.handledBy}</strong></div>`:'<span style="color:var(--muted)">—</span>'}</td>
