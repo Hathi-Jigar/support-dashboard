@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Support Dashboard — digiQC</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --brand:#E8450A;--brand-light:#FFF4F0;--bg:#F8F9FB;--white:#FFF;
+  --text:#1A1D23;--sub:#6B7280;--muted:#9CA3AF;--border:#E5E7EB;
+  --open-bg:#FEF3C7;--open:#92400E;--closed-bg:#DCFCE7;--closed:#166534;
+  --radius:12px;--shadow:0 2px 8px rgba(0,0,0,0.06);
+}
+body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* Header */
+.header{background:var(--white);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.header-left{display:flex;align-items:center;gap:12px}
+.logo{font-size:16px;font-weight:800;color:var(--brand)}
+.header-sep{color:var(--border)}
+.header-title{font-size:15px;font-weight:600}
+.header-right{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--sub)}
+.reviewer-name{font-weight:600;color:var(--text)}
+
+/* Setup */
+.setup-banner{background:var(--brand-light);border-bottom:1px solid #FED7AA;padding:12px 28px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.setup-banner.hidden{display:none}
+.setup-banner input{padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;width:180px}
+.setup-banner input:focus{border-color:var(--brand)}
+.setup-banner button{background:var(--brand);color:white;border:none;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.setup-banner label{font-size:12px;font-weight:600;color:#92400E}
+
+/* Stats */
+.stats-bar{padding:20px 28px 12px;display:flex;gap:12px;flex-wrap:wrap}
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px 20px;min-width:120px;flex:1}
+.stat-value{font-size:24px;font-weight:800}
+.stat-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.stat-card.open .stat-value{color:#D97706}
+.stat-card.closed .stat-value{color:#16A34A}
+.stat-card.tat .stat-value{color:#2563EB;font-size:18px}
+
+/* Filters */
+.filter-bar{padding:8px 28px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.filter-chip{padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--white);font-size:12px;font-weight:600;cursor:pointer;color:var(--sub);font-family:inherit;transition:all .15s}
+.filter-chip:hover{border-color:var(--sub)}
+.filter-chip.active{background:var(--text);color:var(--white);border-color:var(--text)}
+.search-input{padding:7px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;width:220px;margin-left:auto}
+.search-input:focus{border-color:var(--brand)}
+.refresh-btn{background:var(--white);border:1px solid var(--border);padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--sub)}
+.refresh-btn:hover{border-color:var(--brand);color:var(--brand)}
+
+/* Table */
+.table-wrap{padding:0 28px 28px;overflow-x:auto}
+.table{width:100%;border-collapse:collapse;background:var(--white);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--border);min-width:900px}
+.table th{background:var(--bg);padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap}
+.table td{padding:12px 14px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:top}
+.table tr:last-child td{border-bottom:none}
+.table tr:hover td{background:#FAFBFC}
+.table tr.clickable{cursor:pointer}
+
+.bug-title{font-weight:600;color:var(--text);font-size:13px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bug-id{font-size:11px;color:var(--muted)}
+
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+.badge-open{background:var(--open-bg);color:var(--open)}
+.badge-closed{background:var(--closed-bg);color:var(--closed)}
+
+.platform-badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;background:var(--bg);color:var(--sub);border:1px solid var(--border)}
+
+.tat-cell{font-size:12px;color:var(--sub);white-space:nowrap}
+.tat-cell.overdue{color:#DC2626;font-weight:600}
+
+.handler{font-size:11px;color:var(--sub)}
+.handler strong{color:var(--text)}
+
+.empty-state{text-align:center;padding:60px;color:var(--muted)}
+.empty-state .icon{font-size:40px;margin-bottom:12px;opacity:.5}
+.empty-state .title{font-size:16px;font-weight:700;color:var(--sub);margin-bottom:4px}
+
+/* Detail Panel (overlay) */
+.detail-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;justify-content:flex-end}
+.detail-overlay.open{display:flex}
+.detail-panel{background:var(--white);width:560px;max-width:100%;height:100vh;overflow-y:auto;box-shadow:-4px 0 24px rgba(0,0,0,.12);display:flex;flex-direction:column}
+.detail-panel::-webkit-scrollbar{width:4px}
+.detail-panel::-webkit-scrollbar-thumb{background:#ddd;border-radius:2px}
+
+.dp-header{padding:16px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--white);z-index:10;flex-shrink:0}
+.dp-title{font-size:15px;font-weight:700;flex:1;margin-right:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dp-close{width:32px;height:32px;border-radius:8px;background:var(--bg);border:none;cursor:pointer;font-size:16px;color:var(--sub);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.dp-close:hover{background:var(--border)}
+
+.dp-body{flex:1;padding:20px 24px;overflow-y:auto}
+.dp-body::-webkit-scrollbar{display:none}
+
+.dp-section{margin-bottom:20px}
+.dp-section-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+
+.dp-field{margin-bottom:14px}
+.dp-label{font-size:11px;font-weight:600;color:var(--sub);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px}
+.dp-value{font-size:13px;color:var(--text);line-height:1.5}
+.dp-value.muted{color:var(--muted);font-style:italic}
+
+.dp-input,.dp-select,.dp-textarea{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;color:var(--text);background:var(--white)}
+.dp-input:focus,.dp-select:focus,.dp-textarea:focus{border-color:var(--brand)}
+.dp-textarea{resize:vertical;min-height:80px}
+.dp-select{cursor:pointer}
+
+/* Add org inline */
+.add-org-row{display:flex;gap:6px;margin-top:6px}
+.add-org-row input{flex:1;padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;outline:none}
+.add-org-row input:focus{border-color:var(--brand)}
+.add-org-row button{background:var(--brand);color:white;border:none;padding:7px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+
+/* Screenshot */
+.dp-screenshot{max-width:100%;border-radius:8px;border:1px solid var(--border);cursor:pointer;margin-top:4px}
+.dp-screenshot:hover{opacity:.9}
+
+/* TAT display */
+.dp-tat{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:12px}
+.dp-tat-value{font-size:20px;font-weight:800;color:var(--text)}
+.dp-tat-label{font-size:12px;color:var(--sub)}
+
+/* Footer */
+.dp-footer{padding:14px 24px;border-top:1px solid var(--border);display:flex;gap:10px;flex-shrink:0;background:var(--white);position:sticky;bottom:0}
+.btn{padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .15s}
+.btn-save{background:var(--brand);color:white;flex:1}
+.btn-save:hover{background:#C73509}
+.btn-close-issue{background:#16A34A;color:white;flex:1}
+.btn-close-issue:hover{background:#15803D}
+.btn-secondary{background:var(--white);color:var(--sub);border:1px solid var(--border);flex:1}
+.btn-secondary:hover{background:var(--bg)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1A1D23;color:white;padding:12px 24px;border-radius:10px;font-size:13px;font-weight:500;z-index:600;display:none;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.toast.show{display:block;animation:fadeIn .2s}
+.toast.success{background:#166534}
+.toast.error{background:#991B1B}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+.loading{position:fixed;inset:0;background:rgba(255,255,255,.8);display:none;align-items:center;justify-content:center;z-index:500;font-size:14px;color:var(--sub)}
+.loading.show{display:flex}
+
+@media(max-width:768px){
+  .header,.stats-bar,.filter-bar,.table-wrap{padding-left:16px;padding-right:16px}
+  .detail-panel{width:100%}
+  .search-input{width:150px}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <span class="logo">digiQC</span>
+    <span class="header-sep">|</span>
+    <span class="header-title">Support Dashboard</span>
+  </div>
+  <div class="header-right" id="headerRight">
+    <span id="reviewerDisplay"></span>
+    <button class="refresh-btn" onclick="loadIssues()" style="display:none" id="refreshBtn">↻ Refresh</button>
+  </div>
+</div>
+
+<div class="setup-banner" id="setupBanner">
+  <label>Enter your details to get started:</label>
+  <input type="text" id="setupName" placeholder="Your Name">
+  <input type="password" id="setupToken" placeholder="Access Key (GitHub PAT)">
+  <button onclick="saveSetup()">Save</button>
+</div>
+
+<div class="stats-bar" id="statsBar">
+  <div class="stat-card"><div class="stat-value" id="statTotal">—</div><div class="stat-label">Total Bugs</div></div>
+  <div class="stat-card open"><div class="stat-value" id="statOpen">—</div><div class="stat-label">Open</div></div>
+  <div class="stat-card closed"><div class="stat-value" id="statClosed">—</div><div class="stat-label">Closed</div></div>
+  <div class="stat-card tat"><div class="stat-value" id="statAvgTat">—</div><div class="stat-label">Avg TAT (closed)</div></div>
+</div>
+
+<div class="filter-bar">
+  <button class="filter-chip active" onclick="setFilter('all',this)">All</button>
+  <button class="filter-chip" onclick="setFilter('open',this)">Open</button>
+  <button class="filter-chip" onclick="setFilter('closed',this)">Closed</button>
+  <input class="search-input" placeholder="Search by title..." oninput="searchBugs(this.value)" id="searchBox">
+</div>
+
+<div class="table-wrap">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Bug</th>
+        <th>Status</th>
+        <th>Organisation</th>
+        <th>Platform</th>
+        <th>Version</th>
+        <th>Reported</th>
+        <th>TAT</th>
+        <th>Handled By</th>
+      </tr>
+    </thead>
+    <tbody id="bugTableBody">
+      <tr><td colspan="9"><div class="empty-state"><div class="icon">🔄</div><div class="title">Loading bugs...</div></div></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Detail Panel -->
+<div class="detail-overlay" id="detailOverlay" onclick="if(event.target===this)closeDetail()">
+  <div class="detail-panel">
+    <div class="dp-header">
+      <span class="dp-title" id="dpTitle">Bug Title</span>
+      <span class="badge" id="dpBadge">Open</span>
+      <button class="dp-close" onclick="closeDetail()">✕</button>
+    </div>
+    <div class="dp-body">
+
+      <!-- Auto fields -->
+      <div class="dp-section">
+        <div class="dp-section-title">Bug Details</div>
+        <div class="dp-field">
+          <div class="dp-label">Issue</div>
+          <div class="dp-value" id="dpIssueLink"></div>
+        </div>
+        <div class="dp-field">
+          <div class="dp-label">Report Date</div>
+          <div class="dp-value" id="dpReportDate"></div>
+        </div>
+        <div class="dp-field" id="dpCloseDateField" style="display:none">
+          <div class="dp-label">Close Date</div>
+          <div class="dp-value" id="dpCloseDate"></div>
+        </div>
+        <div class="dp-field">
+          <div class="dp-label">TAT</div>
+          <div class="dp-tat">
+            <div class="dp-tat-value" id="dpTatValue">—</div>
+            <div class="dp-tat-label" id="dpTatLabel">Turnaround Time</div>
+          </div>
+        </div>
+        <div class="dp-field">
+          <div class="dp-label">Description</div>
+          <div class="dp-value" id="dpDescription" style="white-space:pre-wrap;max-height:200px;overflow-y:auto"></div>
+        </div>
+        <div class="dp-field" id="dpScreenshotField" style="display:none">
+          <div class="dp-label">Screenshot</div>
+          <img class="dp-screenshot" id="dpScreenshot" onclick="window.open(this.src,'_blank')">
+        </div>
+      </div>
+
+      <!-- Support fields -->
+      <div class="dp-section">
+        <div class="dp-section-title">Support Info (editable)</div>
+        <div class="dp-field">
+          <div class="dp-label">Organisation</div>
+          <select class="dp-select" id="dpOrg">
+            <option value="">— Select —</option>
+          </select>
+          <div class="add-org-row" id="addOrgRow" style="display:none">
+            <input type="text" id="newOrgInput" placeholder="New organisation name">
+            <button onclick="addNewOrg()">Add</button>
+          </div>
+        </div>
+        <div class="dp-field">
+          <div class="dp-label">User Name</div>
+          <input class="dp-input" id="dpUserName" placeholder="Name of the user who reported">
+        </div>
+        <div class="dp-field">
+          <div class="dp-label">Platform</div>
+          <select class="dp-select" id="dpPlatform">
+            <option value="">— Select —</option>
+            <option value="Android">Android</option>
+            <option value="iOS">iOS</option>
+            <option value="Web">Web</option>
+          </select>
+        </div>
+        <div class="dp-field">
+          <div class="dp-label">Version</div>
+          <input class="dp-input" id="dpVersion" placeholder="e.g. 3.15.0">
+        </div>
+        <div class="dp-field">
+          <div class="dp-label">Solution Given</div>
+          <textarea class="dp-textarea" id="dpSolution" placeholder="Describe the solution or resolution..."></textarea>
+        </div>
+      </div>
+
+    </div>
+    <div class="dp-footer" id="dpFooter">
+      <button class="btn btn-secondary" onclick="closeDetail()">Cancel</button>
+      <button class="btn btn-save" onclick="saveMeta()">Save</button>
+      <button class="btn btn-close-issue" id="btnCloseIssue" onclick="closeIssue()">Close Bug</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="loading" id="loading"><span>Saving...</span></div>
+
+<script>
+const SOURCE_OWNER = 'digiqc-hq';
+const SOURCE_REPO = 'product-management';
+const DASH_OWNER = 'Hathi-Jigar';
+const DASH_REPO = 'support-dashboard';
+const META_TAG = '<!-- SUPPORT-META -->';
+
+let allBugs = [];
+let orgList = [];
+let currentFilter = 'all';
+let searchQuery = '';
+let currentBug = null;
+let configSha = null;
+
+function getToken(){return localStorage.getItem('support_token')}
+function getName(){return localStorage.getItem('support_name')}
+
+function checkSetup(){
+  if(getToken()&&getName()){
+    document.getElementById('setupBanner').classList.add('hidden');
+    document.getElementById('reviewerDisplay').innerHTML='Logged in as: <span class="reviewer-name">'+getName()+'</span>';
+    document.getElementById('refreshBtn').style.display='';
+    init();
+  }
+}
+
+function saveSetup(){
+  const name=document.getElementById('setupName').value.trim();
+  const token=document.getElementById('setupToken').value.trim();
+  if(!name||!token){showToast('Both fields are required','error');return}
+  localStorage.setItem('support_name',name);
+  localStorage.setItem('support_token',token);
+  document.getElementById('setupBanner').classList.add('hidden');
+  document.getElementById('reviewerDisplay').innerHTML='Logged in as: <span class="reviewer-name">'+name+'</span>';
+  document.getElementById('refreshBtn').style.display='';
+  init();
+}
+
+async function init(){
+  await loadConfig();
+  await loadIssues();
+}
+
+// Load org dropdown config
+async function loadConfig(){
+  try{
+    const res=await ghGet(`https://api.github.com/repos/${DASH_OWNER}/${DASH_REPO}/contents/config.json`);
+    if(res.ok){
+      const data=await res.json();
+      configSha=data.sha;
+      orgList=JSON.parse(decodeURIComponent(escape(atob(data.content))));
+    }
+  }catch(e){orgList=[]}
+}
+
+async function saveConfig(){
+  const content=btoa(unescape(encodeURIComponent(JSON.stringify(orgList,null,2))));
+  const body={message:`Update org list by ${getName()}`,content,branch:'main'};
+  if(configSha)body.sha=configSha;
+  const res=await fetch(`https://api.github.com/repos/${DASH_OWNER}/${DASH_REPO}/contents/config.json`,{
+    method:'PUT',headers:{'Authorization':`token ${getToken()}`,'Content-Type':'application/json'},
+    body:JSON.stringify(body)
+  });
+  if(res.ok){const d=await res.json();configSha=d.content.sha}
+}
+
+// Load Gleap issues
+async function loadIssues(){
+  try{
+    // Get all issues with Gleap label (open + closed)
+    const [openRes,closedRes]=await Promise.all([
+      ghGet(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues?labels=Gleap&state=open&per_page=100`),
+      ghGet(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues?labels=Gleap&state=closed&per_page=100`)
+    ]);
+    const openIssues=openRes.ok?await openRes.json():[];
+    const closedIssues=closedRes.ok?await closedRes.json():[];
+    const all=[...openIssues,...closedIssues].filter(i=>!i.pull_request);
+
+    // Load meta for each issue
+    allBugs=await Promise.all(all.map(async issue=>{
+      const meta=await loadMeta(issue.number);
+      const screenshot=extractScreenshot(issue.body||'');
+      const description=cleanDescription(issue.body||'');
+      return{
+        number:issue.number,
+        title:cleanTitle(issue.title),
+        state:issue.state,
+        labels:issue.labels.map(l=>l.name),
+        created_at:issue.created_at,
+        closed_at:issue.closed_at,
+        html_url:issue.html_url,
+        body:issue.body||'',
+        screenshot,
+        description,
+        ...meta
+      };
+    }));
+
+    allBugs.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+    updateStats();
+    renderTable();
+  }catch(e){
+    document.getElementById('bugTableBody').innerHTML=`<tr><td colspan="9"><div class="empty-state"><div class="icon">⚠️</div><div class="title">Failed to load — check access key</div></div></td></tr>`;
+  }
+}
+
+function cleanTitle(title){
+  // Remove Gleap ID prefix like [373798]
+  return title.replace(/^\[\d+\]\s*/,'').split('•')[0].trim();
+}
+
+function extractScreenshot(body){
+  const match=body.match(/https:\/\/staticfiles\.gleap\.io[^\s)]+/);
+  return match?match[0]:null;
+}
+
+function cleanDescription(body){
+  // Remove image URLs and clean up
+  return body.replace(/https:\/\/staticfiles\.gleap\.io[^\s)]+/g,'[screenshot]').replace(/!\[.*?\]\(.*?\)/g,'').trim();
+}
+
+// Load support meta from issue comments
+async function loadMeta(issueNumber){
+  const defaults={org:'',userName:'',platform:'',version:'',solution:'',handledBy:''};
+  try{
+    const res=await ghGet(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues/${issueNumber}/comments?per_page=100`);
+    if(!res.ok)return defaults;
+    const comments=await res.json();
+    const metaComment=comments.find(c=>c.body&&c.body.includes(META_TAG));
+    if(!metaComment)return defaults;
+    const lines=metaComment.body.split('\n');
+    const meta={...defaults,commentId:metaComment.id};
+    lines.forEach(line=>{
+      const [key,...valParts]=line.split(':');
+      const val=valParts.join(':').trim();
+      if(key.trim()==='Organisation')meta.org=val;
+      if(key.trim()==='User')meta.userName=val;
+      if(key.trim()==='Platform')meta.platform=val;
+      if(key.trim()==='Version')meta.version=val;
+      if(key.trim()==='Solution')meta.solution=val;
+      if(key.trim()==='Handled By')meta.handledBy=val;
+    });
+    return meta;
+  }catch(e){return defaults}
+}
+
+// Save meta as comment on the issue
+async function saveMeta(){
+  if(!currentBug)return;
+  showLoading(true);
+  const org=document.getElementById('dpOrg').value;
+  const userName=document.getElementById('dpUserName').value.trim();
+  const platform=document.getElementById('dpPlatform').value;
+  const version=document.getElementById('dpVersion').value.trim();
+  const solution=document.getElementById('dpSolution').value.trim();
+  const handledBy=getName();
+
+  const body=`${META_TAG}
+Organisation: ${org}
+User: ${userName}
+Platform: ${platform}
+Version: ${version}
+Solution: ${solution}
+Handled By: ${handledBy}`;
+
+  try{
+    if(currentBug.commentId){
+      // Update existing comment
+      await fetch(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues/comments/${currentBug.commentId}`,{
+        method:'PATCH',
+        headers:{'Authorization':`token ${getToken()}`,'Content-Type':'application/json'},
+        body:JSON.stringify({body})
+      });
+    }else{
+      // Create new comment
+      const res=await fetch(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues/${currentBug.number}/comments`,{
+        method:'POST',
+        headers:{'Authorization':`token ${getToken()}`,'Content-Type':'application/json'},
+        body:JSON.stringify({body})
+      });
+      if(res.ok){const d=await res.json();currentBug.commentId=d.id}
+    }
+    // Update local data
+    currentBug.org=org;currentBug.userName=userName;currentBug.platform=platform;
+    currentBug.version=version;currentBug.solution=solution;currentBug.handledBy=handledBy;
+    renderTable();
+    showToast('Saved successfully','success');
+  }catch(e){showToast('Failed to save','error')}
+  showLoading(false);
+}
+
+// Close the issue
+async function closeIssue(){
+  if(!currentBug||currentBug.state==='closed')return;
+  if(!confirm('Close this bug? This will close the GitHub Issue in product-management.'))return;
+  showLoading(true);
+  // Save meta first
+  await saveMeta();
+  try{
+    await fetch(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues/${currentBug.number}`,{
+      method:'PATCH',
+      headers:{'Authorization':`token ${getToken()}`,'Content-Type':'application/json'},
+      body:JSON.stringify({state:'closed'})
+    });
+    currentBug.state='closed';
+    currentBug.closed_at=new Date().toISOString();
+    renderTable();
+    updateStats();
+    renderDetail(currentBug);
+    showToast('Bug closed successfully','success');
+  }catch(e){showToast('Failed to close','error')}
+  showLoading(false);
+}
+
+// Add new org
+function addNewOrg(){
+  const val=document.getElementById('newOrgInput').value.trim();
+  if(!val){showToast('Enter org name','error');return}
+  if(orgList.includes(val)){showToast('Already exists','error');return}
+  orgList.push(val);
+  orgList.sort();
+  saveConfig();
+  populateOrgDropdown(val);
+  document.getElementById('addOrgRow').style.display='none';
+  document.getElementById('newOrgInput').value='';
+  showToast('Organisation added','success');
+}
+
+function populateOrgDropdown(selected){
+  const sel=document.getElementById('dpOrg');
+  sel.innerHTML='<option value="">— Select —</option>';
+  orgList.forEach(o=>{
+    sel.innerHTML+=`<option value="${o}" ${o===selected?'selected':''}>${o}</option>`;
+  });
+  sel.innerHTML+='<option value="__add_new__">+ Add New Organisation</option>';
+}
+
+// Org dropdown change handler
+document.getElementById('dpOrg').addEventListener('change',function(){
+  if(this.value==='__add_new__'){
+    document.getElementById('addOrgRow').style.display='flex';
+    this.value='';
+  }else{
+    document.getElementById('addOrgRow').style.display='none';
+  }
+});
+
+// Render
+function updateStats(){
+  const open=allBugs.filter(b=>b.state==='open').length;
+  const closed=allBugs.filter(b=>b.state==='closed').length;
+  document.getElementById('statTotal').textContent=allBugs.length;
+  document.getElementById('statOpen').textContent=open;
+  document.getElementById('statClosed').textContent=closed;
+
+  // Avg TAT for closed bugs
+  const closedBugs=allBugs.filter(b=>b.state==='closed'&&b.closed_at);
+  if(closedBugs.length>0){
+    const totalMs=closedBugs.reduce((sum,b)=>sum+(new Date(b.closed_at)-new Date(b.created_at)),0);
+    const avgMs=totalMs/closedBugs.length;
+    document.getElementById('statAvgTat').textContent=formatDuration(avgMs);
+  }else{
+    document.getElementById('statAvgTat').textContent='—';
+  }
+}
+
+function renderTable(){
+  const tbody=document.getElementById('bugTableBody');
+  let filtered=allBugs;
+  if(currentFilter==='open')filtered=filtered.filter(b=>b.state==='open');
+  if(currentFilter==='closed')filtered=filtered.filter(b=>b.state==='closed');
+  if(searchQuery)filtered=filtered.filter(b=>b.title.toLowerCase().includes(searchQuery.toLowerCase()));
+
+  if(filtered.length===0){
+    tbody.innerHTML=`<tr><td colspan="9"><div class="empty-state"><div class="icon">🔍</div><div class="title">No bugs found</div></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML=filtered.map((b,i)=>{
+    const isOpen=b.state==='open';
+    const badgeCls=isOpen?'badge-open':'badge-closed';
+    const badgeText=isOpen?'🔵 Open':'🔒 Closed';
+    const tat=isOpen?tatSince(b.created_at):b.closed_at?formatDuration(new Date(b.closed_at)-new Date(b.created_at)):'—';
+    const tatCls=isOpen&&daysSince(b.created_at)>3?'tat-cell overdue':'tat-cell';
+
+    return`<tr class="clickable" onclick="openDetail(${b.number})">
+      <td><span class="bug-id">#${b.number}</span></td>
+      <td><div class="bug-title">${b.title}</div></td>
+      <td><span class="badge ${badgeCls}">${badgeText}</span></td>
+      <td style="font-size:12px;color:var(--sub)">${b.org||'<span style="color:var(--muted)">—</span>'}</td>
+      <td>${b.platform?`<span class="platform-badge">${b.platform}</span>`:'<span style="color:var(--muted)">—</span>'}</td>
+      <td style="font-size:12px;color:var(--sub)">${b.version||'<span style="color:var(--muted)">—</span>'}</td>
+      <td style="font-size:12px;color:var(--sub)">${formatDate(b.created_at)}</td>
+      <td><span class="${tatCls}">${tat}</span></td>
+      <td>${b.handledBy?`<div class="handler"><strong>${b.handledBy}</strong></div>`:'<span style="color:var(--muted)">—</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function setFilter(f,el){
+  currentFilter=f;
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderTable();
+}
+
+function searchBugs(q){searchQuery=q;renderTable()}
+
+// Detail panel
+function openDetail(number){
+  const bug=allBugs.find(b=>b.number===number);
+  if(!bug)return;
+  currentBug=bug;
+  renderDetail(bug);
+  document.getElementById('detailOverlay').classList.add('open');
+}
+
+function renderDetail(bug){
+  const isOpen=bug.state==='open';
+  document.getElementById('dpTitle').textContent=`#${bug.number} — ${bug.title}`;
+  const badge=document.getElementById('dpBadge');
+  badge.textContent=isOpen?'🔵 Open':'🔒 Closed';
+  badge.className=`badge ${isOpen?'badge-open':'badge-closed'}`;
+
+  document.getElementById('dpIssueLink').innerHTML=`<a href="${bug.html_url}" target="_blank" style="color:var(--brand);text-decoration:none">${bug.html_url}</a>`;
+  document.getElementById('dpReportDate').textContent=formatDateFull(bug.created_at);
+
+  if(bug.closed_at){
+    document.getElementById('dpCloseDateField').style.display='';
+    document.getElementById('dpCloseDate').textContent=formatDateFull(bug.closed_at);
+  }else{
+    document.getElementById('dpCloseDateField').style.display='none';
+  }
+
+  // TAT
+  if(isOpen){
+    document.getElementById('dpTatValue').textContent=tatSince(bug.created_at);
+    document.getElementById('dpTatLabel').textContent='Open since';
+    document.getElementById('dpTatValue').style.color=daysSince(bug.created_at)>3?'#DC2626':'var(--text)';
+  }else if(bug.closed_at){
+    const ms=new Date(bug.closed_at)-new Date(bug.created_at);
+    document.getElementById('dpTatValue').textContent=formatDuration(ms);
+    document.getElementById('dpTatLabel').textContent='Turnaround Time';
+    document.getElementById('dpTatValue').style.color='#16A34A';
+  }
+
+  document.getElementById('dpDescription').textContent=bug.description||'No description';
+
+  if(bug.screenshot){
+    document.getElementById('dpScreenshotField').style.display='';
+    document.getElementById('dpScreenshot').src=bug.screenshot;
+  }else{
+    document.getElementById('dpScreenshotField').style.display='none';
+  }
+
+  // Support fields
+  populateOrgDropdown(bug.org);
+  document.getElementById('dpUserName').value=bug.userName||'';
+  document.getElementById('dpPlatform').value=bug.platform||'';
+  document.getElementById('dpVersion').value=bug.version||'';
+  document.getElementById('dpSolution').value=bug.solution||'';
+  document.getElementById('addOrgRow').style.display='none';
+
+  // Close button visibility
+  document.getElementById('btnCloseIssue').style.display=isOpen?'':'none';
+
+  // Disable editing for closed bugs
+  const editable=isOpen;
+  document.getElementById('dpOrg').disabled=!editable;
+  document.getElementById('dpUserName').disabled=!editable;
+  document.getElementById('dpPlatform').disabled=!editable;
+  document.getElementById('dpVersion').disabled=!editable;
+  document.getElementById('dpSolution').disabled=!editable;
+  document.querySelector('.btn-save').style.display=editable?'':'none';
+}
+
+function closeDetail(){
+  document.getElementById('detailOverlay').classList.remove('open');
+  currentBug=null;
+}
+
+// Helpers
+function ghGet(url){return fetch(url,{headers:{'Authorization':`token ${getToken()}`,'Accept':'application/vnd.github.v3+json'}})}
+
+function formatDate(iso){
+  const d=new Date(iso);
+  return d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+}
+
+function formatDateFull(iso){
+  const d=new Date(iso);
+  return d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})+', '+d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+}
+
+function formatDuration(ms){
+  const mins=Math.floor(ms/60000);
+  const hrs=Math.floor(mins/60);
+  const days=Math.floor(hrs/24);
+  if(days>0)return`${days}d ${hrs%24}h`;
+  if(hrs>0)return`${hrs}h ${mins%60}m`;
+  return`${mins}m`;
+}
+
+function tatSince(iso){return formatDuration(Date.now()-new Date(iso))}
+function daysSince(iso){return Math.floor((Date.now()-new Date(iso))/86400000)}
+
+function showToast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=`toast show ${type}`;
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+function showLoading(show){document.getElementById('loading').classList.toggle('show',show)}
+
+checkSetup();
+</script>
+</body>
+</html>
