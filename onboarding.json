@@ -41,7 +41,18 @@
       "liveSetup": "",
       "dashboardSetup": "",
       "payment": "",
-      "actionItems": [],
+      "actionItems": [
+        {
+          "week": "16 Mar 2026",
+          "items": "Hi",
+          "addedBy": "Jigar"
+        },
+        {
+          "week": "16 Mar 2026",
+          "items": "Hello",
+          "addedBy": "Jigar"
+        }
+      ],
       "notes": "",
       "usage": {
         "inspection": false,
