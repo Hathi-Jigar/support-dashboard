@@ -298,6 +298,48 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .save-indicator{position:fixed;top:70px;right:28px;background:#166534;color:white;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;z-index:300;display:none;animation:fadeIn .2s}
 .save-indicator.show{display:block}
 
+/* ============ TASK TRACKER STYLES ============ */
+.task-table{width:100%;border-collapse:collapse;background:var(--white);border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,0.04);min-width:1400px}
+.task-table th{background:#F9FAFB;padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:#6B7280;text-transform:uppercase;letter-spacing:0.6px;border-bottom:2px solid #E5E7EB;white-space:nowrap}
+.task-table td{padding:12px 14px;border-bottom:1px solid #E5E7EB;font-size:13px;color:#374151;line-height:1.5;vertical-align:top}
+.task-table tr:last-child td{border-bottom:none}
+.task-table tr:hover td{background:#F9FAFB}
+.task-table tr:hover .ob-delete-btn{opacity:1}
+
+/* Task column widths */
+.task-table th:nth-child(1),.task-table td:nth-child(1){min-width:35px;width:35px;white-space:nowrap}
+.task-table th:nth-child(2),.task-table td:nth-child(2){min-width:280px;white-space:normal;word-wrap:break-word}
+.task-table th:nth-child(3),.task-table td:nth-child(3){min-width:180px}
+.task-table th:nth-child(4),.task-table td:nth-child(4){min-width:100px}
+.task-table th:nth-child(5),.task-table td:nth-child(5){min-width:90px}
+.task-table th:nth-child(6),.task-table td:nth-child(6){min-width:110px;white-space:nowrap}
+.task-table th:nth-child(7),.task-table td:nth-child(7){min-width:220px;white-space:normal;word-wrap:break-word}
+.task-table th:nth-child(8),.task-table td:nth-child(8){min-width:95px;white-space:nowrap}
+.task-table th:nth-child(9),.task-table td:nth-child(9){min-width:95px;white-space:nowrap}
+
+/* Priority badges */
+.priority-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:6px;display:inline-block}
+.priority-high{background:#FEE2E2;color:#991B1B;border:1px solid #FECACA}
+.priority-medium{background:#FEF3C7;color:#92400E;border:1px solid #FCD34D}
+.priority-low{background:#DBEAFE;color:#1E40AF;border:1px solid #BFDBFE}
+
+/* Status badges for tasks */
+.task-status-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:6px;display:inline-block}
+.status-open{background:#FEF3C7;color:#92400E;border:1px solid #FCD34D}
+.status-hold{background:#F3F4F6;color:#4B5563;border:1px solid #D1D5DB}
+.status-completed{background:#DCFCE7;color:#166534;border:1px solid #BBF7D0}
+
+/* Multi-select chip styles */
+.assignee-chips{display:flex;flex-wrap:wrap;gap:4px}
+.assignee-chip{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:500;background:#EEF2FF;color:#4338CA;border:1px solid #C7D2FE}
+.assignee-chip .chip-remove{cursor:pointer;font-size:13px;color:#6366F1;margin-left:2px;line-height:1}
+.assignee-chip .chip-remove:hover{color:#DC2626}
+.multi-select-container{position:relative}
+.multi-select-dropdown{position:absolute;top:100%;left:0;right:0;background:var(--white);border:1.5px solid var(--brand);border-top:none;border-radius:0 0 4px 4px;max-height:200px;overflow-y:auto;z-index:50;box-shadow:0 4px 12px rgba(0,0,0,0.1)}
+.multi-select-option{padding:6px 10px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px}
+.multi-select-option:hover{background:#EEF2FF}
+.multi-select-option input[type="checkbox"]{margin:0}
+
 @media(max-width:768px){
   .header,.stats-bar,.filter-bar,.table-wrap,.ob-sub-tabs,.ob-section-header{padding-left:16px;padding-right:16px}
   .detail-panel{width:100%}
@@ -323,6 +365,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 <div class="main-tab-bar">
   <button class="main-tab active" onclick="switchMainTab('bugs',this)">&#128027; Bug Tracker</button>
   <button class="main-tab" onclick="switchMainTab('onboarding',this)">&#128640; Onboarding Tracker</button>
+  <button class="main-tab" onclick="switchMainTab('tasks',this)">&#128203; Task Tracker</button>
 </div>
 
 <div class="setup-banner" id="setupBanner">
@@ -411,6 +454,44 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 </div>
 
 </div><!-- /tabOnboarding -->
+
+<!-- ============ TASK TRACKER TAB ============ -->
+<div class="tab-content" id="tabTasks">
+
+<div class="ob-sub-tabs">
+  <button class="ob-sub-tab active" onclick="switchTaskTab('Open',this)">Open (<span id="taskCountOpen">0</span>)</button>
+  <button class="ob-sub-tab" onclick="switchTaskTab('Hold',this)">Hold (<span id="taskCountHold">0</span>)</button>
+  <button class="ob-sub-tab" onclick="switchTaskTab('Completed',this)">Completed (<span id="taskCountCompleted">0</span>)</button>
+</div>
+
+<div class="ob-section-header">
+  <div></div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <button class="ob-add-btn" onclick="taskAdd()">+ Add Task</button>
+    <div style="position:relative">
+      <button class="ob-share-btn" onclick="toggleTaskShareDropdown(this)">&#128424; Share</button>
+      <div class="share-dropdown" id="taskShareDropdown">
+        <button onclick="taskShareAs('pdf')">&#128196; Export as PDF</button>
+        <button onclick="taskShareAs('photo')">&#128247; Export as Photo</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="table-wrap ob-section-card" id="taskTableWrap">
+  <table class="task-table" id="taskTable">
+    <thead>
+      <tr>
+        <th>#</th><th>Task</th><th>Assignee</th><th>Status</th><th>Priority</th><th>Deadline</th><th>Remark</th><th>Created</th><th>Updated</th><th></th>
+      </tr>
+    </thead>
+    <tbody id="taskTableBody">
+      <tr><td colspan="10"><div class="empty-state"><div class="icon">&#128260;</div><div class="title">Loading...</div></div></td></tr>
+    </tbody>
+  </table>
+</div>
+
+</div><!-- /tabTasks -->
 
 <!-- Detail Panel (Bug Tracker) -->
 <div class="detail-overlay" id="detailOverlay" onclick="if(event.target===this)closeDetail()">
@@ -579,14 +660,19 @@ function switchMainTab(tab,el){
   el.classList.add('active');
   document.getElementById('tabBugs').classList.toggle('active',tab==='bugs');
   document.getElementById('tabOnboarding').classList.toggle('active',tab==='onboarding');
+  document.getElementById('tabTasks').classList.toggle('active',tab==='tasks');
   if(tab==='onboarding'&&obCompanies.length===0&&getToken()){
     loadOnboardingData();
+  }
+  if(tab==='tasks'&&taskItems.length===0&&getToken()){
+    loadTaskData();
   }
 }
 
 function handleRefresh(){
   if(activeMainTab==='bugs') loadIssues();
-  else loadOnboardingData();
+  else if(activeMainTab==='onboarding') loadOnboardingData();
+  else if(activeMainTab==='tasks') loadTaskData();
 }
 
 // ============================================================
@@ -1752,6 +1838,396 @@ async function obShareAs(format){
   if(addBtn)addBtn.style.display='';
   delBtns.forEach(b=>b.style.display='');
   actionBtns.forEach(b=>b.style.display='');
+  if(shareBtnEl)shareBtnEl.style.display='';
+}
+
+// ============================================================
+// TASK TRACKER
+// ============================================================
+let taskItems = [];
+let taskSha = null;
+let taskCurrentTab = 'Open';
+let taskSaveTimer = null;
+let taskEditingField = null;
+
+const TASK_ASSIGNEES_DEFAULT = ['Jigar','Ankit','Sumant','Nachiket','Gani','Neha','Devops','Mayank','Jay','Varun','Jainik'];
+
+function getTaskAssignees(){
+  const stored=localStorage.getItem('task_assignees');
+  if(stored){try{return JSON.parse(stored);}catch(e){}}
+  return TASK_ASSIGNEES_DEFAULT;
+}
+
+const DEFAULT_TASKS = [
+  {id:1,task:"Monitoring register \u2014 follow up on where it was created.",assignees:[],status:"Open",priority:"Medium",deadline:"",remark:"Taking follow-up one by one",created:"2026-03-20",updated:"2026-03-20"},
+  {id:2,task:"Ask Hussain Bhai for organisation custom dashboard for SSACT.",assignees:[],status:"Open",priority:"Medium",deadline:"",remark:"",created:"2026-03-20",updated:"2026-03-20"},
+  {id:3,task:"Contact Hardik from Sangiini Epitome \u2014 sequence: (1) Setup pour card register, (2) Schedule call for team bifurcation and set register approver, (3) Schedule call with team and contractor for instruction and register flow.",assignees:[],status:"Open",priority:"High",deadline:"",remark:"Pending from Hardik Sir from Epitome",created:"2026-03-20",updated:"2026-03-20"},
+  {id:4,task:"Call Vishesh Sir from Trehan Iris regarding case study and testimonial.",assignees:[],status:"Open",priority:"Medium",deadline:"",remark:"He will call once he rejoins the office",created:"2026-03-20",updated:"2026-03-20"},
+  {id:5,task:"Prepare project plan format as part of onboarding process and send after Introduction Meeting.",assignees:[],status:"Open",priority:"High",deadline:"",remark:"Prepared and shared with Jigar Sir for approval",created:"2026-03-20",updated:"2026-03-20"},
+  {id:6,task:"Prepare Constera dashboard after meeting with Jilay Bhai as early as possible.",assignees:[],status:"Open",priority:"High",deadline:"",remark:"Message shared in group with Sumant Sir and Jigar Sir",created:"2026-03-20",updated:"2026-03-20"},
+  {id:7,task:"Start weekly feature awareness sessions (covering new features and features not being used).",assignees:[],status:"Open",priority:"Medium",deadline:"",remark:"",created:"2026-03-20",updated:"2026-03-20"},
+  {id:8,task:"Follow up with Srinivasa Murthy from Welkin Park (Adarsh Group) for Inspection & Instruction usage and payment of 30 users.",assignees:[],status:"Open",priority:"High",deadline:"",remark:"They have started; payment is in process",created:"2026-03-20",updated:"2026-03-20"},
+  {id:9,task:"Schedule meeting with Saheel Property team regarding system admin \u2014 as discussed with Sambhaji Sir.",assignees:[],status:"Open",priority:"Medium",deadline:"",remark:"Meeting scheduled on 20/03/2026 from 12 PM to 1 PM",created:"2026-03-20",updated:"2026-03-20"},
+  {id:10,task:"Inform all old clients about the Register module.",assignees:[],status:"Open",priority:"Medium",deadline:"",remark:"",created:"2026-03-20",updated:"2026-03-20"},
+  {id:11,task:"Check if Trehan Iris is using Register. Every email should include REMINDER about complimentary Register access. Schedule 1:1 call for replicate option, deactivating users, and Register usage.",assignees:[],status:"Open",priority:"Medium",deadline:"",remark:"Need to schedule a 1:1 webcall",created:"2026-03-20",updated:"2026-03-20"},
+  {id:12,task:"NIT-Warangal SOP \u2014 needs to be finalised.",assignees:[],status:"Open",priority:"Medium",deadline:"",remark:"",created:"2026-03-20",updated:"2026-03-20"},
+  {id:13,task:"Webcall with Sumant Sir for onboarding Register, COQ, and custom types in Vascon.",assignees:[],status:"Open",priority:"Medium",deadline:"",remark:"",created:"2026-03-20",updated:"2026-03-20"},
+  {id:14,task:"Schedule meeting with Omkar from Saheel Property regarding Handover Checklist process and validate option.",assignees:[],status:"Open",priority:"Medium",deadline:"",remark:"",created:"2026-03-20",updated:"2026-03-20"},
+  {id:15,task:"Talk with Amit Sir from Schueco for webcall to set up the answer type.",assignees:[],status:"Open",priority:"Medium",deadline:"",remark:"",created:"2026-03-20",updated:"2026-03-20"},
+  {id:16,task:"User limit exceeded error when one or two paid user slots are available in Setup.",assignees:[],status:"Open",priority:"High",deadline:"",remark:"Bug ticket raised in Gleap and ClickUp",created:"2026-03-20",updated:"2026-03-20"},
+  {id:17,task:"Raymond site visit \u2014 schedule with Asavari Ma\u2019am and update date for Address by GS2 Thane site.",assignees:[],status:"Completed",priority:"Medium",deadline:"",remark:"Visit confirmed for 18th March on site",created:"2026-03-20",updated:"2026-03-20"},
+  {id:18,task:"Auto logout issue \u2014 informed to Varun Bhai, they are checking.",assignees:[],status:"Completed",priority:"High",deadline:"",remark:"Bug ticket raised in Gleap and ClickUp",created:"2026-03-20",updated:"2026-03-20"}
+];
+
+async function loadTaskData(){
+  try{
+    const res=await ghGet(`https://api.github.com/repos/${DASH_OWNER}/${DASH_REPO}/contents/tasks.json`);
+    if(res.ok){
+      const data=await res.json();
+      taskSha=data.sha;
+      const parsed=JSON.parse(decodeURIComponent(escape(atob(data.content))));
+      taskItems=parsed.tasks||[];
+    }else{
+      taskItems=JSON.parse(JSON.stringify(DEFAULT_TASKS));
+      await saveTaskData(true);
+    }
+  }catch(e){
+    taskItems=JSON.parse(JSON.stringify(DEFAULT_TASKS));
+  }
+  taskUpdateCounts();
+  taskRenderTable();
+}
+
+async function saveTaskData(force){
+  const content=btoa(unescape(encodeURIComponent(JSON.stringify({tasks:taskItems},null,2))));
+  const body={message:`Update tasks by ${getName()}`,content,branch:'main'};
+  if(taskSha)body.sha=taskSha;
+  try{
+    const res=await fetch(`https://api.github.com/repos/${DASH_OWNER}/${DASH_REPO}/contents/tasks.json`,{
+      method:'PUT',
+      headers:{'Authorization':`token ${getToken()}`,'Content-Type':'application/json'},
+      body:JSON.stringify(body)
+    });
+    if(res.ok){
+      const d=await res.json();
+      taskSha=d.content.sha;
+    }
+  }catch(e){
+    showToast('Failed to save task data','error');
+  }
+}
+
+function taskScheduleSave(){
+  const ind=document.getElementById('saveIndicator');
+  ind.textContent='Saving...';
+  ind.classList.add('show');
+  if(taskSaveTimer)clearTimeout(taskSaveTimer);
+  taskSaveTimer=setTimeout(async ()=>{
+    await saveTaskData();
+    ind.textContent='Saved';
+    setTimeout(()=>ind.classList.remove('show'),1500);
+  },2000);
+}
+
+function taskGetFiltered(){
+  return taskItems.filter(t=>t.status===taskCurrentTab);
+}
+
+function taskUpdateCounts(){
+  document.getElementById('taskCountOpen').textContent=taskItems.filter(t=>t.status==='Open').length;
+  document.getElementById('taskCountHold').textContent=taskItems.filter(t=>t.status==='Hold').length;
+  document.getElementById('taskCountCompleted').textContent=taskItems.filter(t=>t.status==='Completed').length;
+}
+
+function switchTaskTab(tab,el){
+  taskCurrentTab=tab;
+  document.querySelectorAll('#tabTasks .ob-sub-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  taskRenderTable();
+}
+
+function taskFormatDate(isoDate){
+  if(!isoDate)return '';
+  const parts=isoDate.split('-');
+  if(parts.length===3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+  return isoDate;
+}
+
+function taskPriorityBadge(p){
+  if(!p)return '<span style="color:#D1D5DB">Set</span>';
+  const cls=p==='High'?'priority-high':p==='Medium'?'priority-medium':'priority-low';
+  return `<span class="priority-badge ${cls}">${p}</span>`;
+}
+
+function taskStatusBadge(s){
+  if(!s)return '';
+  const cls=s==='Open'?'status-open':s==='Hold'?'status-hold':'status-completed';
+  return `<span class="task-status-badge ${cls}">${s}</span>`;
+}
+
+function taskRenderAssigneeChips(assignees){
+  if(!assignees||assignees.length===0)return '<span style="color:#D1D5DB">Set</span>';
+  return '<div class="assignee-chips">'+assignees.map(a=>`<span class="assignee-chip">${a}</span>`).join('')+'</div>';
+}
+
+function taskRenderTable(){
+  const tbody=document.getElementById('taskTableBody');
+  const filtered=taskGetFiltered();
+
+  if(filtered.length===0){
+    tbody.innerHTML=`<tr><td colspan="10"><div class="empty-state"><div class="icon">&#128203;</div><div class="title">No tasks in this category</div></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML=filtered.map((t,i)=>{
+    const esc=s=>(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/\n/g,'<br>');
+    return `<tr data-task-id="${t.id}">
+      <td style="font-size:12px;color:#9CA3AF">${i+1}</td>
+      <td><div class="ob-editable" onclick="taskEdit(${t.id},'task','textarea')" style="white-space:pre-wrap">${t.task?esc(t.task):'<span style="color:#D1D5DB">Set</span>'}</div></td>
+      <td><div class="ob-editable" onclick="taskEdit(${t.id},'assignees','multiselect')">${taskRenderAssigneeChips(t.assignees)}</div></td>
+      <td><div class="ob-editable" onclick="taskEdit(${t.id},'status','status-dropdown')">${taskStatusBadge(t.status)}</div></td>
+      <td><div class="ob-editable" onclick="taskEdit(${t.id},'priority','priority-dropdown')">${taskPriorityBadge(t.priority)}</div></td>
+      <td><div class="ob-editable" onclick="taskEdit(${t.id},'deadline','date')">${t.deadline?taskFormatDate(t.deadline):'<span style="color:#D1D5DB">Set</span>'}</div></td>
+      <td><div class="ob-editable" onclick="taskEdit(${t.id},'remark','textarea')" style="white-space:pre-wrap">${t.remark?esc(t.remark):'<span style="color:#D1D5DB">Set</span>'}</div></td>
+      <td>${taskFormatDate(t.created)}</td>
+      <td>${taskFormatDate(t.updated)}</td>
+      <td><button class="ob-delete-btn" onclick="taskDelete(${t.id})" title="Delete">&times;</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function taskEdit(taskId,field,type){
+  const task=taskItems.find(t=>t.id===taskId);
+  if(!task)return;
+
+  const row=document.querySelector(`tr[data-task-id="${taskId}"]`);
+  if(!row)return;
+
+  const editables=row.querySelectorAll('.ob-editable');
+  let targetDiv=null;
+  editables.forEach(div=>{
+    const onclick=div.getAttribute('onclick')||'';
+    if(onclick.includes(`'${field}'`))targetDiv=div;
+  });
+  if(!targetDiv)return;
+
+  taskEditingField={taskId,field};
+  const currentVal=field==='assignees'?(task.assignees||[]):(task[field]||'');
+
+  if(type==='textarea'){
+    targetDiv.innerHTML=`<textarea class="ob-edit-textarea">${(currentVal||'').replace(/</g,'&lt;')}</textarea>`;
+    const ta=targetDiv.querySelector('textarea');
+    ta.focus();
+    ta.addEventListener('keydown',function(e){
+      e.stopPropagation();
+      if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();taskSaveField(taskId,field,this.value);}
+      if(e.key==='Escape'){taskEditingField=null;taskRenderTable();}
+    });
+    ta.addEventListener('blur',function(){taskSaveField(taskId,field,this.value);});
+    ta.addEventListener('click',function(e){e.stopPropagation();});
+  }else if(type==='date'){
+    targetDiv.innerHTML=`<input class="ob-edit-input" type="date" value="${currentVal}">`;
+    const inp=targetDiv.querySelector('input');
+    inp.focus();
+    inp.addEventListener('change',function(){taskSaveField(taskId,field,this.value);});
+    inp.addEventListener('blur',function(){taskSaveField(taskId,field,this.value);});
+    inp.addEventListener('click',function(e){e.stopPropagation();});
+  }else if(type==='status-dropdown'){
+    targetDiv.innerHTML=`<select class="ob-edit-select">
+      <option value="Open" ${currentVal==='Open'?'selected':''}>Open</option>
+      <option value="Hold" ${currentVal==='Hold'?'selected':''}>Hold</option>
+      <option value="Completed" ${currentVal==='Completed'?'selected':''}>Completed</option>
+    </select>`;
+    const sel=targetDiv.querySelector('select');
+    sel.addEventListener('mousedown',function(e){e.stopPropagation();});
+    sel.addEventListener('click',function(e){e.stopPropagation();});
+    sel.addEventListener('change',function(e){e.stopPropagation();taskSaveField(taskId,field,this.value);});
+    sel.addEventListener('blur',function(){
+      setTimeout(()=>{if(taskEditingField){taskEditingField=null;taskRenderTable();}},150);
+    });
+    sel.focus();
+  }else if(type==='priority-dropdown'){
+    targetDiv.innerHTML=`<select class="ob-edit-select">
+      <option value="">-- Select --</option>
+      <option value="High" ${currentVal==='High'?'selected':''}>High</option>
+      <option value="Medium" ${currentVal==='Medium'?'selected':''}>Medium</option>
+      <option value="Low" ${currentVal==='Low'?'selected':''}>Low</option>
+    </select>`;
+    const sel=targetDiv.querySelector('select');
+    sel.addEventListener('mousedown',function(e){e.stopPropagation();});
+    sel.addEventListener('click',function(e){e.stopPropagation();});
+    sel.addEventListener('change',function(e){e.stopPropagation();taskSaveField(taskId,field,this.value);});
+    sel.addEventListener('blur',function(){
+      setTimeout(()=>{if(taskEditingField){taskEditingField=null;taskRenderTable();}},150);
+    });
+    sel.focus();
+  }else if(type==='multiselect'){
+    const assigneeList=getTaskAssignees();
+    const selected=new Set(currentVal);
+    let html=`<div class="multi-select-container" onclick="event.stopPropagation()">
+      <div class="assignee-chips" style="margin-bottom:4px;min-height:24px" id="taskChips_${taskId}">`;
+    selected.forEach(a=>{
+      html+=`<span class="assignee-chip">${a}<span class="chip-remove" onclick="event.stopPropagation();taskRemoveAssignee(${taskId},'${a}')">&times;</span></span>`;
+    });
+    html+=`</div><div class="multi-select-dropdown" id="taskAssigneeDD_${taskId}">`;
+    assigneeList.forEach(a=>{
+      html+=`<label class="multi-select-option" onclick="event.stopPropagation()">
+        <input type="checkbox" ${selected.has(a)?'checked':''} onchange="taskToggleAssignee(${taskId},'${a}',this.checked)"> ${a}
+      </label>`;
+    });
+    html+=`</div></div>`;
+    targetDiv.innerHTML=html;
+
+    // Close on outside click
+    const closeHandler=function(e){
+      const container=document.getElementById(`taskAssigneeDD_${taskId}`);
+      if(container&&!targetDiv.contains(e.target)){
+        document.removeEventListener('click',closeHandler);
+        taskSaveAssignees(taskId);
+      }
+    };
+    setTimeout(()=>document.addEventListener('click',closeHandler),0);
+  }
+}
+
+function taskToggleAssignee(taskId,name,checked){
+  const task=taskItems.find(t=>t.id===taskId);
+  if(!task)return;
+  if(!task.assignees)task.assignees=[];
+  if(checked&&!task.assignees.includes(name)){
+    task.assignees.push(name);
+  }else if(!checked){
+    task.assignees=task.assignees.filter(a=>a!==name);
+  }
+  // Re-render chips
+  const chipsDiv=document.getElementById(`taskChips_${taskId}`);
+  if(chipsDiv){
+    chipsDiv.innerHTML=task.assignees.map(a=>`<span class="assignee-chip">${a}<span class="chip-remove" onclick="event.stopPropagation();taskRemoveAssignee(${taskId},'${a}')">&times;</span></span>`).join('');
+  }
+}
+
+function taskRemoveAssignee(taskId,name){
+  const task=taskItems.find(t=>t.id===taskId);
+  if(!task)return;
+  task.assignees=task.assignees.filter(a=>a!==name);
+  // Update checkbox
+  const dd=document.getElementById(`taskAssigneeDD_${taskId}`);
+  if(dd){
+    dd.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
+      const label=cb.parentElement;
+      if(label.textContent.trim()===name)cb.checked=false;
+    });
+  }
+  // Re-render chips
+  const chipsDiv=document.getElementById(`taskChips_${taskId}`);
+  if(chipsDiv){
+    chipsDiv.innerHTML=task.assignees.map(a=>`<span class="assignee-chip">${a}<span class="chip-remove" onclick="event.stopPropagation();taskRemoveAssignee(${taskId},'${a}')">&times;</span></span>`).join('');
+  }
+}
+
+function taskSaveAssignees(taskId){
+  taskEditingField=null;
+  const task=taskItems.find(t=>t.id===taskId);
+  if(!task)return;
+  const today=new Date().toISOString().slice(0,10);
+  task.updated=today;
+  taskScheduleSave();
+  taskRenderTable();
+}
+
+function taskSaveField(taskId,field,value){
+  if(!taskEditingField)return;
+  const task=taskItems.find(t=>t.id===taskId);
+  if(!task)return;
+  taskEditingField=null;
+  task[field]=value;
+  const today=new Date().toISOString().slice(0,10);
+  task.updated=today;
+  taskScheduleSave();
+  taskUpdateCounts();
+  taskRenderTable();
+}
+
+function taskAdd(){
+  const maxId=taskItems.reduce((max,t)=>Math.max(max,t.id||0),0);
+  const today=new Date().toISOString().slice(0,10);
+  taskItems.push({
+    id:maxId+1,
+    task:'',
+    assignees:[],
+    status:taskCurrentTab==='Completed'?'Completed':taskCurrentTab==='Hold'?'Hold':'Open',
+    priority:'Medium',
+    deadline:'',
+    remark:'',
+    created:today,
+    updated:today
+  });
+  taskScheduleSave();
+  taskUpdateCounts();
+  taskRenderTable();
+  showToast('New task added','success');
+}
+
+function taskDelete(taskId){
+  const task=taskItems.find(t=>t.id===taskId);
+  if(!task)return;
+  const preview=(task.task||'Untitled').substring(0,50);
+  if(!confirm(`Delete "${preview}"? This cannot be undone.`))return;
+  taskItems=taskItems.filter(t=>t.id!==taskId);
+  taskScheduleSave();
+  taskUpdateCounts();
+  taskRenderTable();
+  showToast('Task deleted','success');
+}
+
+// Task Share functionality
+function toggleTaskShareDropdown(btn){
+  const dd=document.getElementById('taskShareDropdown');
+  dd.classList.toggle('open');
+  const close=e=>{if(!btn.parentElement.contains(e.target)){dd.classList.remove('open');document.removeEventListener('click',close);}};
+  setTimeout(()=>document.addEventListener('click',close),0);
+}
+
+async function taskShareAs(format){
+  document.getElementById('taskShareDropdown').classList.remove('open');
+
+  const addBtn=document.querySelector('#tabTasks .ob-add-btn');
+  const delBtns=document.querySelectorAll('#tabTasks .ob-delete-btn');
+  const shareBtnEl=document.querySelector('#tabTasks .ob-share-btn');
+
+  if(addBtn)addBtn.style.display='none';
+  delBtns.forEach(b=>b.style.display='none');
+  if(shareBtnEl)shareBtnEl.style.display='none';
+
+  const tableWrap=document.getElementById('taskTableWrap');
+
+  try{
+    const canvas=await html2canvas(tableWrap,{
+      scale:2,useCORS:true,backgroundColor:'#ffffff',
+      scrollX:0,scrollY:0,
+      width:tableWrap.scrollWidth,height:tableWrap.scrollHeight
+    });
+
+    if(format==='photo'){
+      const link=document.createElement('a');
+      link.download=`tasks-${taskCurrentTab.toLowerCase()}-${new Date().toISOString().slice(0,10)}.png`;
+      link.href=canvas.toDataURL('image/png');
+      link.click();
+      showToast('Image downloaded','success');
+    }else{
+      const imgData=canvas.toDataURL('image/png');
+      const {jsPDF}=window.jspdf;
+      const pdf=new jsPDF({orientation:'landscape',unit:'px',format:[canvas.width/2,canvas.height/2]});
+      pdf.addImage(imgData,'PNG',0,0,canvas.width/2,canvas.height/2);
+      pdf.save(`tasks-${taskCurrentTab.toLowerCase()}-${new Date().toISOString().slice(0,10)}.pdf`);
+      showToast('PDF downloaded','success');
+    }
+  }catch(e){
+    showToast('Export failed: '+e.message,'error');
+  }
+
+  if(addBtn)addBtn.style.display='';
+  delBtns.forEach(b=>b.style.display='');
   if(shareBtnEl)shareBtnEl.style.display='';
 }
 
