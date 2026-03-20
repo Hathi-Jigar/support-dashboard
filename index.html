@@ -73,7 +73,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .table th:nth-child(1),.table td:nth-child(1){width:45px;min-width:45px}
 .table th:nth-child(2),.table td:nth-child(2){min-width:160px}
 .table th:nth-child(3),.table td:nth-child(3){width:100px;min-width:100px}
-.table th:nth-child(4),.table td:nth-child(4){min-width:220px}
+.table th:nth-child(4),.table td:nth-child(4){width:300px;min-width:220px;white-space:normal;word-wrap:break-word;overflow-wrap:break-word;word-break:break-word;overflow:visible}
 .table th:nth-child(5),.table td:nth-child(5){min-width:180px}
 .table th:nth-child(6),.table td:nth-child(6){width:90px;min-width:90px}
 .table th:nth-child(7),.table td:nth-child(7){width:75px;min-width:75px}
@@ -189,7 +189,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .inline-cancel{background:var(--bg);color:var(--sub);border:1px solid var(--border);padding:2px 8px;border-radius:3px;font-size:10px;cursor:pointer;font-family:inherit}
 
 /* Description cell */
-.desc-cell{max-width:220px;font-size:13px;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:normal;word-wrap:break-word;cursor:pointer}
+.desc-cell{font-size:13px;color:#374151;white-space:normal;word-wrap:break-word;overflow-wrap:break-word;word-break:break-word;cursor:pointer}
 .desc-cell:hover{color:var(--text)}
 .solution-cell{max-width:180px;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:normal;word-wrap:break-word}
 .solution-cell.empty{color:var(--muted);font-style:italic}
@@ -309,13 +309,11 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 /* Task column widths */
 .task-table th:nth-child(1),.task-table td:nth-child(1){min-width:35px;width:35px;white-space:nowrap}
 .task-table th:nth-child(2),.task-table td:nth-child(2){min-width:280px;white-space:normal;word-wrap:break-word}
-.task-table th:nth-child(3),.task-table td:nth-child(3){min-width:180px}
-.task-table th:nth-child(4),.task-table td:nth-child(4){min-width:100px}
-.task-table th:nth-child(5),.task-table td:nth-child(5){min-width:90px}
-.task-table th:nth-child(6),.task-table td:nth-child(6){min-width:110px;white-space:nowrap}
-.task-table th:nth-child(7),.task-table td:nth-child(7){min-width:220px;white-space:normal;word-wrap:break-word}
-.task-table th:nth-child(8),.task-table td:nth-child(8){min-width:95px;white-space:nowrap}
-.task-table th:nth-child(9),.task-table td:nth-child(9){min-width:95px;white-space:nowrap}
+.task-table th:nth-child(3),.task-table td:nth-child(3){min-width:100px}
+.task-table th:nth-child(4),.task-table td:nth-child(4){min-width:90px}
+.task-table th:nth-child(5),.task-table td:nth-child(5){min-width:110px;white-space:nowrap}
+.task-table th:nth-child(6),.task-table td:nth-child(6){min-width:220px;white-space:normal;word-wrap:break-word}
+.task-table th:nth-child(7),.task-table td:nth-child(7){min-width:95px;white-space:nowrap}
 
 /* Priority badges */
 .priority-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:6px;display:inline-block}
@@ -515,11 +513,11 @@ th {
   <table class="task-table" id="taskTable">
     <thead>
       <tr>
-        <th>#</th><th>Task</th><th>Assignee</th><th>Status</th><th>Priority</th><th>Deadline</th><th>Remark</th><th></th>
+        <th>#</th><th>Task</th><th>Status</th><th>Priority</th><th>Deadline</th><th>Remark</th><th></th>
       </tr>
     </thead>
     <tbody id="taskTableBody">
-      <tr><td colspan="8"><div class="empty-state"><div class="icon">&#128260;</div><div class="title">Loading...</div></div></td></tr>
+      <tr><td colspan="7"><div class="empty-state"><div class="icon">&#128260;</div><div class="title">Loading...</div></div></td></tr>
     </tbody>
   </table>
 </div>
@@ -1044,7 +1042,7 @@ function renderTable(){
     const tat=isOpen?tatSince(b.created_at):b.closed_at?formatDuration(new Date(b.closed_at)-new Date(b.created_at)):'\u2014';
     const tatCls=isOpen&&daysSince(b.created_at)>3?'tat-cell overdue':'tat-cell';
     const esc=s=>(s||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-    const shortDesc=(b.description||'').substring(0,80);
+    const shortDesc=(b.description||'').substring(0,200);
     const shortSol=(b.solution||'').substring(0,60);
 
     const emptyDash='<span style="color:#D1D5DB">\u2014</span>';
@@ -1053,7 +1051,7 @@ function renderTable(){
       <td><span class="bug-id">#${b.number}</span></td>
       <td><div class="bug-title">${b.title}</div><button class="view-btn" onclick="openDetail(${b.number})">View</button></td>
       <td class="inline-cell"><div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'tag')">${b.tag?`<span class="tag-badge tag-${b.tag.replace(/\s/g,'-')}">${b.tag}</span>`:'<span style="color:#D1D5DB">Set</span>'}</div></td>
-      <td><div class="desc-cell" title="${esc(b.description)}" onclick="openDetail(${b.number})">${shortDesc||emptyDash}${b.description&&b.description.length>80?'\u2026':''}</div></td>
+      <td><div class="desc-cell" title="${esc(b.description)}" onclick="openDetail(${b.number})">${shortDesc||emptyDash}${b.description&&b.description.length>200?'\u2026':''}</div></td>
       <td class="inline-cell"><div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'solution')" title="Click to edit">${shortSol?`<span class="solution-cell filled">${shortSol}${b.solution.length>60?'\u2026':''}</span>`:'<span class="solution-cell empty">Add solution</span>'}</div></td>
       <td class="inline-cell"><div class="inline-val editable" onclick="event.stopPropagation();inlineStatusToggle(${b.number})"><span class="badge ${badgeCls}">${badgeText}</span></div></td>
       <td class="inline-cell"><div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'platform')">${b.platform?`<span class="platform-badge">${b.platform}</span>`:'<span style="color:#D1D5DB">Set</span>'}</div></td>
@@ -2022,7 +2020,7 @@ function taskRenderTable(){
   });
 
   if(filtered.length===0){
-    tbody.innerHTML=`<tr><td colspan="8"><div class="empty-state"><div class="icon">&#128203;</div><div class="title">No tasks in this category</div></div></td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="7"><div class="empty-state"><div class="icon">&#128203;</div><div class="title">No tasks in this category</div></div></td></tr>`;
     setTimeout(() => { initColumnResize(); restoreColumnWidths(); }, 50);
     return;
   }
@@ -2033,7 +2031,6 @@ function taskRenderTable(){
     return `<tr data-task-id="${t.id}">
       <td style="font-size:12px;color:#9CA3AF">${i+1}</td>
       <td><div class="ob-editable" onclick="taskEdit(${t.id},'task','textarea')" style="white-space:pre-wrap">${t.task?esc(t.task):'<span style="color:#D1D5DB">Set</span>'}</div></td>
-      <td><div class="ob-editable" onclick="taskEdit(${t.id},'assignees','multiselect')">${taskRenderAssigneeChips(t.assignees)}</div></td>
       <td><div class="ob-editable" onclick="taskEdit(${t.id},'status','status-dropdown')">${taskStatusBadge(t.status)}</div></td>
       <td><div class="ob-editable" onclick="taskEdit(${t.id},'priority','priority-dropdown')">${taskPriorityBadge(t.priority)}</div></td>
       <td><div class="ob-editable" onclick="taskEdit(${t.id},'deadline','date')">${t.deadline?taskFormatDate(t.deadline):'<span style="color:#D1D5DB">Set</span>'}${overdueTag}</div></td>
