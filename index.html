@@ -221,18 +221,18 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
       <tr>
         <th>#</th>
         <th>Bug</th>
+        <th>Tag</th>
         <th>Issue Description</th>
         <th>Solution</th>
         <th>Status</th>
-        <th>Organisation</th>
         <th>Platform</th>
         <th>Version</th>
+        <th>Organisation</th>
         <th>Reported By</th>
         <th>Email</th>
         <th>Phone</th>
         <th>Reported</th>
         <th>TAT</th>
-        <th>Tag</th>
         <th>Handled By</th>
       </tr>
     </thead>
@@ -756,18 +756,18 @@ function renderTable(){
     return`<tr>
       <td><span class="bug-id">#${b.number}</span></td>
       <td><div class="bug-title">${b.title}</div><button class="view-btn" onclick="openDetail(${b.number})">View</button></td>
+      <td class="inline-cell"><div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'tag')">${b.tag?`<span class="tag-badge tag-${b.tag.replace(/\s/g,'-')}">${b.tag}</span>`:'<span style="color:var(--muted)">Set</span>'}</div></td>
       <td><div class="desc-cell" title="${esc(b.description)}" onclick="openDetail(${b.number})">${shortDesc||'<span style="color:var(--muted)">—</span>'}${b.description&&b.description.length>80?'…':''}</div></td>
       <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'solution')" title="Click to edit">${shortSol?`<span class="solution-cell filled">${shortSol}${b.solution.length>60?'…':''}</span>`:'<span class="solution-cell empty">Add solution</span>'}</div>`:`<div class="solution-cell ${b.solution?'filled':'empty'}">${shortSol||'—'}${b.solution&&b.solution.length>60?'…':''}</div>`}</td>
       <td class="inline-cell"><div class="inline-val editable" onclick="event.stopPropagation();inlineStatusToggle(${b.number})"><span class="badge ${badgeCls}">${badgeText}</span></div></td>
-      <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'org')">${b.org||'<span style="color:var(--muted)">Add org</span>'}</div>`:`<span style="font-size:12px;color:var(--sub)">${b.org||'—'}</span>`}</td>
       <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'platform')">${b.platform?`<span class="platform-badge">${b.platform}</span>`:'<span style="color:var(--muted)">Set</span>'}</div>`:`${b.platform?`<span class="platform-badge">${b.platform}</span>`:'<span style="color:var(--muted)">—</span>'}`}</td>
       <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'version')">${b.version||'<span style="color:var(--muted)">Set</span>'}</div>`:`<span style="font-size:12px;color:var(--sub)">${b.version||'—'}</span>`}</td>
+      <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'org')">${b.org||'<span style="color:var(--muted)">Add org</span>'}</div>`:`<span style="font-size:12px;color:var(--sub)">${b.org||'—'}</span>`}</td>
       <td style="font-size:12px;color:var(--sub)">${b.reportedBy||'<span style="color:var(--muted)">—</span>'}</td>
       <td style="font-size:12px;color:var(--sub)">${b.email?`<a href="mailto:${b.email}" onclick="event.stopPropagation()" style="color:var(--brand);text-decoration:none">${b.email}</a>`:'<span style="color:var(--muted)">—</span>'}</td>
       <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'phone')">${b.phone||'<span style="color:var(--muted)">Add</span>'}</div>`:`<span style="font-size:12px;color:var(--sub)">${b.phone||'—'}</span>`}</td>
       <td style="font-size:12px;color:var(--sub)">${formatDate(b.created_at)}</td>
       <td><span class="${tatCls}">${tat}</span></td>
-      <td class="inline-cell"><div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'tag')">${b.tag?`<span class="tag-badge tag-${b.tag.replace(/\s/g,'-')}">${b.tag}</span>`:'<span style="color:var(--muted)">Set</span>'}</div></td>
       <td>${b.handledBy?`<div class="handler"><strong>${b.handledBy}</strong></div>`:'<span style="color:var(--muted)">—</span>'}</td>
     </tr>`;
   }).join('');
@@ -912,7 +912,7 @@ function inlineStatusToggle(number){
   });
   if(!targetRow)return;
 
-  const cell=targetRow.cells[4]; // Status column
+  const cell=targetRow.cells[5]; // Status column
   if(!cell)return;
 
   const isOpen=bug.state==='open';
@@ -980,7 +980,7 @@ function inlineEdit(number,field){
   if(!targetRow)return;
 
   // Column index mapping (0-based)
-  const colMap={solution:3,org:5,platform:6,version:7,phone:10,tag:13};
+  const colMap={tag:2,solution:4,platform:6,version:7,org:8,phone:11};
   const colIdx=colMap[field];
   if(colIdx===undefined)return;
   const cell=targetRow.cells[colIdx];
