@@ -205,12 +205,32 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .share-dropdown button:hover{background:var(--bg)}
 
 /* Onboarding table */
-.ob-table{width:100%;border-collapse:collapse;background:var(--white);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--border);min-width:1600px}
+.ob-table{width:100%;border-collapse:collapse;background:var(--white);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--border);min-width:2200px}
 .ob-table th{background:var(--bg);padding:10px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap}
 .ob-table td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:top}
 .ob-table tr:last-child td{border-bottom:none}
 .ob-table tr:hover td{background:#FAFBFC}
 .ob-table tr:hover .ob-delete-btn{opacity:1}
+
+/* Onboarding column widths */
+.ob-table th:nth-child(1),.ob-table td:nth-child(1){min-width:35px;width:35px;white-space:nowrap}
+.ob-table th:nth-child(2),.ob-table td:nth-child(2){min-width:180px}
+.ob-table th:nth-child(3),.ob-table td:nth-child(3){min-width:120px}
+.ob-table th:nth-child(4),.ob-table td:nth-child(4){min-width:80px;white-space:nowrap}
+.ob-table th:nth-child(5),.ob-table td:nth-child(5){min-width:140px}
+.ob-table th:nth-child(6),.ob-table td:nth-child(6){min-width:160px}
+.ob-table th:nth-child(7),.ob-table td:nth-child(7){min-width:140px}
+.ob-table th:nth-child(8),.ob-table td:nth-child(8){min-width:110px;white-space:nowrap}
+.ob-table th:nth-child(9),.ob-table td:nth-child(9){min-width:110px;white-space:nowrap}
+.ob-table th:nth-child(10),.ob-table td:nth-child(10){min-width:110px;white-space:nowrap}
+.ob-table th:nth-child(11),.ob-table td:nth-child(11){min-width:110px;white-space:nowrap}
+.ob-table td.ob-col-payment{min-width:200px}
+.ob-table td.ob-col-action{min-width:200px}
+.ob-table td.ob-col-notes{min-width:150px}
+.ob-table td.ob-col-usage{min-width:40px;width:40px;white-space:nowrap}
+.ob-table td.ob-col-expansion{min-width:80px}
+.ob-table td.ob-col-expdetails{min-width:120px}
+.ob-table td.ob-col-expremark{min-width:120px}
 
 .ob-delete-btn{opacity:0;background:none;border:none;color:#DC2626;cursor:pointer;font-size:16px;padding:2px 6px;border-radius:4px;transition:opacity .15s}
 .ob-delete-btn:hover{background:#FEE2E2}
@@ -343,7 +363,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 
 <div class="ob-section-header">
   <div class="left-btns">
-    <button class="ob-add-btn" onclick="obAddCompany()">+ Add Company</button>
+    <button class="ob-add-btn" onclick="obAddCompany()">+ Add Organisation</button>
   </div>
   <div style="position:relative">
     <button class="ob-share-btn" onclick="toggleShareDropdown(this)">&#128424; Share</button>
@@ -1190,6 +1210,7 @@ let obCompanies = [];
 let obSha = null;
 let obCurrentTab = 'onboarding';
 let obSaveTimer = null;
+let obEditingCompanyField = null; // Track active inline edit to prevent re-render destroying it
 
 const COUNTRY_CODES = [
   {code:'IN',dial:'+91',name:'India'},
@@ -1302,8 +1323,16 @@ function switchObTab(tab,el){
   obRenderTable();
 }
 
+function obFormatDate(isoDate){
+  if(!isoDate)return '';
+  const parts=isoDate.split('-');
+  if(parts.length===3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+  return isoDate;
+}
+
 function obRenderTable(){
-  const showExtra = obCurrentTab==='monitoring' || obCurrentTab==='completed';
+  const showUsage = obCurrentTab==='monitoring' || obCurrentTab==='completed';
+  const showExpansion = obCurrentTab==='completed';
   const thead=document.getElementById('obTableHead');
   const tbody=document.getElementById('obTableBody');
   const filtered=obGetFiltered();
@@ -1314,15 +1343,17 @@ function obRenderTable(){
     <th>SPOC Name</th><th>SPOC Phone</th><th>System Admin</th>
     <th>Intro Meet</th><th>Training Setup</th><th>Live Setup</th><th>Dashboard Setup</th>
     <th>Payment</th><th>Action Items</th><th>Notes</th>`;
-  if(showExtra){
-    headerHtml+=`<th>Inspection</th><th>Instruction</th><th>Register</th>
-    <th>Expansion</th><th>Exp. Details</th><th>Exp. Remark</th>`;
+  if(showUsage){
+    headerHtml+=`<th>Inspection</th><th>Instruction</th><th>Register</th>`;
+  }
+  if(showExpansion){
+    headerHtml+=`<th>Expansion</th><th>Exp. Details</th><th>Exp. Remark</th>`;
   }
   headerHtml+=`<th></th></tr>`;
   thead.innerHTML=headerHtml;
 
   if(filtered.length===0){
-    const colSpan=showExtra?21:15;
+    const colSpan=15+(showUsage?3:0)+(showExpansion?3:0);
     tbody.innerHTML=`<tr><td colspan="${colSpan}"><div class="empty-state"><div class="icon">&#128203;</div><div class="title">No companies in this category</div></div></td></tr>`;
     return;
   }
@@ -1340,22 +1371,25 @@ function obRenderTable(){
       <td><div class="ob-editable" onclick="obEdit(${c.id},'spocName','text')">${esc(c.spocName)||'<span style="color:var(--muted)">Set</span>'}</div></td>
       <td><div class="ob-editable" onclick="obEdit(${c.id},'spocPhone','phone')">${c.spocPhone||'<span style="color:var(--muted)">Set</span>'}</div></td>
       <td><div class="ob-editable" onclick="obEdit(${c.id},'systemAdmin','text')">${esc(c.systemAdmin)||'<span style="color:var(--muted)">Set</span>'}</div></td>
-      <td><div class="ob-editable" onclick="obEdit(${c.id},'introMeet','date')">${c.introMeet?formatDate(c.introMeet+'T00:00:00'):'<span style="color:var(--muted)">Set</span>'}</div></td>
-      <td><div class="ob-editable" onclick="obEdit(${c.id},'trainingSetup','date')">${c.trainingSetup?formatDate(c.trainingSetup+'T00:00:00'):'<span style="color:var(--muted)">Set</span>'}</div></td>
-      <td><div class="ob-editable" onclick="obEdit(${c.id},'liveSetup','date')">${c.liveSetup?formatDate(c.liveSetup+'T00:00:00'):'<span style="color:var(--muted)">Set</span>'}</div></td>
-      <td><div class="ob-editable" onclick="obEdit(${c.id},'dashboardSetup','date')">${c.dashboardSetup?formatDate(c.dashboardSetup+'T00:00:00'):'<span style="color:var(--muted)">Set</span>'}</div></td>
-      <td><div class="ob-editable" onclick="obEdit(${c.id},'payment','textarea')" title="${esc(c.payment)}">${shortPayment?esc(shortPayment)+(c.payment.length>40?'...':''):'<span style="color:var(--muted)">Set</span>'}</div></td>
-      <td class="action-items-cell">${obRenderActionItems(c)}</td>
-      <td><div class="ob-editable" onclick="obEdit(${c.id},'notes','textarea')" title="${esc(c.notes)}">${shortNotes?esc(shortNotes)+(c.notes&&c.notes.length>40?'...':''):'<span style="color:var(--muted)">Set</span>'}</div></td>`;
+      <td><div class="ob-editable" onclick="obEdit(${c.id},'introMeet','date')">${c.introMeet?obFormatDate(c.introMeet):'<span style="color:var(--muted)">Set</span>'}</div></td>
+      <td><div class="ob-editable" onclick="obEdit(${c.id},'trainingSetup','date')">${c.trainingSetup?obFormatDate(c.trainingSetup):'<span style="color:var(--muted)">Set</span>'}</div></td>
+      <td><div class="ob-editable" onclick="obEdit(${c.id},'liveSetup','date')">${c.liveSetup?obFormatDate(c.liveSetup):'<span style="color:var(--muted)">Set</span>'}</div></td>
+      <td><div class="ob-editable" onclick="obEdit(${c.id},'dashboardSetup','date')">${c.dashboardSetup?obFormatDate(c.dashboardSetup):'<span style="color:var(--muted)">Set</span>'}</div></td>
+      <td class="ob-col-payment"><div class="ob-editable" onclick="obEdit(${c.id},'payment','textarea')" title="${esc(c.payment)}">${shortPayment?esc(shortPayment)+(c.payment.length>40?'...':''):'<span style="color:var(--muted)">Set</span>'}</div></td>
+      <td class="action-items-cell ob-col-action">${obRenderActionItems(c)}</td>
+      <td class="ob-col-notes"><div class="ob-editable" onclick="obEdit(${c.id},'notes','textarea')" title="${esc(c.notes)}">${shortNotes?esc(shortNotes)+(c.notes&&c.notes.length>40?'...':''):'<span style="color:var(--muted)">Set</span>'}</div></td>`;
 
-    if(showExtra){
+    if(showUsage){
       row+=`
-      <td style="text-align:center"><button class="usage-toggle" onclick="obToggleUsage(${c.id},'inspection')">${c.usage&&c.usage.inspection?'<span style="color:#16A34A;font-size:18px">&#10004;</span>':'<span style="color:#DC2626;font-size:18px">&#10008;</span>'}</button></td>
-      <td style="text-align:center"><button class="usage-toggle" onclick="obToggleUsage(${c.id},'instruction')">${c.usage&&c.usage.instruction?'<span style="color:#16A34A;font-size:18px">&#10004;</span>':'<span style="color:#DC2626;font-size:18px">&#10008;</span>'}</button></td>
-      <td style="text-align:center"><button class="usage-toggle" onclick="obToggleUsage(${c.id},'register')">${c.usage&&c.usage.register?'<span style="color:#16A34A;font-size:18px">&#10004;</span>':'<span style="color:#DC2626;font-size:18px">&#10008;</span>'}</button></td>
-      <td><div class="ob-editable" onclick="obEdit(${c.id},'expansion.possible','expansion')">${obExpansionBadge(c.expansion&&c.expansion.possible)}</div></td>
-      <td><div class="ob-editable" onclick="obEdit(${c.id},'expansion.details','text')">${esc(c.expansion&&c.expansion.details)||'<span style="color:var(--muted)">Set</span>'}</div></td>
-      <td><div class="ob-editable" onclick="obEdit(${c.id},'expansion.remark','text')">${esc(c.expansion&&c.expansion.remark)||'<span style="color:var(--muted)">Set</span>'}</div></td>`;
+      <td class="ob-col-usage" style="text-align:center"><button class="usage-toggle" onclick="obToggleUsage(${c.id},'inspection')">${c.usage&&c.usage.inspection?'<span style="color:#16A34A;font-size:18px">&#10004;</span>':'<span style="color:#DC2626;font-size:18px">&#10008;</span>'}</button></td>
+      <td class="ob-col-usage" style="text-align:center"><button class="usage-toggle" onclick="obToggleUsage(${c.id},'instruction')">${c.usage&&c.usage.instruction?'<span style="color:#16A34A;font-size:18px">&#10004;</span>':'<span style="color:#DC2626;font-size:18px">&#10008;</span>'}</button></td>
+      <td class="ob-col-usage" style="text-align:center"><button class="usage-toggle" onclick="obToggleUsage(${c.id},'register')">${c.usage&&c.usage.register?'<span style="color:#16A34A;font-size:18px">&#10004;</span>':'<span style="color:#DC2626;font-size:18px">&#10008;</span>'}</button></td>`;
+    }
+    if(showExpansion){
+      row+=`
+      <td class="ob-col-expansion"><div class="ob-editable" onclick="obEdit(${c.id},'expansion.possible','expansion')">${obExpansionBadge(c.expansion&&c.expansion.possible)}</div></td>
+      <td class="ob-col-expdetails"><div class="ob-editable" onclick="obEdit(${c.id},'expansion.details','text')">${esc(c.expansion&&c.expansion.details)||'<span style="color:var(--muted)">Set</span>'}</div></td>
+      <td class="ob-col-expremark"><div class="ob-editable" onclick="obEdit(${c.id},'expansion.remark','text')">${esc(c.expansion&&c.expansion.remark)||'<span style="color:var(--muted)">Set</span>'}</div></td>`;
     }
 
     row+=`<td><button class="ob-delete-btn" onclick="obDeleteCompany(${c.id})" title="Delete">&times;</button></td></tr>`;
@@ -1446,6 +1480,9 @@ function obEdit(companyId,field,type){
   });
   if(!targetDiv)return;
 
+  // Mark that we are editing so obRenderTable won't destroy our input
+  obEditingCompanyField={companyId,field};
+
   // Get current value
   let currentVal='';
   if(field.startsWith('expansion.')){
@@ -1457,48 +1494,99 @@ function obEdit(companyId,field,type){
 
   // Replace with edit control
   if(type==='text'){
-    targetDiv.innerHTML=`<input class="ob-edit-input" value="${String(currentVal).replace(/"/g,'&quot;')}"
-      onkeydown="if(event.key==='Enter'){obSaveField(${companyId},'${field}',this.value);}"
-      onblur="obSaveField(${companyId},'${field}',this.value)">`;
-    targetDiv.querySelector('input').focus();
+    targetDiv.innerHTML=`<input class="ob-edit-input" value="${String(currentVal).replace(/"/g,'&quot;')}">`;
+    const inp=targetDiv.querySelector('input');
+    inp.focus();
+    inp.addEventListener('keydown',function(e){
+      e.stopPropagation();
+      if(e.key==='Enter'){obSaveField(companyId,field,this.value);}
+      if(e.key==='Escape'){obEditingCompanyField=null;obRenderTable();}
+    });
+    inp.addEventListener('blur',function(){obSaveField(companyId,field,this.value);});
+    inp.addEventListener('click',function(e){e.stopPropagation();});
   }else if(type==='number'){
-    targetDiv.innerHTML=`<input class="ob-edit-input" type="number" value="${currentVal}" min="0"
-      onkeydown="if(event.key==='Enter'){obSaveField(${companyId},'${field}',parseInt(this.value)||0);}"
-      onblur="obSaveField(${companyId},'${field}',parseInt(this.value)||0)">`;
-    targetDiv.querySelector('input').focus();
+    targetDiv.innerHTML=`<input class="ob-edit-input" type="number" value="${currentVal}" min="0">`;
+    const inp=targetDiv.querySelector('input');
+    inp.focus();
+    inp.addEventListener('keydown',function(e){
+      e.stopPropagation();
+      if(e.key==='Enter'){obSaveField(companyId,field,parseInt(this.value)||0);}
+      if(e.key==='Escape'){obEditingCompanyField=null;obRenderTable();}
+    });
+    inp.addEventListener('blur',function(){obSaveField(companyId,field,parseInt(this.value)||0);});
+    inp.addEventListener('click',function(e){e.stopPropagation();});
   }else if(type==='date'){
-    targetDiv.innerHTML=`<input class="ob-edit-input" type="date" value="${currentVal}"
-      onchange="obSaveField(${companyId},'${field}',this.value)"
-      onblur="obSaveField(${companyId},'${field}',this.value)">`;
-    targetDiv.querySelector('input').focus();
+    targetDiv.innerHTML=`<input class="ob-edit-input" type="date" value="${currentVal}">`;
+    const inp=targetDiv.querySelector('input');
+    inp.focus();
+    inp.addEventListener('change',function(){obSaveField(companyId,field,this.value);});
+    inp.addEventListener('blur',function(){obSaveField(companyId,field,this.value);});
+    inp.addEventListener('click',function(e){e.stopPropagation();});
   }else if(type==='dropdown'){
-    targetDiv.innerHTML=`<select class="ob-edit-select" onchange="obSaveField(${companyId},'${field}',this.value)">
+    targetDiv.innerHTML=`<select class="ob-edit-select">
       <option value="">-- Select --</option>
       <option value="Project Based" ${currentVal==='Project Based'?'selected':''}>Project Based</option>
       <option value="User Based" ${currentVal==='User Based'?'selected':''}>User Based</option>
     </select>`;
-    targetDiv.querySelector('select').focus();
+    const sel=targetDiv.querySelector('select');
+    sel.addEventListener('mousedown',function(e){e.stopPropagation();});
+    sel.addEventListener('click',function(e){e.stopPropagation();});
+    sel.addEventListener('change',function(e){e.stopPropagation();obSaveField(companyId,field,this.value);});
+    sel.addEventListener('blur',function(){
+      // Small delay to allow change event to fire first
+      setTimeout(()=>{if(obEditingCompanyField){obEditingCompanyField=null;obRenderTable();}},150);
+    });
+    sel.focus();
   }else if(type==='expansion'){
-    targetDiv.innerHTML=`<select class="ob-edit-select" onchange="obSaveField(${companyId},'${field}',this.value)">
+    targetDiv.innerHTML=`<select class="ob-edit-select">
       <option value="">-- Select --</option>
       <option value="Yes" ${currentVal==='Yes'?'selected':''}>Yes</option>
       <option value="No" ${currentVal==='No'?'selected':''}>No</option>
       <option value="Maybe" ${currentVal==='Maybe'?'selected':''}>Maybe</option>
     </select>`;
-    targetDiv.querySelector('select').focus();
+    const sel=targetDiv.querySelector('select');
+    sel.addEventListener('mousedown',function(e){e.stopPropagation();});
+    sel.addEventListener('click',function(e){e.stopPropagation();});
+    sel.addEventListener('change',function(e){e.stopPropagation();obSaveField(companyId,field,this.value);});
+    sel.addEventListener('blur',function(){
+      setTimeout(()=>{if(obEditingCompanyField){obEditingCompanyField=null;obRenderTable();}},150);
+    });
+    sel.focus();
   }else if(type==='textarea'){
-    targetDiv.innerHTML=`<textarea class="ob-edit-textarea" onblur="obSaveField(${companyId},'${field}',this.value)">${(currentVal||'').replace(/</g,'&lt;')}</textarea>`;
-    targetDiv.querySelector('textarea').focus();
+    targetDiv.innerHTML=`<textarea class="ob-edit-textarea">${(currentVal||'').replace(/</g,'&lt;')}</textarea>`;
+    const ta=targetDiv.querySelector('textarea');
+    ta.focus();
+    ta.addEventListener('keydown',function(e){
+      e.stopPropagation();
+      // Shift+Enter inserts newline (default behavior), Enter alone saves
+      if(e.key==='Enter'&&!e.shiftKey){
+        e.preventDefault();
+        obSaveField(companyId,field,this.value);
+      }
+      if(e.key==='Escape'){obEditingCompanyField=null;obRenderTable();}
+    });
+    ta.addEventListener('blur',function(){obSaveField(companyId,field,this.value);});
+    ta.addEventListener('click',function(e){e.stopPropagation();});
   }else if(type==='phone'){
     const countryCode=company.spocCountry||'IN';
     const opts=COUNTRY_CODES.map(cc=>`<option value="${cc.code}" ${cc.code===countryCode?'selected':''}>${cc.dial} ${cc.name}</option>`).join('');
     targetDiv.innerHTML=`<div class="phone-group">
-      <select onchange="obSaveCountry(${companyId},this.value)">${opts}</select>
-      <input class="ob-edit-input" value="${String(currentVal).replace(/"/g,'&quot;')}" placeholder="Phone number"
-        onkeydown="if(event.key==='Enter'){obSaveField(${companyId},'spocPhone',this.value);}"
-        onblur="obSaveField(${companyId},'spocPhone',this.value)">
+      <select>${opts}</select>
+      <input class="ob-edit-input" value="${String(currentVal).replace(/"/g,'&quot;')}" placeholder="Phone number">
     </div>`;
-    targetDiv.querySelector('input').focus();
+    const countrySelect=targetDiv.querySelector('select');
+    const phoneInput=targetDiv.querySelector('input');
+    countrySelect.addEventListener('mousedown',function(e){e.stopPropagation();});
+    countrySelect.addEventListener('click',function(e){e.stopPropagation();});
+    countrySelect.addEventListener('change',function(e){e.stopPropagation();obSaveCountry(companyId,this.value);});
+    phoneInput.addEventListener('keydown',function(e){
+      e.stopPropagation();
+      if(e.key==='Enter'){obSaveField(companyId,'spocPhone',this.value);}
+      if(e.key==='Escape'){obEditingCompanyField=null;obRenderTable();}
+    });
+    phoneInput.addEventListener('blur',function(){obSaveField(companyId,'spocPhone',this.value);});
+    phoneInput.addEventListener('click',function(e){e.stopPropagation();});
+    phoneInput.focus();
   }
 }
 
@@ -1510,6 +1598,8 @@ function obSaveCountry(companyId,code){
 }
 
 function obSaveField(companyId,field,value){
+  // Prevent double-save if already cleared
+  if(!obEditingCompanyField)return;
   const company=obCompanies.find(c=>c.id===companyId);
   if(!company)return;
 
@@ -1521,6 +1611,7 @@ function obSaveField(companyId,field,value){
     company[field]=value;
   }
 
+  obEditingCompanyField=null;
   obScheduleSave();
   obUpdateCounts();
   obRenderTable();
@@ -1541,7 +1632,7 @@ function obAddCompany(){
   obScheduleSave();
   obUpdateCounts();
   obRenderTable();
-  showToast('New company added','success');
+  showToast('New organisation added','success');
 }
 
 function obDeleteCompany(companyId){
