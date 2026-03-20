@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Support Dashboard — digiQC</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -23,6 +25,12 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .header-title{font-size:15px;font-weight:600}
 .header-right{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--sub)}
 .reviewer-name{font-weight:600;color:var(--text)}
+
+/* Main Tab Bar */
+.main-tab-bar{background:var(--white);border-bottom:1px solid var(--border);padding:0 28px;display:flex;gap:0}
+.main-tab{padding:14px 24px;font-size:14px;font-weight:600;color:var(--sub);cursor:pointer;border:none;background:none;border-bottom:3px solid transparent;font-family:inherit;transition:all .15s}
+.main-tab:hover{color:var(--text)}
+.main-tab.active{color:var(--brand);border-bottom-color:var(--brand)}
 
 /* Setup */
 .setup-banner{background:var(--brand-light);border-bottom:1px solid #FED7AA;padding:12px 28px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
@@ -173,8 +181,79 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .view-btn{background:none;border:1px solid var(--border);padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;cursor:pointer;color:var(--sub);font-family:inherit;white-space:nowrap;margin-left:4px}
 .view-btn:hover{border-color:var(--brand);color:var(--brand)}
 
+/* ============ ONBOARDING TRACKER STYLES ============ */
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* Sub-tabs for onboarding */
+.ob-sub-tabs{padding:12px 28px;display:flex;gap:8px;align-items:center}
+.ob-sub-tab{padding:8px 18px;border-radius:20px;border:1px solid var(--border);background:var(--white);font-size:13px;font-weight:600;cursor:pointer;color:var(--sub);font-family:inherit;transition:all .15s}
+.ob-sub-tab:hover{border-color:var(--sub)}
+.ob-sub-tab.active{background:var(--text);color:var(--white);border-color:var(--text)}
+.ob-sub-tab .count{font-weight:700;margin-left:2px}
+
+/* Section header with buttons */
+.ob-section-header{padding:8px 28px 12px;display:flex;align-items:center;gap:10px;justify-content:space-between}
+.ob-section-header .left-btns{display:flex;gap:8px;align-items:center}
+.ob-add-btn{background:var(--brand);color:white;border:none;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.ob-add-btn:hover{background:#C73509}
+.ob-share-btn{background:var(--white);border:1px solid var(--border);padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--sub);position:relative}
+.ob-share-btn:hover{border-color:var(--brand);color:var(--brand)}
+.share-dropdown{display:none;position:absolute;top:100%;right:0;background:var(--white);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);z-index:50;overflow:hidden;min-width:140px;margin-top:4px}
+.share-dropdown.open{display:block}
+.share-dropdown button{display:block;width:100%;padding:10px 16px;text-align:left;border:none;background:none;font-size:13px;font-family:inherit;cursor:pointer;color:var(--text)}
+.share-dropdown button:hover{background:var(--bg)}
+
+/* Onboarding table */
+.ob-table{width:100%;border-collapse:collapse;background:var(--white);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--border);min-width:1600px}
+.ob-table th{background:var(--bg);padding:10px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap}
+.ob-table td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:top}
+.ob-table tr:last-child td{border-bottom:none}
+.ob-table tr:hover td{background:#FAFBFC}
+.ob-table tr:hover .ob-delete-btn{opacity:1}
+
+.ob-delete-btn{opacity:0;background:none;border:none;color:#DC2626;cursor:pointer;font-size:16px;padding:2px 6px;border-radius:4px;transition:opacity .15s}
+.ob-delete-btn:hover{background:#FEE2E2}
+
+/* Inline edit for onboarding */
+.ob-editable{cursor:pointer;padding:2px 4px;border-radius:4px;min-height:20px;border-bottom:1px dashed transparent;transition:all .1s}
+.ob-editable:hover{background:#EEF2FF;border-bottom-color:var(--brand)}
+.ob-edit-input{width:100%;padding:4px 6px;border:1.5px solid var(--brand);border-radius:4px;font-size:12px;font-family:inherit;outline:none;background:var(--white);color:var(--text)}
+.ob-edit-select{padding:3px 4px;border:1.5px solid var(--brand);border-radius:4px;font-size:12px;font-family:inherit;outline:none;background:var(--white);color:var(--text);width:100%}
+.ob-edit-textarea{width:100%;padding:4px 6px;border:1.5px solid var(--brand);border-radius:4px;font-size:12px;font-family:inherit;outline:none;background:var(--white);color:var(--text);resize:vertical;min-height:60px}
+
+/* Phone input group */
+.phone-group{display:flex;gap:4px;align-items:center}
+.phone-group select{width:70px;padding:3px 2px;border:1.5px solid var(--brand);border-radius:4px;font-size:11px;font-family:inherit;outline:none}
+.phone-group input{flex:1}
+
+/* Usage toggles */
+.usage-toggle{cursor:pointer;font-size:16px;padding:2px 6px;border-radius:4px;border:none;background:none;transition:background .1s}
+.usage-toggle:hover{background:var(--bg)}
+
+/* Action items */
+.action-items-cell{min-width:200px;max-width:280px}
+.action-week{margin-bottom:6px;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.action-week-header{display:flex;align-items:center;justify-content:space-between;padding:4px 8px;background:var(--bg);cursor:pointer;font-size:11px;font-weight:600;color:var(--sub)}
+.action-week-header:hover{background:#EEF2FF}
+.action-week-body{padding:6px 8px;font-size:11px;color:var(--text);line-height:1.5;display:none;border-top:1px solid var(--border)}
+.action-week-body.open{display:block}
+.action-week-by{font-size:10px;color:var(--muted);margin-top:2px}
+.action-add-btn{background:var(--brand);color:white;border:none;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:4px}
+.action-add-btn:hover{background:#C73509}
+
+/* Expansion dropdown */
+.expansion-badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;display:inline-block}
+.expansion-yes{background:#DCFCE7;color:#166534;border:1px solid #BBF7D0}
+.expansion-no{background:#FEE2E2;color:#991B1B;border:1px solid #FECACA}
+.expansion-maybe{background:#FEF3C7;color:#92400E;border:1px solid #FCD34D}
+
+/* Save indicator */
+.save-indicator{position:fixed;top:70px;right:28px;background:#166534;color:white;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;z-index:300;display:none;animation:fadeIn .2s}
+.save-indicator.show{display:block}
+
 @media(max-width:768px){
-  .header,.stats-bar,.filter-bar,.table-wrap{padding-left:16px;padding-right:16px}
+  .header,.stats-bar,.filter-bar,.table-wrap,.ob-sub-tabs,.ob-section-header{padding-left:16px;padding-right:16px}
   .detail-panel{width:100%}
   .search-input{width:150px}
 }
@@ -190,8 +269,14 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
   </div>
   <div class="header-right" id="headerRight">
     <span id="reviewerDisplay"></span>
-    <button class="refresh-btn" onclick="loadIssues()" style="display:none" id="refreshBtn">↻ Refresh</button>
+    <button class="refresh-btn" onclick="handleRefresh()" style="display:none" id="refreshBtn">&#8635; Refresh</button>
   </div>
+</div>
+
+<!-- Main Tab Bar -->
+<div class="main-tab-bar">
+  <button class="main-tab active" onclick="switchMainTab('bugs',this)">&#128027; Bug Tracker</button>
+  <button class="main-tab" onclick="switchMainTab('onboarding',this)">&#128640; Onboarding Tracker</button>
 </div>
 
 <div class="setup-banner" id="setupBanner">
@@ -201,11 +286,14 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
   <button onclick="saveSetup()">Save</button>
 </div>
 
+<!-- ============ BUG TRACKER TAB ============ -->
+<div class="tab-content active" id="tabBugs">
+
 <div class="stats-bar" id="statsBar">
-  <div class="stat-card"><div class="stat-value" id="statTotal">—</div><div class="stat-label">Total Bugs</div></div>
-  <div class="stat-card open"><div class="stat-value" id="statOpen">—</div><div class="stat-label">Open</div></div>
-  <div class="stat-card closed"><div class="stat-value" id="statClosed">—</div><div class="stat-label">Closed</div></div>
-  <div class="stat-card tat"><div class="stat-value" id="statAvgTat">—</div><div class="stat-label">Avg TAT (closed)</div></div>
+  <div class="stat-card"><div class="stat-value" id="statTotal">&mdash;</div><div class="stat-label">Total Bugs</div></div>
+  <div class="stat-card open"><div class="stat-value" id="statOpen">&mdash;</div><div class="stat-label">Open</div></div>
+  <div class="stat-card closed"><div class="stat-value" id="statClosed">&mdash;</div><div class="stat-label">Closed</div></div>
+  <div class="stat-card tat"><div class="stat-value" id="statAvgTat">&mdash;</div><div class="stat-label">Avg TAT (closed)</div></div>
 </div>
 
 <div class="filter-bar">
@@ -237,18 +325,53 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
       </tr>
     </thead>
     <tbody id="bugTableBody">
-      <tr><td colspan="15"><div class="empty-state"><div class="icon">🔄</div><div class="title">Loading bugs...</div></div></td></tr>
+      <tr><td colspan="15"><div class="empty-state"><div class="icon">&#128260;</div><div class="title">Loading bugs...</div></div></td></tr>
     </tbody>
   </table>
 </div>
 
-<!-- Detail Panel -->
+</div><!-- /tabBugs -->
+
+<!-- ============ ONBOARDING TRACKER TAB ============ -->
+<div class="tab-content" id="tabOnboarding">
+
+<div class="ob-sub-tabs">
+  <button class="ob-sub-tab active" onclick="switchObTab('onboarding',this)">Onboarding (<span id="obCountOnboarding">0</span>)</button>
+  <button class="ob-sub-tab" onclick="switchObTab('monitoring',this)">Monitoring (<span id="obCountMonitoring">0</span>)</button>
+  <button class="ob-sub-tab" onclick="switchObTab('completed',this)">Completed (<span id="obCountCompleted">0</span>)</button>
+</div>
+
+<div class="ob-section-header">
+  <div class="left-btns">
+    <button class="ob-add-btn" onclick="obAddCompany()">+ Add Company</button>
+  </div>
+  <div style="position:relative">
+    <button class="ob-share-btn" onclick="toggleShareDropdown(this)">&#128424; Share</button>
+    <div class="share-dropdown" id="obShareDropdown">
+      <button onclick="obShareAs('pdf')">&#128196; Export as PDF</button>
+      <button onclick="obShareAs('photo')">&#128247; Export as Photo</button>
+    </div>
+  </div>
+</div>
+
+<div class="table-wrap" id="obTableWrap">
+  <table class="ob-table" id="obTable">
+    <thead id="obTableHead"></thead>
+    <tbody id="obTableBody">
+      <tr><td colspan="14"><div class="empty-state"><div class="icon">&#128260;</div><div class="title">Loading...</div></div></td></tr>
+    </tbody>
+  </table>
+</div>
+
+</div><!-- /tabOnboarding -->
+
+<!-- Detail Panel (Bug Tracker) -->
 <div class="detail-overlay" id="detailOverlay" onclick="if(event.target===this)closeDetail()">
   <div class="detail-panel">
     <div class="dp-header">
       <span class="dp-title" id="dpTitle">Bug Title</span>
       <span class="badge" id="dpBadge">Open</span>
-      <button class="dp-close" onclick="closeDetail()">✕</button>
+      <button class="dp-close" onclick="closeDetail()">&#10005;</button>
     </div>
     <div class="dp-body">
 
@@ -282,7 +405,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
         <div class="dp-field">
           <div class="dp-label">TAT</div>
           <div class="dp-tat">
-            <div class="dp-tat-value" id="dpTatValue">—</div>
+            <div class="dp-tat-value" id="dpTatValue">&mdash;</div>
             <div class="dp-tat-label" id="dpTatLabel">Turnaround Time</div>
           </div>
         </div>
@@ -354,24 +477,74 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 
 <div class="toast" id="toast"></div>
 <div class="loading" id="loading"><span>Saving...</span></div>
+<div class="save-indicator" id="saveIndicator">Saving...</div>
 
 <script>
+// ============================================================
+// SHARED CONSTANTS & HELPERS
+// ============================================================
 const SOURCE_OWNER = 'digiqc-hq';
 const SOURCE_REPO = 'product-management';
 const DASH_OWNER = 'Hathi-Jigar';
 const DASH_REPO = 'support-dashboard';
 const META_TAG = '<!-- SUPPORT-META -->';
 
-let allBugs = [];
-let orgList = [];
-let currentFilter = 'all';
-let searchQuery = '';
-let currentBug = null;
-let configSha = null;
-
 function getToken(){return localStorage.getItem('support_token')}
 function getName(){return localStorage.getItem('support_name')}
 
+function showToast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=`toast show ${type}`;
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+function showLoading(show){document.getElementById('loading').classList.toggle('show',show)}
+
+function ghGet(url){return fetch(url,{headers:{'Authorization':`token ${getToken()}`,'Accept':'application/vnd.github.v3+json'}})}
+
+function formatDate(iso){
+  if(!iso)return '';
+  const d=new Date(iso);
+  return d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+}
+function formatDateFull(iso){
+  const d=new Date(iso);
+  return d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})+', '+d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+}
+function formatDuration(ms){
+  const mins=Math.floor(ms/60000);
+  const hrs=Math.floor(mins/60);
+  const days=Math.floor(hrs/24);
+  if(days>0)return`${days}d ${hrs%24}h`;
+  if(hrs>0)return`${hrs}h ${mins%60}m`;
+  return`${mins}m`;
+}
+function tatSince(iso){return formatDuration(Date.now()-new Date(iso))}
+function daysSince(iso){return Math.floor((Date.now()-new Date(iso))/86400000)}
+
+// ============================================================
+// MAIN TAB SWITCHING
+// ============================================================
+let activeMainTab='bugs';
+
+function switchMainTab(tab,el){
+  activeMainTab=tab;
+  document.querySelectorAll('.main-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tabBugs').classList.toggle('active',tab==='bugs');
+  document.getElementById('tabOnboarding').classList.toggle('active',tab==='onboarding');
+  if(tab==='onboarding'&&obCompanies.length===0&&getToken()){
+    loadOnboardingData();
+  }
+}
+
+function handleRefresh(){
+  if(activeMainTab==='bugs') loadIssues();
+  else loadOnboardingData();
+}
+
+// ============================================================
+// SETUP
+// ============================================================
 function checkSetup(){
   if(getToken()&&getName()){
     document.getElementById('setupBanner').classList.add('hidden');
@@ -398,7 +571,16 @@ async function init(){
   await loadIssues();
 }
 
-// Load org dropdown config
+// ============================================================
+// BUG TRACKER (existing logic preserved)
+// ============================================================
+let allBugs = [];
+let orgList = [];
+let currentFilter = 'all';
+let searchQuery = '';
+let currentBug = null;
+let configSha = null;
+
 async function loadConfig(){
   try{
     const res=await ghGet(`https://api.github.com/repos/${DASH_OWNER}/${DASH_REPO}/contents/config.json`);
@@ -421,10 +603,8 @@ async function saveConfig(){
   if(res.ok){const d=await res.json();configSha=d.content.sha}
 }
 
-// Load Gleap issues
 async function loadIssues(){
   try{
-    // Get all issues with Gleap label (open + closed)
     const [openRes,closedRes]=await Promise.all([
       ghGet(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues?labels=Gleap&state=open&per_page=100`),
       ghGet(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues?labels=Gleap&state=closed&per_page=100`)
@@ -433,7 +613,6 @@ async function loadIssues(){
     const closedIssues=closedRes.ok?await closedRes.json():[];
     const all=[...openIssues,...closedIssues].filter(i=>!i.pull_request);
 
-    // Load meta for each issue
     allBugs=await Promise.all(all.map(async issue=>{
       const meta=await loadMeta(issue.number);
       const screenshot=extractScreenshot(issue.body||'');
@@ -450,14 +629,11 @@ async function loadIssues(){
         body:issue.body||'',
         screenshot,
         description,
-        // Gleap auto-extracted (read-only)
         reportedBy:gleap.reportedBy,
         email:gleap.email,
         gleapLink:gleap.gleapLink,
-        // Use Gleap values as defaults, support meta overrides
         platform:meta.platform||gleap.gleapPlatform,
         version:meta.version||gleap.gleapVersion,
-        // Support meta fields
         org:meta.org,
         userName:meta.userName,
         phone:meta.phone||'',
@@ -472,13 +648,12 @@ async function loadIssues(){
     updateStats();
     renderTable();
   }catch(e){
-    document.getElementById('bugTableBody').innerHTML=`<tr><td colspan="15"><div class="empty-state"><div class="icon">⚠️</div><div class="title">Failed to load — check access key</div></div></td></tr>`;
+    document.getElementById('bugTableBody').innerHTML=`<tr><td colspan="15"><div class="empty-state"><div class="icon">&#9888;&#65039;</div><div class="title">Failed to load — check access key</div></div></td></tr>`;
   }
 }
 
 function cleanTitle(title){
-  // Remove Gleap ID prefix like [373798]
-  return title.replace(/^\[\d+\]\s*/,'').split('•')[0].trim();
+  return title.replace(/^\[\d+\]\s*/,'').split('\u2022')[0].trim();
 }
 
 function extractScreenshot(body){
@@ -487,54 +662,38 @@ function extractScreenshot(body){
 }
 
 function cleanDescription(body){
-  // Extract just the Description field content
   const descMatch=body.match(/\*\*Description:\*\*\s*([\s\S]*?)(?=##|$)/);
   if(descMatch)return descMatch[1].trim();
   return body.replace(/https:\/\/staticfiles\.gleap\.io[^\s)]+/g,'').replace(/!\[.*?\]\(.*?\)/g,'').replace(/##\s*Info[\s\S]*$/,'').trim();
 }
 
-// Auto-extract fields from Gleap issue body
 function extractGleapFields(body){
   const fields={reportedBy:'',email:'',gleapPlatform:'',gleapVersion:'',gleapLink:''};
-
-  // Reported by: **Reported by:** Name [(email)](mailto:email)
   const reportMatch=body.match(/\*\*Reported by:\*\*\s*([^(\[]+)/);
   if(reportMatch)fields.reportedBy=reportMatch[1].trim();
-
-  // Email from mailto link — handles [(email)](mailto:email) and [email](mailto:email)
   const emailMatch=body.match(/\[?\(?([\w.%+-]+@[\w.-]+\.\w+)\)?\]?\(mailto:/);
   if(emailMatch)fields.email=emailMatch[1];
-
-  // Platform from systemName or sdkType
   const sysMatch=body.match(/\*\*systemName:\*\*\s*(\w+)/);
   if(sysMatch){
     const sys=sysMatch[1].toLowerCase();
     if(sys==='android')fields.gleapPlatform='Android';
     else if(sys==='ios')fields.gleapPlatform='iOS';
   }
-  // Check for web via sdkType
   const sdkMatch=body.match(/\*\*sdkType:\*\*\s*(\w+)/);
   if(sdkMatch&&sdkMatch[1].toLowerCase()==='javascript')fields.gleapPlatform='Web';
-
-  // Version from releaseVersionNumber
   const verMatch=body.match(/\*\*releaseVersionNumber:\*\*\s*([\d.]+)/);
   if(verMatch)fields.gleapVersion=verMatch[1];
-
-  // Gleap ticket link
   const linkMatch=body.match(/\[Open ticket in Gleap\]\((https:\/\/app\.gleap\.io[^\s)]+)\)/);
   if(linkMatch)fields.gleapLink=linkMatch[1];
-
   return fields;
 }
 
-// Load support meta from issue comments
 async function loadMeta(issueNumber){
   const defaults={org:'',userName:'',phone:'',platform:'',version:'',solution:'',handledBy:''};
   try{
     const res=await ghGet(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues/${issueNumber}/comments?per_page=100`);
     if(!res.ok)return defaults;
     const comments=await res.json();
-    // First check for Gleap auto-fetched contact details
     const gleapContact=comments.find(c=>c.body&&c.body.includes('<!-- GLEAP-CONTACT -->'));
     if(gleapContact){
       const gcLines=gleapContact.body.split('\n');
@@ -543,13 +702,8 @@ async function loadMeta(issueNumber){
         if(phoneMatch&&phoneMatch[1].trim()!=='N/A')defaults.phone=phoneMatch[1].trim();
       });
     }
-
-    // Then check for support meta (overrides Gleap contact if present)
     const metaComment=comments.find(c=>c.body&&c.body.includes(META_TAG));
-    if(!metaComment){
-      // Return defaults with Gleap phone if found
-      return defaults;
-    }
+    if(!metaComment) return defaults;
     const lines=metaComment.body.split('\n');
     const meta={...defaults,commentId:metaComment.id};
     lines.forEach(line=>{
@@ -564,13 +718,11 @@ async function loadMeta(issueNumber){
       if(key.trim()==='Tag')meta.tag=val;
       if(key.trim()==='Handled By')meta.handledBy=val;
     });
-    // If support meta has no phone but Gleap contact does, keep it
     if(!meta.phone)meta.phone=defaults.phone;
     return meta;
   }catch(e){return defaults}
 }
 
-// Save meta as comment on the issue
 async function saveMeta(){
   if(!currentBug)return;
   showLoading(true);
@@ -595,14 +747,12 @@ Handled By: ${handledBy}`;
 
   try{
     if(currentBug.commentId){
-      // Update existing comment
       await fetch(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues/comments/${currentBug.commentId}`,{
         method:'PATCH',
         headers:{'Authorization':`token ${getToken()}`,'Content-Type':'application/json'},
         body:JSON.stringify({body})
       });
     }else{
-      // Create new comment
       const res=await fetch(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues/${currentBug.number}/comments`,{
         method:'POST',
         headers:{'Authorization':`token ${getToken()}`,'Content-Type':'application/json'},
@@ -610,7 +760,6 @@ Handled By: ${handledBy}`;
       });
       if(res.ok){const d=await res.json();currentBug.commentId=d.id}
     }
-    // Update local data
     currentBug.org=org;currentBug.userName=userName;currentBug.phone=phone;currentBug.platform=platform;
     currentBug.version=version;currentBug.solution=solution;currentBug.tag=tag;currentBug.handledBy=handledBy;
     renderTable();
@@ -619,20 +768,14 @@ Handled By: ${handledBy}`;
   showLoading(false);
 }
 
-// Close the issue
 async function closeIssue(){
   if(!currentBug||currentBug.state==='closed')return;
   if(!confirm('Close this bug? This will close the GitHub Issue in product-management.'))return;
   showLoading(true);
-  // Save meta first
   await saveMeta();
   try{
-    // 1. Close the issue + set final labels in one call
-    // Build new label set: remove 🔵 Open, add 🔒 Closed from Support
-    const newLabels=currentBug.labels.filter(l=>l!=='🔵 Open');
-    if(!newLabels.includes('🔒 Closed from Support'))newLabels.push('🔒 Closed from Support');
-
-    // Close issue and set labels in parallel
+    const newLabels=currentBug.labels.filter(l=>l!=='\ud83d\udd35 Open');
+    if(!newLabels.includes('\ud83d\udd12 Closed from Support'))newLabels.push('\ud83d\udd12 Closed from Support');
     await Promise.all([
       fetch(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues/${currentBug.number}`,{
         method:'PATCH',
@@ -640,53 +783,41 @@ async function closeIssue(){
         body:JSON.stringify({state:'closed',labels:newLabels})
       }),
     ]);
-
     currentBug.state='closed';
     currentBug.closed_at=new Date().toISOString();
     currentBug.labels=newLabels;
     renderTable();
     updateStats();
     renderDetail(currentBug);
-    showToast('Bug closed — label updated to 🔒 Closed from Support','success');
+    showToast('Bug closed \u2014 label updated to \ud83d\udd12 Closed from Support','success');
   }catch(e){showToast('Failed to close: '+e.message,'error')}
   showLoading(false);
 }
 
-// Reopen the issue
 async function reopenIssue(){
   if(!currentBug||currentBug.state==='open')return;
   if(!confirm('Reopen this bug? This will reopen the GitHub Issue in product-management.'))return;
   showLoading(true);
   try{
-    // Reopen issue + set labels: remove 🔒 Closed from Support, add 🔵 Open
-    const newLabels=currentBug.labels.filter(l=>l!=='🔒 Closed from Support');
-    if(!newLabels.includes('🔵 Open'))newLabels.push('🔵 Open');
-
+    const newLabels=currentBug.labels.filter(l=>l!=='\ud83d\udd12 Closed from Support');
+    if(!newLabels.includes('\ud83d\udd35 Open'))newLabels.push('\ud83d\udd35 Open');
     await fetch(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues/${currentBug.number}`,{
       method:'PATCH',
       headers:{'Authorization':`token ${getToken()}`,'Content-Type':'application/json'},
       body:JSON.stringify({state:'open',labels:newLabels})
     });
-
-    currentBug.state='open';
-    currentBug.closed_at=null;
-    currentBug.labels=newLabels;
-    renderTable();
-    updateStats();
-    renderDetail(currentBug);
-    showToast('Bug reopened — label updated to 🔵 Open','success');
+    currentBug.state='open';currentBug.closed_at=null;currentBug.labels=newLabels;
+    renderTable();updateStats();renderDetail(currentBug);
+    showToast('Bug reopened \u2014 label updated to \ud83d\udd35 Open','success');
   }catch(e){showToast('Failed to reopen: '+e.message,'error')}
   showLoading(false);
 }
 
-// Add new org
 function addNewOrg(){
   const val=document.getElementById('newOrgInput').value.trim();
   if(!val){showToast('Enter org name','error');return}
   if(orgList.includes(val)){showToast('Already exists','error');return}
-  orgList.push(val);
-  orgList.sort();
-  saveConfig();
+  orgList.push(val);orgList.sort();saveConfig();
   populateOrgDropdown(val);
   document.getElementById('addOrgRow').style.display='none';
   document.getElementById('newOrgInput').value='';
@@ -695,14 +826,13 @@ function addNewOrg(){
 
 function populateOrgDropdown(selected){
   const sel=document.getElementById('dpOrg');
-  sel.innerHTML='<option value="">— Select —</option>';
+  sel.innerHTML='<option value="">\u2014 Select \u2014</option>';
   orgList.forEach(o=>{
     sel.innerHTML+=`<option value="${o}" ${o===selected?'selected':''}>${o}</option>`;
   });
   sel.innerHTML+='<option value="__add_new__">+ Add New Organisation</option>';
 }
 
-// Org dropdown change handler
 document.getElementById('dpOrg').addEventListener('change',function(){
   if(this.value==='__add_new__'){
     document.getElementById('addOrgRow').style.display='flex';
@@ -712,22 +842,19 @@ document.getElementById('dpOrg').addEventListener('change',function(){
   }
 });
 
-// Render
 function updateStats(){
   const open=allBugs.filter(b=>b.state==='open').length;
   const closed=allBugs.filter(b=>b.state==='closed').length;
   document.getElementById('statTotal').textContent=allBugs.length;
   document.getElementById('statOpen').textContent=open;
   document.getElementById('statClosed').textContent=closed;
-
-  // Avg TAT for closed bugs
   const closedBugs=allBugs.filter(b=>b.state==='closed'&&b.closed_at);
   if(closedBugs.length>0){
     const totalMs=closedBugs.reduce((sum,b)=>sum+(new Date(b.closed_at)-new Date(b.created_at)),0);
     const avgMs=totalMs/closedBugs.length;
     document.getElementById('statAvgTat').textContent=formatDuration(avgMs);
   }else{
-    document.getElementById('statAvgTat').textContent='—';
+    document.getElementById('statAvgTat').textContent='\u2014';
   }
 }
 
@@ -739,15 +866,15 @@ function renderTable(){
   if(searchQuery)filtered=filtered.filter(b=>b.title.toLowerCase().includes(searchQuery.toLowerCase()));
 
   if(filtered.length===0){
-    tbody.innerHTML=`<tr><td colspan="15"><div class="empty-state"><div class="icon">🔍</div><div class="title">No bugs found</div></div></td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="15"><div class="empty-state"><div class="icon">&#128269;</div><div class="title">No bugs found</div></div></td></tr>`;
     return;
   }
 
   tbody.innerHTML=filtered.map((b,i)=>{
     const isOpen=b.state==='open';
     const badgeCls=isOpen?'badge-open':'badge-closed';
-    const badgeText=isOpen?'🔵 Open':'🔒 Closed';
-    const tat=isOpen?tatSince(b.created_at):b.closed_at?formatDuration(new Date(b.closed_at)-new Date(b.created_at)):'—';
+    const badgeText=isOpen?'\ud83d\udd35 Open':'\ud83d\udd12 Closed';
+    const tat=isOpen?tatSince(b.created_at):b.closed_at?formatDuration(new Date(b.closed_at)-new Date(b.created_at)):'\u2014';
     const tatCls=isOpen&&daysSince(b.created_at)>3?'tat-cell overdue':'tat-cell';
     const esc=s=>(s||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
     const shortDesc=(b.description||'').substring(0,80);
@@ -757,18 +884,18 @@ function renderTable(){
       <td><span class="bug-id">#${b.number}</span></td>
       <td><div class="bug-title">${b.title}</div><button class="view-btn" onclick="openDetail(${b.number})">View</button></td>
       <td class="inline-cell"><div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'tag')">${b.tag?`<span class="tag-badge tag-${b.tag.replace(/\s/g,'-')}">${b.tag}</span>`:'<span style="color:var(--muted)">Set</span>'}</div></td>
-      <td><div class="desc-cell" title="${esc(b.description)}" onclick="openDetail(${b.number})">${shortDesc||'<span style="color:var(--muted)">—</span>'}${b.description&&b.description.length>80?'…':''}</div></td>
-      <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'solution')" title="Click to edit">${shortSol?`<span class="solution-cell filled">${shortSol}${b.solution.length>60?'…':''}</span>`:'<span class="solution-cell empty">Add solution</span>'}</div>`:`<div class="solution-cell ${b.solution?'filled':'empty'}">${shortSol||'—'}${b.solution&&b.solution.length>60?'…':''}</div>`}</td>
+      <td><div class="desc-cell" title="${esc(b.description)}" onclick="openDetail(${b.number})">${shortDesc||'<span style="color:var(--muted)">\u2014</span>'}${b.description&&b.description.length>80?'\u2026':''}</div></td>
+      <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'solution')" title="Click to edit">${shortSol?`<span class="solution-cell filled">${shortSol}${b.solution.length>60?'\u2026':''}</span>`:'<span class="solution-cell empty">Add solution</span>'}</div>`:`<div class="solution-cell ${b.solution?'filled':'empty'}">${shortSol||'\u2014'}${b.solution&&b.solution.length>60?'\u2026':''}</div>`}</td>
       <td class="inline-cell"><div class="inline-val editable" onclick="event.stopPropagation();inlineStatusToggle(${b.number})"><span class="badge ${badgeCls}">${badgeText}</span></div></td>
-      <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'platform')">${b.platform?`<span class="platform-badge">${b.platform}</span>`:'<span style="color:var(--muted)">Set</span>'}</div>`:`${b.platform?`<span class="platform-badge">${b.platform}</span>`:'<span style="color:var(--muted)">—</span>'}`}</td>
-      <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'version')">${b.version||'<span style="color:var(--muted)">Set</span>'}</div>`:`<span style="font-size:12px;color:var(--sub)">${b.version||'—'}</span>`}</td>
-      <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'org')">${b.org||'<span style="color:var(--muted)">Add org</span>'}</div>`:`<span style="font-size:12px;color:var(--sub)">${b.org||'—'}</span>`}</td>
-      <td style="font-size:12px;color:var(--sub)">${b.reportedBy||'<span style="color:var(--muted)">—</span>'}</td>
-      <td style="font-size:12px;color:var(--sub)">${b.email?`<a href="mailto:${b.email}" onclick="event.stopPropagation()" style="color:var(--brand);text-decoration:none">${b.email}</a>`:'<span style="color:var(--muted)">—</span>'}</td>
-      <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'phone')">${b.phone||'<span style="color:var(--muted)">Add</span>'}</div>`:`<span style="font-size:12px;color:var(--sub)">${b.phone||'—'}</span>`}</td>
+      <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'platform')">${b.platform?`<span class="platform-badge">${b.platform}</span>`:'<span style="color:var(--muted)">Set</span>'}</div>`:`${b.platform?`<span class="platform-badge">${b.platform}</span>`:'<span style="color:var(--muted)">\u2014</span>'}`}</td>
+      <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'version')">${b.version||'<span style="color:var(--muted)">Set</span>'}</div>`:`<span style="font-size:12px;color:var(--sub)">${b.version||'\u2014'}</span>`}</td>
+      <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'org')">${b.org||'<span style="color:var(--muted)">Add org</span>'}</div>`:`<span style="font-size:12px;color:var(--sub)">${b.org||'\u2014'}</span>`}</td>
+      <td style="font-size:12px;color:var(--sub)">${b.reportedBy||'<span style="color:var(--muted)">\u2014</span>'}</td>
+      <td style="font-size:12px;color:var(--sub)">${b.email?`<a href="mailto:${b.email}" onclick="event.stopPropagation()" style="color:var(--brand);text-decoration:none">${b.email}</a>`:'<span style="color:var(--muted)">\u2014</span>'}</td>
+      <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'phone')">${b.phone||'<span style="color:var(--muted)">Add</span>'}</div>`:`<span style="font-size:12px;color:var(--sub)">${b.phone||'\u2014'}</span>`}</td>
       <td style="font-size:12px;color:var(--sub)">${formatDate(b.created_at)}</td>
       <td><span class="${tatCls}">${tat}</span></td>
-      <td>${b.handledBy?`<div class="handler"><strong>${b.handledBy}</strong></div>`:'<span style="color:var(--muted)">—</span>'}</td>
+      <td>${b.handledBy?`<div class="handler"><strong>${b.handledBy}</strong></div>`:'<span style="color:var(--muted)">\u2014</span>'}</td>
     </tr>`;
   }).join('');
 }
@@ -782,7 +909,6 @@ function setFilter(f,el){
 
 function searchBugs(q){searchQuery=q;renderTable()}
 
-// Detail panel
 function openDetail(number){
   const bug=allBugs.find(b=>b.number===number);
   if(!bug)return;
@@ -793,13 +919,13 @@ function openDetail(number){
 
 function renderDetail(bug){
   const isOpen=bug.state==='open';
-  document.getElementById('dpTitle').textContent=`#${bug.number} — ${bug.title}`;
+  document.getElementById('dpTitle').textContent=`#${bug.number} \u2014 ${bug.title}`;
   const badge=document.getElementById('dpBadge');
-  badge.textContent=isOpen?'🔵 Open':'🔒 Closed';
+  badge.textContent=isOpen?'\ud83d\udd35 Open':'\ud83d\udd12 Closed';
   badge.className=`badge ${isOpen?'badge-open':'badge-closed'}`;
 
   document.getElementById('dpIssueLink').innerHTML=`<a href="${bug.html_url}" target="_blank" style="color:var(--brand);text-decoration:none">${bug.html_url}</a>`+
-    (bug.gleapLink?` &nbsp;·&nbsp; <a href="${bug.gleapLink}" target="_blank" style="color:var(--sub);text-decoration:none;font-size:12px">Open in Gleap</a>`:'');
+    (bug.gleapLink?` &nbsp;\u00b7&nbsp; <a href="${bug.gleapLink}" target="_blank" style="color:var(--sub);text-decoration:none;font-size:12px">Open in Gleap</a>`:'');
   document.getElementById('dpReportedBy').textContent=bug.reportedBy||'Unknown';
   document.getElementById('dpEmail').innerHTML=bug.email?`<a href="mailto:${bug.email}" style="color:var(--brand);text-decoration:none">${bug.email}</a>`:'<span style="color:var(--muted)">Not available</span>';
   document.getElementById('dpEmailField').style.display=bug.email?'':'none';
@@ -812,7 +938,6 @@ function renderDetail(bug){
     document.getElementById('dpCloseDateField').style.display='none';
   }
 
-  // TAT
   if(isOpen){
     document.getElementById('dpTatValue').textContent=tatSince(bug.created_at);
     document.getElementById('dpTatLabel').textContent='Open since';
@@ -833,7 +958,6 @@ function renderDetail(bug){
     document.getElementById('dpScreenshotField').style.display='none';
   }
 
-  // Support fields — auto-populate from Gleap where available
   populateOrgDropdown(bug.org);
   document.getElementById('dpUserName').value=bug.userName||bug.reportedBy||'';
   document.getElementById('dpPhone').value=bug.phone||'';
@@ -842,14 +966,10 @@ function renderDetail(bug){
   document.getElementById('dpSolution').value=bug.solution||'';
   document.getElementById('addOrgRow').style.display='none';
 
-  // Close/Reopen button visibility
   document.getElementById('btnCloseIssue').style.display=isOpen?'':'none';
   document.getElementById('btnReopenIssue').style.display=isOpen?'none':'';
-
-  // Tag
   document.getElementById('dpTag').value=bug.tag||'';
 
-  // Disable editing for closed bugs
   const editable=isOpen;
   document.getElementById('dpOrg').disabled=!editable;
   document.getElementById('dpUserName').disabled=!editable;
@@ -857,7 +977,7 @@ function renderDetail(bug){
   document.getElementById('dpPlatform').disabled=!editable;
   document.getElementById('dpVersion').disabled=!editable;
   document.getElementById('dpSolution').disabled=!editable;
-  document.getElementById('dpTag').disabled=false; // Tag always editable
+  document.getElementById('dpTag').disabled=false;
   document.querySelector('.btn-save').style.display='';
 }
 
@@ -866,44 +986,10 @@ function closeDetail(){
   currentBug=null;
 }
 
-// Helpers
-function ghGet(url){return fetch(url,{headers:{'Authorization':`token ${getToken()}`,'Accept':'application/vnd.github.v3+json'}})}
-
-function formatDate(iso){
-  const d=new Date(iso);
-  return d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
-}
-
-function formatDateFull(iso){
-  const d=new Date(iso);
-  return d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})+', '+d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-}
-
-function formatDuration(ms){
-  const mins=Math.floor(ms/60000);
-  const hrs=Math.floor(mins/60);
-  const days=Math.floor(hrs/24);
-  if(days>0)return`${days}d ${hrs%24}h`;
-  if(hrs>0)return`${hrs}h ${mins%60}m`;
-  return`${mins}m`;
-}
-
-function tatSince(iso){return formatDuration(Date.now()-new Date(iso))}
-function daysSince(iso){return Math.floor((Date.now()-new Date(iso))/86400000)}
-
-function showToast(msg,type=''){
-  const t=document.getElementById('toast');
-  t.textContent=msg;t.className=`toast show ${type}`;
-  setTimeout(()=>t.classList.remove('show'),3000);
-}
-function showLoading(show){document.getElementById('loading').classList.toggle('show',show)}
-
-// === INLINE STATUS TOGGLE ===
+// Inline status toggle
 function inlineStatusToggle(number){
   const bug=allBugs.find(b=>b.number===number);
   if(!bug)return;
-
-  // Find the clicked cell
   const rows=document.querySelectorAll('#bugTableBody tr');
   let targetRow=null;
   rows.forEach(r=>{
@@ -911,10 +997,8 @@ function inlineStatusToggle(number){
     if(idCell&&idCell.textContent===`#${number}`)targetRow=r;
   });
   if(!targetRow)return;
-
-  const cell=targetRow.cells[5]; // Status column
+  const cell=targetRow.cells[5];
   if(!cell)return;
-
   const isOpen=bug.state==='open';
   cell.innerHTML=`<select class="inline-select" onchange="inlineStatusSave(${number},this.value)" style="font-weight:600">
     <option value="open" ${isOpen?'selected':''}>🔵 Open</option>
@@ -927,13 +1011,11 @@ async function inlineStatusSave(number,newState){
   const bug=allBugs.find(b=>b.number===number);
   if(!bug)return;
   if(bug.state===newState){renderTable();return;}
-
   showLoading(true);
   try{
     if(newState==='closed'){
-      // Close: remove 🔵 Open, add 🔒 Closed from Support
-      const newLabels=bug.labels.filter(l=>l!=='🔵 Open');
-      if(!newLabels.includes('🔒 Closed from Support'))newLabels.push('🔒 Closed from Support');
+      const newLabels=bug.labels.filter(l=>l!=='\ud83d\udd35 Open');
+      if(!newLabels.includes('\ud83d\udd12 Closed from Support'))newLabels.push('\ud83d\udd12 Closed from Support');
       await fetch(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues/${bug.number}`,{
         method:'PATCH',
         headers:{'Authorization':`token ${getToken()}`,'Content-Type':'application/json'},
@@ -942,9 +1024,8 @@ async function inlineStatusSave(number,newState){
       bug.state='closed';bug.closed_at=new Date().toISOString();bug.labels=newLabels;
       showToast('Bug closed','success');
     }else{
-      // Reopen: remove 🔒 Closed from Support, add 🔵 Open
-      const newLabels=bug.labels.filter(l=>l!=='🔒 Closed from Support');
-      if(!newLabels.includes('🔵 Open'))newLabels.push('🔵 Open');
+      const newLabels=bug.labels.filter(l=>l!=='\ud83d\udd12 Closed from Support');
+      if(!newLabels.includes('\ud83d\udd35 Open'))newLabels.push('\ud83d\udd35 Open');
       await fetch(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues/${bug.number}`,{
         method:'PATCH',
         headers:{'Authorization':`token ${getToken()}`,'Content-Type':'application/json'},
@@ -958,19 +1039,15 @@ async function inlineStatusSave(number,newState){
   showLoading(false);
 }
 
-// === INLINE EDIT ===
+// Inline edit
 let inlineEditingCell=null;
 
 function inlineEdit(number,field){
   const bug=allBugs.find(b=>b.number===number);
   if(!bug)return;
-  // Allow tag editing even for closed bugs; block other fields
   if(bug.state==='closed'&&field!=='tag')return;
-
-  // Close any existing inline edit
   if(inlineEditingCell){renderTable();inlineEditingCell=null;}
 
-  // Find the clicked cell
   const rows=document.querySelectorAll('#bugTableBody tr');
   let targetRow=null;
   rows.forEach(r=>{
@@ -979,7 +1056,6 @@ function inlineEdit(number,field){
   });
   if(!targetRow)return;
 
-  // Column index mapping (0-based)
   const colMap={tag:2,solution:4,platform:6,version:7,org:8,phone:11};
   const colIdx=colMap[field];
   if(colIdx===undefined)return;
@@ -991,12 +1067,12 @@ function inlineEdit(number,field){
   if(field==='org'){
     const opts=orgList.map(o=>`<option value="${o}" ${o===bug.org?'selected':''}>${o}</option>`).join('');
     html=`<select class="inline-select" onchange="inlineSave(${number},'org',this.value)">
-      <option value="">— Select —</option>${opts}
+      <option value="">\u2014 Select \u2014</option>${opts}
       <option value="__add_new__">+ Add New</option>
     </select>`;
   }else if(field==='tag'){
     html=`<select class="inline-select" onchange="inlineSave(${number},'tag',this.value)">
-      <option value="">— Select —</option>
+      <option value="">\u2014 Select \u2014</option>
       <option value="Bug" ${bug.tag==='Bug'?'selected':''}>Bug</option>
       <option value="Knowledge Gap" ${bug.tag==='Knowledge Gap'?'selected':''}>Knowledge Gap</option>
       <option value="Feedback" ${bug.tag==='Feedback'?'selected':''}>Feedback</option>
@@ -1004,7 +1080,7 @@ function inlineEdit(number,field){
     </select>`;
   }else if(field==='platform'){
     html=`<select class="inline-select" onchange="inlineSave(${number},'platform',this.value)">
-      <option value="">— Select —</option>
+      <option value="">\u2014 Select \u2014</option>
       <option value="Android" ${bug.platform==='Android'?'selected':''}>Android</option>
       <option value="iOS" ${bug.platform==='iOS'?'selected':''}>iOS</option>
       <option value="Web" ${bug.platform==='Web'?'selected':''}>Web</option>
@@ -1028,11 +1104,9 @@ function inlineEdit(number,field){
   }
   cell.innerHTML=html;
 
-  // Focus
   const inp=cell.querySelector('input,textarea,select');
   if(inp)inp.focus();
 
-  // Handle org "Add New"
   const sel=cell.querySelector('select');
   if(sel&&field==='org'){
     sel.addEventListener('change',function(){
@@ -1065,11 +1139,9 @@ async function inlineSave(number,field,value){
   if(!bug)return;
   inlineEditingCell=null;
 
-  // Update local data
   bug[field]=value;
   bug.handledBy=getName();
 
-  // Save to GitHub
   currentBug=bug;
   showLoading(true);
   const org=bug.org||'';
@@ -1110,6 +1182,442 @@ Handled By: ${handledBy}`;
   renderTable();
 }
 
+
+// ============================================================
+// ONBOARDING TRACKER
+// ============================================================
+let obCompanies = [];
+let obSha = null;
+let obCurrentTab = 'onboarding';
+let obSaveTimer = null;
+
+const COUNTRY_CODES = [
+  {code:'IN',dial:'+91',name:'India'},
+  {code:'US',dial:'+1',name:'US'},
+  {code:'GB',dial:'+44',name:'UK'},
+  {code:'AE',dial:'+971',name:'UAE'},
+  {code:'SG',dial:'+65',name:'Singapore'},
+  {code:'AU',dial:'+61',name:'Australia'},
+  {code:'CA',dial:'+1',name:'Canada'},
+  {code:'DE',dial:'+49',name:'Germany'},
+  {code:'FR',dial:'+33',name:'France'},
+  {code:'SA',dial:'+966',name:'Saudi Arabia'},
+  {code:'QA',dial:'+974',name:'Qatar'},
+  {code:'OM',dial:'+968',name:'Oman'},
+  {code:'KW',dial:'+965',name:'Kuwait'},
+  {code:'BH',dial:'+973',name:'Bahrain'},
+  {code:'MY',dial:'+60',name:'Malaysia'},
+  {code:'ID',dial:'+62',name:'Indonesia'},
+  {code:'JP',dial:'+81',name:'Japan'},
+  {code:'KR',dial:'+82',name:'South Korea'},
+  {code:'BR',dial:'+55',name:'Brazil'},
+  {code:'ZA',dial:'+27',name:'South Africa'}
+];
+
+const DEFAULT_COMPANIES = [
+  {id:1,org:"Kohinoor Developers",planType:"User Based",purchased:50,spocName:"Manoj Varma",spocPhone:"",spocCountry:"IN",systemAdmin:"Kailas Gaikwad",introMeet:"2025-04-29",trainingSetup:"",liveSetup:"2025-05-09",dashboardSetup:"",payment:"50% Advance Payment Rs 96,250 + GST received",actionItems:[],notes:"",usage:{inspection:false,instruction:false,register:false},expansion:{possible:"",details:"",remark:""}},
+  {id:2,org:"Achyut Realty",planType:"User Based",purchased:10,spocName:"Abhimanyu Sir",spocPhone:"",spocCountry:"IN",systemAdmin:"",introMeet:"2025-09-08",trainingSetup:"2025-10-03",liveSetup:"",dashboardSetup:"",payment:"",actionItems:[],notes:"",usage:{inspection:false,instruction:false,register:false},expansion:{possible:"",details:"",remark:""}},
+  {id:3,org:"Total Environment",planType:"User Based",purchased:50,spocName:"Shuchi Mishra / Nissy K Ninan",spocPhone:"",spocCountry:"IN",systemAdmin:"",introMeet:"2025-09-24",trainingSetup:"2025-10-10",liveSetup:"",dashboardSetup:"",payment:"",actionItems:[],notes:"",usage:{inspection:false,instruction:false,register:false},expansion:{possible:"",details:"",remark:""}},
+  {id:4,org:"Urbanac Projects",planType:"User Based",purchased:70,spocName:"Jeyakumar / Vasanth",spocPhone:"",spocCountry:"IN",systemAdmin:"",introMeet:"2025-10-14",trainingSetup:"2025-10-29",liveSetup:"",dashboardSetup:"",payment:"",actionItems:[],notes:"",usage:{inspection:false,instruction:false,register:false},expansion:{possible:"",details:"",remark:""}},
+  {id:5,org:"Ashish Interbuild",planType:"User Based",purchased:100,spocName:"Dharmendra Chauhan",spocPhone:"",spocCountry:"IN",systemAdmin:"",introMeet:"2025-10-28",trainingSetup:"2025-11-04",liveSetup:"",dashboardSetup:"",payment:"One fourth payment received",actionItems:[],notes:"",usage:{inspection:false,instruction:false,register:false},expansion:{possible:"",details:"",remark:""}},
+  {id:6,org:"BECIS",planType:"User Based",purchased:30,spocName:"Vasudev Sir and Emerson Sir",spocPhone:"",spocCountry:"IN",systemAdmin:"",introMeet:"2025-11-14",trainingSetup:"2025-12-03",liveSetup:"",dashboardSetup:"",payment:"Full payment received",actionItems:[],notes:"",usage:{inspection:false,instruction:false,register:false},expansion:{possible:"",details:"",remark:""}},
+  {id:7,org:"Suryam Developers",planType:"User Based",purchased:100,spocName:"Neha Bhavsar",spocPhone:"",spocCountry:"IN",systemAdmin:"",introMeet:"",trainingSetup:"",liveSetup:"",dashboardSetup:"",payment:"Full payment received",actionItems:[],notes:"",usage:{inspection:false,instruction:false,register:false},expansion:{possible:"",details:"",remark:""}},
+  {id:8,org:"Mano Project Consultants",planType:"User Based",purchased:10,spocName:"Syed Arshal Qazi",spocPhone:"",spocCountry:"IN",systemAdmin:"",introMeet:"2025-12-30",trainingSetup:"2025-12-30",liveSetup:"",dashboardSetup:"",payment:"",actionItems:[],notes:"",usage:{inspection:false,instruction:false,register:false},expansion:{possible:"",details:"",remark:""}},
+  {id:9,org:"Magicrete Building Solutions",planType:"User Based",purchased:10,spocName:"Rahul Aneja / Lakshman Varma",spocPhone:"",spocCountry:"IN",systemAdmin:"",introMeet:"2026-01-08",trainingSetup:"2026-01-13",liveSetup:"2026-02-03",dashboardSetup:"",payment:"Full payment received",actionItems:[],notes:"",usage:{inspection:false,instruction:false,register:false},expansion:{possible:"",details:"",remark:""}},
+  {id:10,org:"GR Infraprojects",planType:"User Based",purchased:100,spocName:"Bimlesh Kumar Choubey",spocPhone:"",spocCountry:"IN",systemAdmin:"",introMeet:"2026-02-09",trainingSetup:"",liveSetup:"",dashboardSetup:"",payment:"A. 30% on Kick-off (Rs. 1,99,260). B. 50% on UAT (Rs. 3,32,100). C. 20% on Go-Live (Rs. 1,32,840). Total = Rs. 6,64,200 Plus GST.",actionItems:[],notes:"",usage:{inspection:false,instruction:false,register:false},expansion:{possible:"",details:"",remark:""}},
+  {id:11,org:"Padam Interiors",planType:"User Based",purchased:20,spocName:"Dilip Jangid / Mitul Ghosalkar",spocPhone:"",spocCountry:"IN",systemAdmin:"",introMeet:"2026-03-10",trainingSetup:"",liveSetup:"",dashboardSetup:"",payment:"Full payment received",actionItems:[],notes:"",usage:{inspection:false,instruction:false,register:false},expansion:{possible:"",details:"",remark:""}},
+  {id:12,org:"Sumedha Infra Projects",planType:"User Based",purchased:15,spocName:"Ritwik Dusane / Pravin Gatkawar",spocPhone:"",spocCountry:"IN",systemAdmin:"",introMeet:"2026-03-16",trainingSetup:"",liveSetup:"",dashboardSetup:"",payment:"Full payment received",actionItems:[],notes:"",usage:{inspection:false,instruction:false,register:false},expansion:{possible:"",details:"",remark:""}}
+];
+
+async function loadOnboardingData(){
+  try{
+    const res=await ghGet(`https://api.github.com/repos/${DASH_OWNER}/${DASH_REPO}/contents/onboarding.json`);
+    if(res.ok){
+      const data=await res.json();
+      obSha=data.sha;
+      const parsed=JSON.parse(decodeURIComponent(escape(atob(data.content))));
+      obCompanies=parsed.companies||[];
+    }else{
+      // File doesn't exist, create with defaults
+      obCompanies=JSON.parse(JSON.stringify(DEFAULT_COMPANIES));
+      await saveOnboardingData(true);
+    }
+  }catch(e){
+    obCompanies=JSON.parse(JSON.stringify(DEFAULT_COMPANIES));
+  }
+  obUpdateCounts();
+  obRenderTable();
+}
+
+async function saveOnboardingData(force){
+  const content=btoa(unescape(encodeURIComponent(JSON.stringify({companies:obCompanies},null,2))));
+  const body={message:`Update onboarding data by ${getName()}`,content,branch:'main'};
+  if(obSha)body.sha=obSha;
+  try{
+    const res=await fetch(`https://api.github.com/repos/${DASH_OWNER}/${DASH_REPO}/contents/onboarding.json`,{
+      method:'PUT',
+      headers:{'Authorization':`token ${getToken()}`,'Content-Type':'application/json'},
+      body:JSON.stringify(body)
+    });
+    if(res.ok){
+      const d=await res.json();
+      obSha=d.content.sha;
+    }
+  }catch(e){
+    showToast('Failed to save onboarding data','error');
+  }
+}
+
+function obScheduleSave(){
+  // Show save indicator
+  const ind=document.getElementById('saveIndicator');
+  ind.textContent='Saving...';
+  ind.classList.add('show');
+
+  if(obSaveTimer)clearTimeout(obSaveTimer);
+  obSaveTimer=setTimeout(async ()=>{
+    await saveOnboardingData();
+    ind.textContent='Saved';
+    setTimeout(()=>ind.classList.remove('show'),1500);
+  },2000);
+}
+
+function obGetFiltered(){
+  if(obCurrentTab==='onboarding') return obCompanies.filter(c=>!c.liveSetup);
+  if(obCurrentTab==='monitoring') return obCompanies.filter(c=>c.liveSetup && !c.dashboardSetup);
+  if(obCurrentTab==='completed') return obCompanies.filter(c=>!!c.dashboardSetup);
+  return [];
+}
+
+function obUpdateCounts(){
+  document.getElementById('obCountOnboarding').textContent=obCompanies.filter(c=>!c.liveSetup).length;
+  document.getElementById('obCountMonitoring').textContent=obCompanies.filter(c=>c.liveSetup && !c.dashboardSetup).length;
+  document.getElementById('obCountCompleted').textContent=obCompanies.filter(c=>!!c.dashboardSetup).length;
+}
+
+function switchObTab(tab,el){
+  obCurrentTab=tab;
+  document.querySelectorAll('.ob-sub-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  obRenderTable();
+}
+
+function obRenderTable(){
+  const showExtra = obCurrentTab==='monitoring' || obCurrentTab==='completed';
+  const thead=document.getElementById('obTableHead');
+  const tbody=document.getElementById('obTableBody');
+  const filtered=obGetFiltered();
+
+  // Build header
+  let headerHtml=`<tr>
+    <th>#</th><th>Organisation</th><th>Plan</th><th>Purchased</th>
+    <th>SPOC Name</th><th>SPOC Phone</th><th>System Admin</th>
+    <th>Intro Meet</th><th>Training Setup</th><th>Live Setup</th><th>Dashboard Setup</th>
+    <th>Payment</th><th>Action Items</th><th>Notes</th>`;
+  if(showExtra){
+    headerHtml+=`<th>Inspection</th><th>Instruction</th><th>Register</th>
+    <th>Expansion</th><th>Exp. Details</th><th>Exp. Remark</th>`;
+  }
+  headerHtml+=`<th></th></tr>`;
+  thead.innerHTML=headerHtml;
+
+  if(filtered.length===0){
+    const colSpan=showExtra?21:15;
+    tbody.innerHTML=`<tr><td colspan="${colSpan}"><div class="empty-state"><div class="icon">&#128203;</div><div class="title">No companies in this category</div></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML=filtered.map((c,i)=>{
+    const esc=s=>(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const shortPayment=(c.payment||'').substring(0,40);
+    const shortNotes=(c.notes||'').substring(0,40);
+
+    let row=`<tr data-id="${c.id}">
+      <td style="font-size:11px;color:var(--muted)">${i+1}</td>
+      <td><div class="ob-editable" onclick="obEdit(${c.id},'org','text')" style="font-weight:600;color:var(--text)">${esc(c.org)||'<span style="color:var(--muted)">Set</span>'}</div></td>
+      <td><div class="ob-editable" onclick="obEdit(${c.id},'planType','dropdown')">${c.planType?`<span class="platform-badge">${c.planType}</span>`:'<span style="color:var(--muted)">Set</span>'}</div></td>
+      <td><div class="ob-editable" onclick="obEdit(${c.id},'purchased','number')">${c.purchased||'<span style="color:var(--muted)">0</span>'}</div></td>
+      <td><div class="ob-editable" onclick="obEdit(${c.id},'spocName','text')">${esc(c.spocName)||'<span style="color:var(--muted)">Set</span>'}</div></td>
+      <td><div class="ob-editable" onclick="obEdit(${c.id},'spocPhone','phone')">${c.spocPhone||'<span style="color:var(--muted)">Set</span>'}</div></td>
+      <td><div class="ob-editable" onclick="obEdit(${c.id},'systemAdmin','text')">${esc(c.systemAdmin)||'<span style="color:var(--muted)">Set</span>'}</div></td>
+      <td><div class="ob-editable" onclick="obEdit(${c.id},'introMeet','date')">${c.introMeet?formatDate(c.introMeet+'T00:00:00'):'<span style="color:var(--muted)">Set</span>'}</div></td>
+      <td><div class="ob-editable" onclick="obEdit(${c.id},'trainingSetup','date')">${c.trainingSetup?formatDate(c.trainingSetup+'T00:00:00'):'<span style="color:var(--muted)">Set</span>'}</div></td>
+      <td><div class="ob-editable" onclick="obEdit(${c.id},'liveSetup','date')">${c.liveSetup?formatDate(c.liveSetup+'T00:00:00'):'<span style="color:var(--muted)">Set</span>'}</div></td>
+      <td><div class="ob-editable" onclick="obEdit(${c.id},'dashboardSetup','date')">${c.dashboardSetup?formatDate(c.dashboardSetup+'T00:00:00'):'<span style="color:var(--muted)">Set</span>'}</div></td>
+      <td><div class="ob-editable" onclick="obEdit(${c.id},'payment','textarea')" title="${esc(c.payment)}">${shortPayment?esc(shortPayment)+(c.payment.length>40?'...':''):'<span style="color:var(--muted)">Set</span>'}</div></td>
+      <td class="action-items-cell">${obRenderActionItems(c)}</td>
+      <td><div class="ob-editable" onclick="obEdit(${c.id},'notes','textarea')" title="${esc(c.notes)}">${shortNotes?esc(shortNotes)+(c.notes&&c.notes.length>40?'...':''):'<span style="color:var(--muted)">Set</span>'}</div></td>`;
+
+    if(showExtra){
+      row+=`
+      <td style="text-align:center"><button class="usage-toggle" onclick="obToggleUsage(${c.id},'inspection')">${c.usage&&c.usage.inspection?'<span style="color:#16A34A;font-size:18px">&#10004;</span>':'<span style="color:#DC2626;font-size:18px">&#10008;</span>'}</button></td>
+      <td style="text-align:center"><button class="usage-toggle" onclick="obToggleUsage(${c.id},'instruction')">${c.usage&&c.usage.instruction?'<span style="color:#16A34A;font-size:18px">&#10004;</span>':'<span style="color:#DC2626;font-size:18px">&#10008;</span>'}</button></td>
+      <td style="text-align:center"><button class="usage-toggle" onclick="obToggleUsage(${c.id},'register')">${c.usage&&c.usage.register?'<span style="color:#16A34A;font-size:18px">&#10004;</span>':'<span style="color:#DC2626;font-size:18px">&#10008;</span>'}</button></td>
+      <td><div class="ob-editable" onclick="obEdit(${c.id},'expansion.possible','expansion')">${obExpansionBadge(c.expansion&&c.expansion.possible)}</div></td>
+      <td><div class="ob-editable" onclick="obEdit(${c.id},'expansion.details','text')">${esc(c.expansion&&c.expansion.details)||'<span style="color:var(--muted)">Set</span>'}</div></td>
+      <td><div class="ob-editable" onclick="obEdit(${c.id},'expansion.remark','text')">${esc(c.expansion&&c.expansion.remark)||'<span style="color:var(--muted)">Set</span>'}</div></td>`;
+    }
+
+    row+=`<td><button class="ob-delete-btn" onclick="obDeleteCompany(${c.id})" title="Delete">&times;</button></td></tr>`;
+    return row;
+  }).join('');
+}
+
+function obExpansionBadge(val){
+  if(!val) return '<span style="color:var(--muted)">Set</span>';
+  if(val==='Yes') return '<span class="expansion-badge expansion-yes">Yes</span>';
+  if(val==='No') return '<span class="expansion-badge expansion-no">No</span>';
+  if(val==='Maybe') return '<span class="expansion-badge expansion-maybe">Maybe</span>';
+  return val;
+}
+
+function obRenderActionItems(company){
+  const items=company.actionItems||[];
+  if(items.length===0){
+    return `<button class="action-add-btn" onclick="obAddActionItem(${company.id})">+ Add This Week</button>`;
+  }
+  // Show items in reverse (most recent first)
+  const sorted=[...items].reverse();
+  let html='';
+  sorted.forEach((item,idx)=>{
+    const isFirst=idx===0;
+    html+=`<div class="action-week">
+      <div class="action-week-header" onclick="this.nextElementSibling.classList.toggle('open')">
+        <span>${item.week}</span>
+        <span style="font-size:10px">${isFirst?'\u25BC':'\u25B6'}</span>
+      </div>
+      <div class="action-week-body${isFirst?' open':''}">
+        <div style="white-space:pre-wrap">${(item.items||'').replace(/</g,'&lt;')}</div>
+        <div class="action-week-by">Added by: ${item.addedBy||'Unknown'}</div>
+      </div>
+    </div>`;
+  });
+  html+=`<button class="action-add-btn" onclick="obAddActionItem(${company.id})">+ Add This Week</button>`;
+  return html;
+}
+
+function obAddActionItem(companyId){
+  const company=obCompanies.find(c=>c.id===companyId);
+  if(!company)return;
+
+  // Get current week's Monday date
+  const now=new Date();
+  const monday=new Date(now);
+  monday.setDate(monday.getDate()-((monday.getDay()+6)%7));
+  const weekStr=monday.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+
+  const items=prompt('Enter action items for this week:');
+  if(!items||!items.trim())return;
+
+  if(!company.actionItems)company.actionItems=[];
+  company.actionItems.push({
+    week:weekStr,
+    items:items.trim(),
+    addedBy:getName()||'Unknown'
+  });
+
+  obScheduleSave();
+  obRenderTable();
+}
+
+function obToggleUsage(companyId,field){
+  const company=obCompanies.find(c=>c.id===companyId);
+  if(!company)return;
+  if(!company.usage)company.usage={inspection:false,instruction:false,register:false};
+  company.usage[field]=!company.usage[field];
+  obScheduleSave();
+  obRenderTable();
+}
+
+function obEdit(companyId,field,type){
+  const company=obCompanies.find(c=>c.id===companyId);
+  if(!company)return;
+
+  // Find the clicked cell
+  const row=document.querySelector(`tr[data-id="${companyId}"]`);
+  if(!row)return;
+
+  // Find the editable div that was clicked
+  const editables=row.querySelectorAll('.ob-editable');
+  let targetDiv=null;
+  editables.forEach(div=>{
+    const onclick=div.getAttribute('onclick')||'';
+    if(onclick.includes(`'${field}'`))targetDiv=div;
+  });
+  if(!targetDiv)return;
+
+  // Get current value
+  let currentVal='';
+  if(field.startsWith('expansion.')){
+    const subField=field.split('.')[1];
+    currentVal=(company.expansion&&company.expansion[subField])||'';
+  }else{
+    currentVal=company[field]||'';
+  }
+
+  // Replace with edit control
+  if(type==='text'){
+    targetDiv.innerHTML=`<input class="ob-edit-input" value="${String(currentVal).replace(/"/g,'&quot;')}"
+      onkeydown="if(event.key==='Enter'){obSaveField(${companyId},'${field}',this.value);}"
+      onblur="obSaveField(${companyId},'${field}',this.value)">`;
+    targetDiv.querySelector('input').focus();
+  }else if(type==='number'){
+    targetDiv.innerHTML=`<input class="ob-edit-input" type="number" value="${currentVal}" min="0"
+      onkeydown="if(event.key==='Enter'){obSaveField(${companyId},'${field}',parseInt(this.value)||0);}"
+      onblur="obSaveField(${companyId},'${field}',parseInt(this.value)||0)">`;
+    targetDiv.querySelector('input').focus();
+  }else if(type==='date'){
+    targetDiv.innerHTML=`<input class="ob-edit-input" type="date" value="${currentVal}"
+      onchange="obSaveField(${companyId},'${field}',this.value)"
+      onblur="obSaveField(${companyId},'${field}',this.value)">`;
+    targetDiv.querySelector('input').focus();
+  }else if(type==='dropdown'){
+    targetDiv.innerHTML=`<select class="ob-edit-select" onchange="obSaveField(${companyId},'${field}',this.value)">
+      <option value="">-- Select --</option>
+      <option value="Project Based" ${currentVal==='Project Based'?'selected':''}>Project Based</option>
+      <option value="User Based" ${currentVal==='User Based'?'selected':''}>User Based</option>
+    </select>`;
+    targetDiv.querySelector('select').focus();
+  }else if(type==='expansion'){
+    targetDiv.innerHTML=`<select class="ob-edit-select" onchange="obSaveField(${companyId},'${field}',this.value)">
+      <option value="">-- Select --</option>
+      <option value="Yes" ${currentVal==='Yes'?'selected':''}>Yes</option>
+      <option value="No" ${currentVal==='No'?'selected':''}>No</option>
+      <option value="Maybe" ${currentVal==='Maybe'?'selected':''}>Maybe</option>
+    </select>`;
+    targetDiv.querySelector('select').focus();
+  }else if(type==='textarea'){
+    targetDiv.innerHTML=`<textarea class="ob-edit-textarea" onblur="obSaveField(${companyId},'${field}',this.value)">${(currentVal||'').replace(/</g,'&lt;')}</textarea>`;
+    targetDiv.querySelector('textarea').focus();
+  }else if(type==='phone'){
+    const countryCode=company.spocCountry||'IN';
+    const opts=COUNTRY_CODES.map(cc=>`<option value="${cc.code}" ${cc.code===countryCode?'selected':''}>${cc.dial} ${cc.name}</option>`).join('');
+    targetDiv.innerHTML=`<div class="phone-group">
+      <select onchange="obSaveCountry(${companyId},this.value)">${opts}</select>
+      <input class="ob-edit-input" value="${String(currentVal).replace(/"/g,'&quot;')}" placeholder="Phone number"
+        onkeydown="if(event.key==='Enter'){obSaveField(${companyId},'spocPhone',this.value);}"
+        onblur="obSaveField(${companyId},'spocPhone',this.value)">
+    </div>`;
+    targetDiv.querySelector('input').focus();
+  }
+}
+
+function obSaveCountry(companyId,code){
+  const company=obCompanies.find(c=>c.id===companyId);
+  if(!company)return;
+  company.spocCountry=code;
+  obScheduleSave();
+}
+
+function obSaveField(companyId,field,value){
+  const company=obCompanies.find(c=>c.id===companyId);
+  if(!company)return;
+
+  if(field.startsWith('expansion.')){
+    const subField=field.split('.')[1];
+    if(!company.expansion)company.expansion={possible:'',details:'',remark:''};
+    company.expansion[subField]=value;
+  }else{
+    company[field]=value;
+  }
+
+  obScheduleSave();
+  obUpdateCounts();
+  obRenderTable();
+}
+
+function obAddCompany(){
+  const maxId=obCompanies.reduce((max,c)=>Math.max(max,c.id||0),0);
+  obCompanies.push({
+    id:maxId+1,
+    org:'',planType:'',purchased:0,
+    spocName:'',spocPhone:'',spocCountry:'IN',
+    systemAdmin:'',
+    introMeet:'',trainingSetup:'',liveSetup:'',dashboardSetup:'',
+    payment:'',actionItems:[],notes:'',
+    usage:{inspection:false,instruction:false,register:false},
+    expansion:{possible:'',details:'',remark:''}
+  });
+  obScheduleSave();
+  obUpdateCounts();
+  obRenderTable();
+  showToast('New company added','success');
+}
+
+function obDeleteCompany(companyId){
+  const company=obCompanies.find(c=>c.id===companyId);
+  if(!company)return;
+  if(!confirm(`Delete "${company.org||'Untitled'}"? This cannot be undone.`))return;
+  obCompanies=obCompanies.filter(c=>c.id!==companyId);
+  obScheduleSave();
+  obUpdateCounts();
+  obRenderTable();
+  showToast('Company deleted','success');
+}
+
+// Share functionality
+function toggleShareDropdown(btn){
+  const dd=document.getElementById('obShareDropdown');
+  dd.classList.toggle('open');
+  // Close on outside click
+  const close=e=>{if(!btn.parentElement.contains(e.target)){dd.classList.remove('open');document.removeEventListener('click',close);}};
+  setTimeout(()=>document.addEventListener('click',close),0);
+}
+
+async function obShareAs(format){
+  document.getElementById('obShareDropdown').classList.remove('open');
+
+  // Hide buttons during capture
+  const addBtn=document.querySelector('.ob-add-btn');
+  const delBtns=document.querySelectorAll('.ob-delete-btn');
+  const actionBtns=document.querySelectorAll('.action-add-btn');
+  const shareBtnEl=document.querySelector('.ob-share-btn');
+
+  if(addBtn)addBtn.style.display='none';
+  delBtns.forEach(b=>b.style.display='none');
+  actionBtns.forEach(b=>b.style.display='none');
+  if(shareBtnEl)shareBtnEl.style.display='none';
+
+  const tableWrap=document.getElementById('obTableWrap');
+
+  try{
+    const canvas=await html2canvas(tableWrap,{
+      scale:2,
+      useCORS:true,
+      backgroundColor:'#ffffff',
+      scrollX:0,scrollY:0,
+      width:tableWrap.scrollWidth,
+      height:tableWrap.scrollHeight
+    });
+
+    if(format==='photo'){
+      const link=document.createElement('a');
+      link.download=`onboarding-${obCurrentTab}-${new Date().toISOString().slice(0,10)}.png`;
+      link.href=canvas.toDataURL('image/png');
+      link.click();
+      showToast('Image downloaded','success');
+    }else{
+      const imgData=canvas.toDataURL('image/png');
+      const {jsPDF}=window.jspdf;
+      const pdf=new jsPDF({orientation:'landscape',unit:'px',format:[canvas.width/2,canvas.height/2]});
+      pdf.addImage(imgData,'PNG',0,0,canvas.width/2,canvas.height/2);
+      pdf.save(`onboarding-${obCurrentTab}-${new Date().toISOString().slice(0,10)}.pdf`);
+      showToast('PDF downloaded','success');
+    }
+  }catch(e){
+    showToast('Export failed: '+e.message,'error');
+  }
+
+  // Restore buttons
+  if(addBtn)addBtn.style.display='';
+  delBtns.forEach(b=>b.style.display='');
+  actionBtns.forEach(b=>b.style.display='');
+  if(shareBtnEl)shareBtnEl.style.display='';
+}
+
+// ============================================================
+// INIT
+// ============================================================
 checkSetup();
 </script>
 </body>
