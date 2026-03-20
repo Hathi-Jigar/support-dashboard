@@ -66,25 +66,25 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .table td{padding:12px 14px;border-bottom:1px solid #E5E7EB;font-size:13px;color:#374151;line-height:1.5;vertical-align:top}
 .table tr:last-child td{border-bottom:none}
 .table tr:hover td{background:#F9FAFB}
-.table td:nth-child(9),.table td:nth-child(13),.table td:nth-child(14){white-space:normal;word-wrap:break-word}
+.table td:nth-child(9),.table td:nth-child(13),.table td:nth-child(14){white-space:normal;word-wrap:break-word;overflow:visible}
 .table tr.clickable{cursor:pointer}
 
-/* Bug Tracker column widths */
-.table th:nth-child(1),.table td:nth-child(1){width:45px;min-width:45px}
-.table th:nth-child(2),.table td:nth-child(2){min-width:160px}
-.table th:nth-child(3),.table td:nth-child(3){width:100px;min-width:100px}
-.table th:nth-child(4),.table td:nth-child(4){width:300px;min-width:220px;white-space:normal;word-wrap:break-word;overflow-wrap:break-word;word-break:break-word;overflow:visible}
-.table th:nth-child(5),.table td:nth-child(5){min-width:180px}
-.table th:nth-child(6),.table td:nth-child(6){width:90px;min-width:90px}
-.table th:nth-child(7),.table td:nth-child(7){width:75px;min-width:75px}
-.table th:nth-child(8),.table td:nth-child(8){width:65px;min-width:65px}
-.table th:nth-child(9),.table td:nth-child(9){min-width:130px}
-.table th:nth-child(10),.table td:nth-child(10){min-width:110px}
-.table th:nth-child(11),.table td:nth-child(11){min-width:170px}
-.table th:nth-child(12),.table td:nth-child(12){min-width:110px}
-.table th:nth-child(13),.table td:nth-child(13){width:85px;min-width:85px}
-.table th:nth-child(14),.table td:nth-child(14){width:70px;min-width:70px}
-.table th:nth-child(15),.table td:nth-child(15){width:85px;min-width:85px}
+/* Bug Tracker column widths — use width (not min-width) for table-layout:fixed */
+.table th:nth-child(1),.table td:nth-child(1){width:45px}
+.table th:nth-child(2),.table td:nth-child(2){width:160px}
+.table th:nth-child(3),.table td:nth-child(3){width:100px}
+.table th:nth-child(4),.table td:nth-child(4){width:300px;white-space:normal;word-wrap:break-word;overflow-wrap:break-word;word-break:break-word;overflow:visible}
+.table th:nth-child(5),.table td:nth-child(5){width:180px;white-space:normal;word-wrap:break-word;overflow-wrap:break-word;overflow:visible}
+.table th:nth-child(6),.table td:nth-child(6){width:90px}
+.table th:nth-child(7),.table td:nth-child(7){width:75px}
+.table th:nth-child(8),.table td:nth-child(8){width:65px}
+.table th:nth-child(9),.table td:nth-child(9){width:130px;white-space:normal;word-wrap:break-word;overflow-wrap:break-word;overflow:visible}
+.table th:nth-child(10),.table td:nth-child(10){width:110px}
+.table th:nth-child(11),.table td:nth-child(11){width:170px}
+.table th:nth-child(12),.table td:nth-child(12){width:110px}
+.table th:nth-child(13),.table td:nth-child(13){width:85px}
+.table th:nth-child(14),.table td:nth-child(14){width:70px}
+.table th:nth-child(15),.table td:nth-child(15){width:85px}
 
 .bug-title{font-weight:600;color:var(--text);font-size:13px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:normal;word-wrap:break-word}
 .bug-id{font-size:11px;color:var(--muted)}
@@ -230,33 +230,33 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .ob-table tr:hover td{background:#F9FAFB}
 .ob-table tr:hover .ob-delete-btn{opacity:1}
 
-/* Onboarding column widths */
-.ob-table th:nth-child(1),.ob-table td:nth-child(1){min-width:35px;width:35px;white-space:nowrap}
-.ob-table th:nth-child(2),.ob-table td:nth-child(2){min-width:160px}
-.ob-table th:nth-child(3),.ob-table td:nth-child(3){min-width:100px}
-.ob-table th:nth-child(4),.ob-table td:nth-child(4){min-width:70px;white-space:nowrap}
-.ob-table th:nth-child(5),.ob-table td:nth-child(5){min-width:130px}
-.ob-table th:nth-child(6),.ob-table td:nth-child(6){min-width:130px}
-.ob-table th:nth-child(7),.ob-table td:nth-child(7){min-width:150px}
-.ob-table th:nth-child(8),.ob-table td:nth-child(8){min-width:95px;white-space:nowrap}
-.ob-table th:nth-child(9),.ob-table td:nth-child(9){min-width:95px;white-space:nowrap}
-.ob-table th:nth-child(10),.ob-table td:nth-child(10){min-width:95px;white-space:nowrap}
-.ob-table th:nth-child(11),.ob-table td:nth-child(11){min-width:95px;white-space:nowrap}
-.ob-table td.ob-col-payment{min-width:200px;max-width:280px;white-space:normal;word-wrap:break-word}
-.ob-table td.ob-col-action{min-width:200px;max-width:280px;white-space:normal;word-wrap:break-word}
-.ob-table td.ob-col-notes{min-width:160px;max-width:220px;white-space:normal;word-wrap:break-word}
-.ob-table td.ob-col-usage{min-width:35px;width:35px;white-space:nowrap}
-.ob-table td.ob-col-expansion{min-width:80px}
-.ob-table td.ob-col-expdetails{min-width:120px;white-space:normal;word-wrap:break-word}
-.ob-table td.ob-col-expremark{min-width:120px;white-space:normal;word-wrap:break-word}
+/* Onboarding column widths — use width (not min-width) for table-layout:fixed */
+.ob-table th:nth-child(1),.ob-table td:nth-child(1){width:35px;white-space:nowrap}
+.ob-table th:nth-child(2),.ob-table td:nth-child(2){width:160px;white-space:normal;word-wrap:break-word;overflow-wrap:break-word;overflow:visible}
+.ob-table th:nth-child(3),.ob-table td:nth-child(3){width:100px}
+.ob-table th:nth-child(4),.ob-table td:nth-child(4){width:70px;white-space:nowrap}
+.ob-table th:nth-child(5),.ob-table td:nth-child(5){width:130px;white-space:normal;word-wrap:break-word;overflow-wrap:break-word;overflow:visible}
+.ob-table th:nth-child(6),.ob-table td:nth-child(6){width:130px}
+.ob-table th:nth-child(7),.ob-table td:nth-child(7){width:150px;white-space:normal;word-wrap:break-word;overflow-wrap:break-word;overflow:visible}
+.ob-table th:nth-child(8),.ob-table td:nth-child(8){width:95px;white-space:nowrap}
+.ob-table th:nth-child(9),.ob-table td:nth-child(9){width:95px;white-space:nowrap}
+.ob-table th:nth-child(10),.ob-table td:nth-child(10){width:95px;white-space:nowrap}
+.ob-table th:nth-child(11),.ob-table td:nth-child(11){width:95px;white-space:nowrap}
+.ob-table td.ob-col-payment{width:200px;white-space:normal;word-wrap:break-word;overflow-wrap:break-word;overflow:visible}
+.ob-table td.ob-col-action{width:200px;white-space:normal;word-wrap:break-word;overflow-wrap:break-word;overflow:visible}
+.ob-table td.ob-col-notes{width:160px;white-space:normal;word-wrap:break-word;overflow-wrap:break-word;overflow:visible}
+.ob-table td.ob-col-usage{width:35px;white-space:nowrap}
+.ob-table td.ob-col-expansion{width:80px}
+.ob-table td.ob-col-expdetails{width:120px;white-space:normal;word-wrap:break-word;overflow-wrap:break-word;overflow:visible}
+.ob-table td.ob-col-expremark{width:120px;white-space:normal;word-wrap:break-word;overflow-wrap:break-word;overflow:visible}
 
 /* Onboarding section card */
 .ob-section-card{padding:0;border:1px solid #E5E7EB;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.04);margin-bottom:24px;overflow-x:auto;-webkit-overflow-scrolling:touch}
 
-/* Auto-wrap text columns in onboarding table */
-.ob-table td:nth-child(2){white-space:normal;word-wrap:break-word} /* Organisation */
-.ob-table td:nth-child(5){white-space:normal;word-wrap:break-word} /* SPOC Name */
-.ob-table td:nth-child(7){white-space:normal;word-wrap:break-word} /* System Admin */
+/* Auto-wrap text columns in onboarding table — overflow:visible so wrapped text is not clipped */
+.ob-table td:nth-child(2){white-space:normal;word-wrap:break-word;overflow:visible} /* Organisation */
+.ob-table td:nth-child(5){white-space:normal;word-wrap:break-word;overflow:visible} /* SPOC Name */
+.ob-table td:nth-child(7){white-space:normal;word-wrap:break-word;overflow:visible} /* System Admin */
 
 .ob-delete-btn{opacity:0;background:none;border:none;color:#DC2626;cursor:pointer;font-size:16px;padding:2px 6px;border-radius:4px;transition:opacity .15s}
 .ob-delete-btn:hover{background:#FEE2E2}
@@ -278,7 +278,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .usage-toggle:hover{background:var(--bg)}
 
 /* Action items */
-.action-items-cell{min-width:200px;max-width:280px}
+.action-items-cell{width:200px}
 .action-week{margin-bottom:6px;border:1px solid var(--border);border-radius:6px;overflow:hidden}
 .action-week-header{display:flex;align-items:center;justify-content:space-between;padding:4px 8px;background:var(--bg);cursor:pointer;font-size:11px;font-weight:600;color:var(--sub)}
 .action-week-header:hover{background:#EEF2FF}
@@ -306,14 +306,14 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .task-table tr:hover td{background:#F9FAFB}
 .task-table tr:hover .ob-delete-btn{opacity:1}
 
-/* Task column widths */
-.task-table th:nth-child(1),.task-table td:nth-child(1){min-width:35px;width:35px;white-space:nowrap}
-.task-table th:nth-child(2),.task-table td:nth-child(2){min-width:280px;white-space:normal;word-wrap:break-word}
-.task-table th:nth-child(3),.task-table td:nth-child(3){min-width:100px}
-.task-table th:nth-child(4),.task-table td:nth-child(4){min-width:90px}
-.task-table th:nth-child(5),.task-table td:nth-child(5){min-width:110px;white-space:nowrap}
-.task-table th:nth-child(6),.task-table td:nth-child(6){min-width:220px;white-space:normal;word-wrap:break-word}
-.task-table th:nth-child(7),.task-table td:nth-child(7){min-width:95px;white-space:nowrap}
+/* Task column widths — use width (not min-width) for table-layout:fixed */
+.task-table th:nth-child(1),.task-table td:nth-child(1){width:35px;white-space:nowrap}
+.task-table th:nth-child(2),.task-table td:nth-child(2){width:280px;white-space:normal;word-wrap:break-word;overflow-wrap:break-word;overflow:visible}
+.task-table th:nth-child(3),.task-table td:nth-child(3){width:100px}
+.task-table th:nth-child(4),.task-table td:nth-child(4){width:90px}
+.task-table th:nth-child(5),.task-table td:nth-child(5){width:110px;white-space:nowrap}
+.task-table th:nth-child(6),.task-table td:nth-child(6){width:220px;white-space:normal;word-wrap:break-word;overflow-wrap:break-word;overflow:visible}
+.task-table th:nth-child(7),.task-table td:nth-child(7){width:95px;white-space:nowrap}
 
 /* Priority badges */
 .priority-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:6px;display:inline-block}
@@ -2353,22 +2353,15 @@ function restoreColumnWidths() {
     document.querySelectorAll('.table, .ob-table, .task-table').forEach(table => {
       const key = getTableKey(table);
       if (widths[key]) {
+        // With table-layout:fixed, only th width matters — no minWidth needed
+        let totalWidth = 0;
         table.querySelectorAll('thead th').forEach((th, i) => {
           if (widths[key][i]) {
             th.style.width = widths[key][i] + 'px';
-            th.style.minWidth = widths[key][i] + 'px';
           }
+          totalWidth += widths[key][i] || th.offsetWidth;
         });
-        // Apply to body cells too
-        Object.entries(widths[key]).forEach(([idx, w]) => {
-          table.querySelectorAll('tbody tr').forEach(row => {
-            const td = row.cells[parseInt(idx)];
-            if (td) {
-              td.style.width = w + 'px';
-              td.style.minWidth = w + 'px';
-            }
-          });
-        });
+        table.style.width = totalWidth + 'px';
       }
     });
   } catch(e) {}
