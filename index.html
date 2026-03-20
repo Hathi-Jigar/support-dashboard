@@ -758,7 +758,7 @@ function renderTable(){
       <td><div class="bug-title">${b.title}</div><button class="view-btn" onclick="openDetail(${b.number})">View</button></td>
       <td><div class="desc-cell" title="${esc(b.description)}" onclick="openDetail(${b.number})">${shortDesc||'<span style="color:var(--muted)">—</span>'}${b.description&&b.description.length>80?'…':''}</div></td>
       <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'solution')" title="Click to edit">${shortSol?`<span class="solution-cell filled">${shortSol}${b.solution.length>60?'…':''}</span>`:'<span class="solution-cell empty">Add solution</span>'}</div>`:`<div class="solution-cell ${b.solution?'filled':'empty'}">${shortSol||'—'}${b.solution&&b.solution.length>60?'…':''}</div>`}</td>
-      <td><span class="badge ${badgeCls}">${badgeText}</span></td>
+      <td class="inline-cell"><div class="inline-val editable" onclick="event.stopPropagation();inlineStatusToggle(${b.number})"><span class="badge ${badgeCls}">${badgeText}</span></div></td>
       <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'org')">${b.org||'<span style="color:var(--muted)">Add org</span>'}</div>`:`<span style="font-size:12px;color:var(--sub)">${b.org||'—'}</span>`}</td>
       <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'platform')">${b.platform?`<span class="platform-badge">${b.platform}</span>`:'<span style="color:var(--muted)">Set</span>'}</div>`:`${b.platform?`<span class="platform-badge">${b.platform}</span>`:'<span style="color:var(--muted)">—</span>'}`}</td>
       <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'version')">${b.version||'<span style="color:var(--muted)">Set</span>'}</div>`:`<span style="font-size:12px;color:var(--sub)">${b.version||'—'}</span>`}</td>
@@ -897,6 +897,66 @@ function showToast(msg,type=''){
   setTimeout(()=>t.classList.remove('show'),3000);
 }
 function showLoading(show){document.getElementById('loading').classList.toggle('show',show)}
+
+// === INLINE STATUS TOGGLE ===
+function inlineStatusToggle(number){
+  const bug=allBugs.find(b=>b.number===number);
+  if(!bug)return;
+
+  // Find the clicked cell
+  const rows=document.querySelectorAll('#bugTableBody tr');
+  let targetRow=null;
+  rows.forEach(r=>{
+    const idCell=r.querySelector('.bug-id');
+    if(idCell&&idCell.textContent===`#${number}`)targetRow=r;
+  });
+  if(!targetRow)return;
+
+  const cell=targetRow.cells[4]; // Status column
+  if(!cell)return;
+
+  const isOpen=bug.state==='open';
+  cell.innerHTML=`<select class="inline-select" onchange="inlineStatusSave(${number},this.value)" style="font-weight:600">
+    <option value="open" ${isOpen?'selected':''}>🔵 Open</option>
+    <option value="closed" ${!isOpen?'selected':''}>🔒 Closed</option>
+  </select>`;
+  cell.querySelector('select').focus();
+}
+
+async function inlineStatusSave(number,newState){
+  const bug=allBugs.find(b=>b.number===number);
+  if(!bug)return;
+  if(bug.state===newState){renderTable();return;}
+
+  showLoading(true);
+  try{
+    if(newState==='closed'){
+      // Close: remove 🔵 Open, add 🔒 Closed from Support
+      const newLabels=bug.labels.filter(l=>l!=='🔵 Open');
+      if(!newLabels.includes('🔒 Closed from Support'))newLabels.push('🔒 Closed from Support');
+      await fetch(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues/${bug.number}`,{
+        method:'PATCH',
+        headers:{'Authorization':`token ${getToken()}`,'Content-Type':'application/json'},
+        body:JSON.stringify({state:'closed',labels:newLabels})
+      });
+      bug.state='closed';bug.closed_at=new Date().toISOString();bug.labels=newLabels;
+      showToast('Bug closed','success');
+    }else{
+      // Reopen: remove 🔒 Closed from Support, add 🔵 Open
+      const newLabels=bug.labels.filter(l=>l!=='🔒 Closed from Support');
+      if(!newLabels.includes('🔵 Open'))newLabels.push('🔵 Open');
+      await fetch(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues/${bug.number}`,{
+        method:'PATCH',
+        headers:{'Authorization':`token ${getToken()}`,'Content-Type':'application/json'},
+        body:JSON.stringify({state:'open',labels:newLabels})
+      });
+      bug.state='open';bug.closed_at=null;bug.labels=newLabels;
+      showToast('Bug reopened','success');
+    }
+    renderTable();updateStats();
+  }catch(e){showToast('Failed: '+e.message,'error');renderTable();}
+  showLoading(false);
+}
 
 // === INLINE EDIT ===
 let inlineEditingCell=null;
