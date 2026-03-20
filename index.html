@@ -41,43 +41,60 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .setup-banner label{font-size:12px;font-weight:600;color:#92400E}
 
 /* Stats */
-.stats-bar{padding:20px 28px 12px;display:flex;gap:12px;flex-wrap:wrap}
-.stat-card{background:var(--white);border:1px solid #F0F2F5;border-radius:10px;padding:14px 20px;min-width:120px;flex:1;margin-bottom:20px}
-.stat-value{font-size:24px;font-weight:800}
-.stat-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.stats-bar{padding:20px 28px 12px;display:flex;gap:16px;flex-wrap:wrap}
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:16px 24px;min-width:120px;flex:1;margin-bottom:20px}
+.stat-value{font-size:28px;font-weight:800}
+.stat-label{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
 .stat-card.open .stat-value{color:#D97706}
 .stat-card.closed .stat-value{color:#16A34A}
 .stat-card.tat .stat-value{color:#2563EB;font-size:18px}
 
 /* Filters */
 .filter-bar{padding:8px 28px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.filter-chip{padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--white);font-size:12px;font-weight:600;cursor:pointer;color:var(--sub);font-family:inherit;transition:all .15s}
+.filter-chip{padding:7px 16px;border-radius:20px;border:1px solid var(--border);background:var(--white);font-size:12px;font-weight:600;cursor:pointer;color:var(--sub);font-family:inherit;transition:all .15s}
 .filter-chip:hover{border-color:var(--sub)}
-.filter-chip.active{background:var(--text);color:var(--white);border-color:var(--text)}
+.filter-chip.active{background:var(--brand);color:var(--white);border-color:var(--brand)}
 .search-input{padding:7px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;width:220px;margin-left:auto}
 .search-input:focus{border-color:var(--brand)}
 .refresh-btn{background:var(--white);border:1px solid var(--border);padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--sub)}
 .refresh-btn:hover{border-color:var(--brand);color:var(--brand)}
 
 /* Table */
-.table-wrap{padding:0 28px 28px;overflow-x:auto;margin-bottom:20px}
-.table{width:100%;border-collapse:collapse;background:var(--white);border-radius:var(--radius);overflow:hidden;border:1px solid #F0F2F5;min-width:1200px}
-.table th{background:var(--bg);padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #F0F2F5;white-space:nowrap}
-.table td{padding:8px 10px;border-bottom:1px solid #F0F2F5;font-size:12px;line-height:1.4;vertical-align:top}
+.table-wrap{padding:0 28px 28px;overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px;margin-bottom:20px}
+.table{width:100%;border-collapse:collapse;background:var(--white);border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);min-width:1800px}
+.table th{background:#F9FAFB;padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:#6B7280;text-transform:uppercase;letter-spacing:0.6px;border-bottom:2px solid #E5E7EB;white-space:nowrap}
+.table td{padding:12px 14px;border-bottom:1px solid #E5E7EB;font-size:13px;color:#374151;line-height:1.5;vertical-align:top}
 .table tr:last-child td{border-bottom:none}
-.table tr:hover td{background:#FAFBFC}
+.table tr:hover td{background:#F9FAFB}
 .table td:nth-child(9),.table td:nth-child(13),.table td:nth-child(14){white-space:normal;word-wrap:break-word}
 .table tr.clickable{cursor:pointer}
 
-.bug-title{font-weight:600;color:var(--text);font-size:12px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:normal;word-wrap:break-word}
+/* Bug Tracker column widths */
+.table th:nth-child(1),.table td:nth-child(1){width:45px;min-width:45px}
+.table th:nth-child(2),.table td:nth-child(2){min-width:160px}
+.table th:nth-child(3),.table td:nth-child(3){width:100px;min-width:100px}
+.table th:nth-child(4),.table td:nth-child(4){min-width:220px}
+.table th:nth-child(5),.table td:nth-child(5){min-width:180px}
+.table th:nth-child(6),.table td:nth-child(6){width:90px;min-width:90px}
+.table th:nth-child(7),.table td:nth-child(7){width:75px;min-width:75px}
+.table th:nth-child(8),.table td:nth-child(8){width:65px;min-width:65px}
+.table th:nth-child(9),.table td:nth-child(9){min-width:130px}
+.table th:nth-child(10),.table td:nth-child(10){min-width:110px}
+.table th:nth-child(11),.table td:nth-child(11){min-width:170px}
+.table th:nth-child(12),.table td:nth-child(12){min-width:110px}
+.table th:nth-child(13),.table td:nth-child(13){width:85px;min-width:85px}
+.table th:nth-child(14),.table td:nth-child(14){width:70px;min-width:70px}
+.table th:nth-child(15),.table td:nth-child(15){width:85px;min-width:85px}
+
+.bug-title{font-weight:600;color:var(--text);font-size:13px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:normal;word-wrap:break-word}
 .bug-id{font-size:11px;color:var(--muted)}
 
-.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600;white-space:nowrap}
 .badge-open{background:var(--open-bg);color:var(--open)}
 .badge-closed{background:var(--closed-bg);color:var(--closed)}
 
-.platform-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;background:var(--bg);color:var(--sub);border:1px solid #F0F2F5}
-.tag-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;display:inline-block}
+.platform-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:6px;background:var(--bg);color:var(--sub);border:1px solid var(--border)}
+.tag-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:6px;display:inline-block}
 .tag-Bug{background:#FEE2E2;color:#991B1B;border:1px solid #FECACA}
 .tag-Knowledge-Gap{background:#DBEAFE;color:#1E40AF;border:1px solid #BFDBFE}
 .tag-Feedback{background:#FEF3C7;color:#92400E;border:1px solid #FCD34D}
@@ -85,10 +102,10 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .btn-reopen{background:#D97706;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
 .btn-reopen:hover{background:#B45309}
 
-.tat-cell{font-size:12px;color:var(--sub);white-space:nowrap}
+.tat-cell{font-size:13px;color:var(--sub);white-space:nowrap}
 .tat-cell.overdue{color:#DC2626;font-weight:600}
 
-.handler{font-size:11px;color:var(--sub)}
+.handler{font-size:13px;color:var(--sub)}
 .handler strong{color:var(--text)}
 
 .empty-state{text-align:center;padding:60px;color:var(--muted)}
@@ -161,26 +178,26 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 
 /* Inline edit cells */
 .inline-cell{position:relative;min-width:80px}
-.inline-val{cursor:pointer;padding:2px 4px;border-radius:4px;transition:background .1s;font-size:12px;color:var(--sub)}
+.inline-val{cursor:pointer;padding:2px 4px;border-radius:4px;transition:background .1s;font-size:13px;color:#374151}
 .inline-val:hover{background:#EEF2FF}
 .inline-val.editable{border-bottom:1px dashed var(--border)}
 .inline-val.editable:hover{border-bottom-color:var(--brand);color:var(--brand)}
-.inline-input{width:100%;padding:4px 6px;border:1.5px solid var(--brand);border-radius:4px;font-size:12px;font-family:inherit;outline:none;background:var(--white);color:var(--text)}
-.inline-select{padding:3px 4px;border:1.5px solid var(--brand);border-radius:4px;font-size:12px;font-family:inherit;outline:none;background:var(--white);color:var(--text);width:100%}
+.inline-input{width:100%;padding:4px 6px;border:1.5px solid var(--brand);border-radius:4px;font-size:13px;font-family:inherit;outline:none;background:var(--white);color:var(--text)}
+.inline-select{padding:3px 4px;border:1.5px solid var(--brand);border-radius:4px;font-size:13px;font-family:inherit;outline:none;background:var(--white);color:var(--text);width:100%}
 .inline-actions{display:flex;gap:3px;margin-top:3px}
 .inline-save{background:var(--brand);color:white;border:none;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit}
 .inline-cancel{background:var(--bg);color:var(--sub);border:1px solid var(--border);padding:2px 8px;border-radius:3px;font-size:10px;cursor:pointer;font-family:inherit}
 
 /* Description cell */
-.desc-cell{max-width:180px;font-size:12px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:normal;word-wrap:break-word;cursor:pointer}
+.desc-cell{max-width:220px;font-size:13px;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:normal;word-wrap:break-word;cursor:pointer}
 .desc-cell:hover{color:var(--text)}
-.solution-cell{max-width:160px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:normal;word-wrap:break-word}
+.solution-cell{max-width:180px;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:normal;word-wrap:break-word}
 .solution-cell.empty{color:var(--muted);font-style:italic}
 .solution-cell.filled{color:var(--text)}
 
 /* View button */
-.view-btn{background:none;border:1px solid var(--border);padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;cursor:pointer;color:var(--sub);font-family:inherit;white-space:nowrap;margin-left:4px}
-.view-btn:hover{border-color:var(--brand);color:var(--brand)}
+.view-btn{background:none;border:none;padding:2px 0;font-size:11px;font-weight:500;cursor:pointer;color:#E8450A;font-family:inherit;white-space:nowrap;text-decoration:underline}
+.view-btn:hover{color:#C73509}
 
 /* ============ ONBOARDING TRACKER STYLES ============ */
 .tab-content{display:none}
@@ -190,11 +207,11 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .ob-sub-tabs{padding:12px 28px;display:flex;gap:8px;align-items:center}
 .ob-sub-tab{padding:8px 18px;border-radius:20px;border:1px solid var(--border);background:var(--white);font-size:13px;font-weight:600;cursor:pointer;color:var(--sub);font-family:inherit;transition:all .15s}
 .ob-sub-tab:hover{border-color:var(--sub)}
-.ob-sub-tab.active{background:var(--text);color:var(--white);border-color:var(--text)}
+.ob-sub-tab.active{background:var(--brand);color:var(--white);border-color:var(--brand)}
 .ob-sub-tab .count{font-weight:700;margin-left:2px}
 
 /* Section header with buttons */
-.ob-section-header{padding:8px 28px 12px;display:flex;align-items:center;gap:10px;justify-content:space-between}
+.ob-section-header{padding:16px 20px;display:flex;align-items:center;gap:10px;justify-content:space-between}
 .ob-section-header .left-btns{display:flex;gap:8px;align-items:center}
 .ob-add-btn{background:var(--brand);color:white;border:none;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
 .ob-add-btn:hover{background:#C73509}
@@ -206,32 +223,35 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .share-dropdown button:hover{background:var(--bg)}
 
 /* Onboarding table */
-.ob-table{width:100%;border-collapse:collapse;background:var(--white);border-radius:var(--radius);overflow:hidden;border:1px solid #F0F2F5;min-width:2200px}
-.ob-table th{background:var(--bg);padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #F0F2F5;white-space:nowrap}
-.ob-table td{padding:8px 10px;border-bottom:1px solid #F0F2F5;font-size:12px;line-height:1.4;vertical-align:top}
+.ob-table{width:100%;border-collapse:collapse;background:var(--white);border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,0.04);min-width:2200px}
+.ob-table th{background:#F9FAFB;padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:#6B7280;text-transform:uppercase;letter-spacing:0.6px;border-bottom:2px solid #E5E7EB;white-space:nowrap}
+.ob-table td{padding:12px 14px;border-bottom:1px solid #E5E7EB;font-size:13px;color:#374151;line-height:1.5;vertical-align:top}
 .ob-table tr:last-child td{border-bottom:none}
-.ob-table tr:hover td{background:#FAFBFC}
+.ob-table tr:hover td{background:#F9FAFB}
 .ob-table tr:hover .ob-delete-btn{opacity:1}
 
 /* Onboarding column widths */
 .ob-table th:nth-child(1),.ob-table td:nth-child(1){min-width:35px;width:35px;white-space:nowrap}
-.ob-table th:nth-child(2),.ob-table td:nth-child(2){min-width:180px}
-.ob-table th:nth-child(3),.ob-table td:nth-child(3){min-width:120px}
-.ob-table th:nth-child(4),.ob-table td:nth-child(4){min-width:80px;white-space:nowrap}
-.ob-table th:nth-child(5),.ob-table td:nth-child(5){min-width:140px}
-.ob-table th:nth-child(6),.ob-table td:nth-child(6){min-width:160px}
-.ob-table th:nth-child(7),.ob-table td:nth-child(7){min-width:140px}
-.ob-table th:nth-child(8),.ob-table td:nth-child(8){min-width:110px;white-space:nowrap}
-.ob-table th:nth-child(9),.ob-table td:nth-child(9){min-width:110px;white-space:nowrap}
-.ob-table th:nth-child(10),.ob-table td:nth-child(10){min-width:110px;white-space:nowrap}
-.ob-table th:nth-child(11),.ob-table td:nth-child(11){min-width:110px;white-space:nowrap}
-.ob-table td.ob-col-payment{min-width:200px;max-width:250px;white-space:normal;word-wrap:break-word}
-.ob-table td.ob-col-action{min-width:200px;max-width:250px;white-space:normal;word-wrap:break-word}
-.ob-table td.ob-col-notes{min-width:150px;max-width:200px;white-space:normal;word-wrap:break-word}
-.ob-table td.ob-col-usage{min-width:40px;width:40px;white-space:nowrap}
+.ob-table th:nth-child(2),.ob-table td:nth-child(2){min-width:160px}
+.ob-table th:nth-child(3),.ob-table td:nth-child(3){min-width:100px}
+.ob-table th:nth-child(4),.ob-table td:nth-child(4){min-width:70px;white-space:nowrap}
+.ob-table th:nth-child(5),.ob-table td:nth-child(5){min-width:130px}
+.ob-table th:nth-child(6),.ob-table td:nth-child(6){min-width:130px}
+.ob-table th:nth-child(7),.ob-table td:nth-child(7){min-width:150px}
+.ob-table th:nth-child(8),.ob-table td:nth-child(8){min-width:95px;white-space:nowrap}
+.ob-table th:nth-child(9),.ob-table td:nth-child(9){min-width:95px;white-space:nowrap}
+.ob-table th:nth-child(10),.ob-table td:nth-child(10){min-width:95px;white-space:nowrap}
+.ob-table th:nth-child(11),.ob-table td:nth-child(11){min-width:95px;white-space:nowrap}
+.ob-table td.ob-col-payment{min-width:200px;max-width:280px;white-space:normal;word-wrap:break-word}
+.ob-table td.ob-col-action{min-width:200px;max-width:280px;white-space:normal;word-wrap:break-word}
+.ob-table td.ob-col-notes{min-width:160px;max-width:220px;white-space:normal;word-wrap:break-word}
+.ob-table td.ob-col-usage{min-width:35px;width:35px;white-space:nowrap}
 .ob-table td.ob-col-expansion{min-width:80px}
 .ob-table td.ob-col-expdetails{min-width:120px;white-space:normal;word-wrap:break-word}
 .ob-table td.ob-col-expremark{min-width:120px;white-space:normal;word-wrap:break-word}
+
+/* Onboarding section card */
+.ob-section-card{padding:0;border:1px solid #E5E7EB;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.04);margin-bottom:24px;overflow-x:auto;-webkit-overflow-scrolling:touch}
 
 /* Auto-wrap text columns in onboarding table */
 .ob-table td:nth-child(2){white-space:normal;word-wrap:break-word} /* Organisation */
@@ -242,15 +262,15 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .ob-delete-btn:hover{background:#FEE2E2}
 
 /* Inline edit for onboarding */
-.ob-editable{cursor:pointer;padding:2px 4px;border-radius:4px;min-height:20px;border-bottom:1px dashed transparent;transition:all .1s}
+.ob-editable{cursor:pointer;padding:2px 4px;border-radius:4px;min-height:20px;border-bottom:1px dashed transparent;transition:all .1s;font-size:13px;color:#374151}
 .ob-editable:hover{background:#EEF2FF;border-bottom-color:var(--brand)}
-.ob-edit-input{width:100%;padding:4px 6px;border:1.5px solid var(--brand);border-radius:4px;font-size:12px;font-family:inherit;outline:none;background:var(--white);color:var(--text)}
-.ob-edit-select{padding:3px 4px;border:1.5px solid var(--brand);border-radius:4px;font-size:12px;font-family:inherit;outline:none;background:var(--white);color:var(--text);width:100%}
-.ob-edit-textarea{width:100%;padding:4px 6px;border:1.5px solid var(--brand);border-radius:4px;font-size:12px;font-family:inherit;outline:none;background:var(--white);color:var(--text);resize:vertical;min-height:60px}
+.ob-edit-input{width:100%;padding:4px 6px;border:1.5px solid var(--brand);border-radius:4px;font-size:13px;font-family:inherit;outline:none;background:var(--white);color:var(--text)}
+.ob-edit-select{padding:3px 4px;border:1.5px solid var(--brand);border-radius:4px;font-size:13px;font-family:inherit;outline:none;background:var(--white);color:var(--text);width:100%}
+.ob-edit-textarea{width:100%;padding:4px 6px;border:1.5px solid var(--brand);border-radius:4px;font-size:13px;font-family:inherit;outline:none;background:var(--white);color:var(--text);resize:vertical;min-height:60px}
 
 /* Phone input group */
 .phone-group{display:flex;gap:4px;align-items:center}
-.phone-group select{width:70px;padding:3px 2px;border:1.5px solid var(--brand);border-radius:4px;font-size:11px;font-family:inherit;outline:none}
+.phone-group select{min-width:80px;width:auto;padding:3px 4px;border:1.5px solid var(--brand);border-radius:4px;font-size:11px;font-family:inherit;outline:none}
 .phone-group input{flex:1}
 
 /* Usage toggles */
@@ -269,7 +289,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .action-add-btn:hover{background:#C73509}
 
 /* Expansion dropdown */
-.expansion-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;display:inline-block}
+.expansion-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:6px;display:inline-block}
 .expansion-yes{background:#DCFCE7;color:#166534;border:1px solid #BBF7D0}
 .expansion-no{background:#FEE2E2;color:#991B1B;border:1px solid #FECACA}
 .expansion-maybe{background:#FEF3C7;color:#92400E;border:1px solid #FCD34D}
@@ -381,7 +401,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
   </div>
 </div>
 
-<div class="table-wrap" id="obTableWrap">
+<div class="table-wrap ob-section-card" id="obTableWrap">
   <table class="ob-table" id="obTable">
     <thead id="obTableHead"></thead>
     <tbody id="obTableBody">
@@ -907,22 +927,24 @@ function renderTable(){
     const shortDesc=(b.description||'').substring(0,80);
     const shortSol=(b.solution||'').substring(0,60);
 
+    const emptyDash='<span style="color:#D1D5DB">\u2014</span>';
+
     return`<tr>
       <td><span class="bug-id">#${b.number}</span></td>
       <td><div class="bug-title">${b.title}</div><button class="view-btn" onclick="openDetail(${b.number})">View</button></td>
-      <td class="inline-cell"><div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'tag')">${b.tag?`<span class="tag-badge tag-${b.tag.replace(/\s/g,'-')}">${b.tag}</span>`:'<span style="color:var(--muted)">Set</span>'}</div></td>
-      <td><div class="desc-cell" title="${esc(b.description)}" onclick="openDetail(${b.number})">${shortDesc||'<span style="color:var(--muted)">\u2014</span>'}${b.description&&b.description.length>80?'\u2026':''}</div></td>
+      <td class="inline-cell"><div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'tag')">${b.tag?`<span class="tag-badge tag-${b.tag.replace(/\s/g,'-')}">${b.tag}</span>`:'<span style="color:#D1D5DB">Set</span>'}</div></td>
+      <td><div class="desc-cell" title="${esc(b.description)}" onclick="openDetail(${b.number})">${shortDesc||emptyDash}${b.description&&b.description.length>80?'\u2026':''}</div></td>
       <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'solution')" title="Click to edit">${shortSol?`<span class="solution-cell filled">${shortSol}${b.solution.length>60?'\u2026':''}</span>`:'<span class="solution-cell empty">Add solution</span>'}</div>`:`<div class="solution-cell ${b.solution?'filled':'empty'}">${shortSol||'\u2014'}${b.solution&&b.solution.length>60?'\u2026':''}</div>`}</td>
       <td class="inline-cell"><div class="inline-val editable" onclick="event.stopPropagation();inlineStatusToggle(${b.number})"><span class="badge ${badgeCls}">${badgeText}</span></div></td>
-      <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'platform')">${b.platform?`<span class="platform-badge">${b.platform}</span>`:'<span style="color:var(--muted)">Set</span>'}</div>`:`${b.platform?`<span class="platform-badge">${b.platform}</span>`:'<span style="color:var(--muted)">\u2014</span>'}`}</td>
-      <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'version')">${b.version||'<span style="color:var(--muted)">Set</span>'}</div>`:`<span style="font-size:12px;color:var(--sub)">${b.version||'\u2014'}</span>`}</td>
-      <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'org')">${b.org||'<span style="color:var(--muted)">Add org</span>'}</div>`:`<span style="font-size:12px;color:var(--sub)">${b.org||'\u2014'}</span>`}</td>
-      <td style="font-size:12px;color:var(--sub)">${b.reportedBy||'<span style="color:var(--muted)">\u2014</span>'}</td>
-      <td style="font-size:12px;color:var(--sub)">${b.email?`<a href="mailto:${b.email}" onclick="event.stopPropagation()" style="color:var(--brand);text-decoration:none">${b.email}</a>`:'<span style="color:var(--muted)">\u2014</span>'}</td>
-      <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'phone')">${b.phone||'<span style="color:var(--muted)">Add</span>'}</div>`:`<span style="font-size:12px;color:var(--sub)">${b.phone||'\u2014'}</span>`}</td>
-      <td style="font-size:12px;color:var(--sub)">${formatDate(b.created_at)}</td>
+      <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'platform')">${b.platform?`<span class="platform-badge">${b.platform}</span>`:'<span style="color:#D1D5DB">Set</span>'}</div>`:`${b.platform?`<span class="platform-badge">${b.platform}</span>`:emptyDash}`}</td>
+      <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'version')">${b.version||'<span style="color:#D1D5DB">Set</span>'}</div>`:`${b.version||emptyDash}`}</td>
+      <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'org')">${b.org||'<span style="color:#D1D5DB">Add org</span>'}</div>`:`${b.org||emptyDash}`}</td>
+      <td>${b.reportedBy||emptyDash}</td>
+      <td>${b.email?`<a href="mailto:${b.email}" onclick="event.stopPropagation()" style="color:var(--brand);text-decoration:none">${b.email}</a>`:emptyDash}</td>
+      <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'phone')">${b.phone||'<span style="color:#D1D5DB">Add</span>'}</div>`:`${b.phone||emptyDash}`}</td>
+      <td>${formatDate(b.created_at)}</td>
       <td><span class="${tatCls}">${tat}</span></td>
-      <td>${b.handledBy?`<div class="handler"><strong>${b.handledBy}</strong></div>`:'<span style="color:var(--muted)">\u2014</span>'}</td>
+      <td>${b.handledBy?`<div class="handler"><strong>${b.handledBy}</strong></div>`:emptyDash}</td>
     </tr>`;
   }).join('');
 }
@@ -1371,20 +1393,20 @@ function obRenderTable(){
     const shortNotes=c.notes||'';
 
     let row=`<tr data-id="${c.id}">
-      <td style="font-size:11px;color:var(--muted)">${i+1}</td>
-      <td><div class="ob-editable" onclick="obEdit(${c.id},'org','text')" style="font-weight:600;color:var(--text)">${esc(c.org)||'<span style="color:var(--muted)">Set</span>'}</div></td>
-      <td><div class="ob-editable" onclick="obEdit(${c.id},'planType','dropdown')">${c.planType?`<span class="platform-badge">${c.planType}</span>`:'<span style="color:var(--muted)">Set</span>'}</div></td>
+      <td style="font-size:12px;color:#9CA3AF">${i+1}</td>
+      <td><div class="ob-editable" onclick="obEdit(${c.id},'org','text')" style="font-weight:600;color:var(--text)">${esc(c.org)||'<span style="color:#D1D5DB">Set</span>'}</div></td>
+      <td><div class="ob-editable" onclick="obEdit(${c.id},'planType','dropdown')">${c.planType?`<span class="platform-badge">${c.planType}</span>`:'<span style="color:#D1D5DB">Set</span>'}</div></td>
       <td><div class="ob-editable" onclick="obEdit(${c.id},'purchased','number')">${c.purchased||'<span style="color:var(--muted)">0</span>'}</div></td>
-      <td><div class="ob-editable" onclick="obEdit(${c.id},'spocName','text')">${esc(c.spocName)||'<span style="color:var(--muted)">Set</span>'}</div></td>
-      <td><div class="ob-editable" onclick="obEdit(${c.id},'spocPhone','phone')">${c.spocPhone||'<span style="color:var(--muted)">Set</span>'}</div></td>
-      <td><div class="ob-editable" onclick="obEdit(${c.id},'systemAdmin','text')">${c.systemAdmin?c.systemAdmin.split(',').map(n=>n.trim()).filter(n=>n).map(n=>'<span style="display:inline-block;background:#EEF2FF;color:#4338CA;padding:1px 8px;border-radius:12px;font-size:11px;margin:1px 2px;white-space:nowrap">'+esc(n)+'</span>').join(''):'<span style="color:var(--muted)">Set</span>'}</div></td>
-      <td><div class="ob-editable" onclick="obEdit(${c.id},'introMeet','date')">${c.introMeet?obFormatDate(c.introMeet):'<span style="color:var(--muted)">Set</span>'}</div></td>
-      <td><div class="ob-editable" onclick="obEdit(${c.id},'trainingSetup','date')">${c.trainingSetup?obFormatDate(c.trainingSetup):'<span style="color:var(--muted)">Set</span>'}</div></td>
-      <td><div class="ob-editable" onclick="obEdit(${c.id},'liveSetup','date')">${c.liveSetup?obFormatDate(c.liveSetup):'<span style="color:var(--muted)">Set</span>'}</div></td>
-      <td><div class="ob-editable" onclick="obEdit(${c.id},'dashboardSetup','date')">${c.dashboardSetup?obFormatDate(c.dashboardSetup):'<span style="color:var(--muted)">Set</span>'}</div></td>
-      <td class="ob-col-payment"><div class="ob-editable" onclick="obEdit(${c.id},'payment','textarea')" title="${esc(c.payment)}">${shortPayment?esc(shortPayment):'<span style="color:var(--muted)">Set</span>'}</div></td>
+      <td><div class="ob-editable" onclick="obEdit(${c.id},'spocName','text')">${esc(c.spocName)||'<span style="color:#D1D5DB">Set</span>'}</div></td>
+      <td><div class="ob-editable" onclick="obEdit(${c.id},'spocPhone','phone')">${c.spocPhone||'<span style="color:#D1D5DB">Set</span>'}</div></td>
+      <td><div class="ob-editable" onclick="obEdit(${c.id},'systemAdmin','textarea')" style="white-space:pre-wrap">${c.systemAdmin?esc(c.systemAdmin):'<span style="color:#D1D5DB">\u2014</span>'}</div></td>
+      <td><div class="ob-editable" onclick="obEdit(${c.id},'introMeet','date')">${c.introMeet?obFormatDate(c.introMeet):'<span style="color:#D1D5DB">Set</span>'}</div></td>
+      <td><div class="ob-editable" onclick="obEdit(${c.id},'trainingSetup','date')">${c.trainingSetup?obFormatDate(c.trainingSetup):'<span style="color:#D1D5DB">Set</span>'}</div></td>
+      <td><div class="ob-editable" onclick="obEdit(${c.id},'liveSetup','date')">${c.liveSetup?obFormatDate(c.liveSetup):'<span style="color:#D1D5DB">Set</span>'}</div></td>
+      <td><div class="ob-editable" onclick="obEdit(${c.id},'dashboardSetup','date')">${c.dashboardSetup?obFormatDate(c.dashboardSetup):'<span style="color:#D1D5DB">Set</span>'}</div></td>
+      <td class="ob-col-payment"><div class="ob-editable" onclick="obEdit(${c.id},'payment','textarea')" title="${esc(c.payment)}">${shortPayment?esc(shortPayment):'<span style="color:#D1D5DB">Set</span>'}</div></td>
       <td class="action-items-cell ob-col-action">${obRenderActionItems(c)}</td>
-      <td class="ob-col-notes"><div class="ob-editable" onclick="obEdit(${c.id},'notes','textarea')" title="${esc(c.notes)}">${shortNotes?esc(shortNotes):'<span style="color:var(--muted)">Set</span>'}</div></td>`;
+      <td class="ob-col-notes"><div class="ob-editable" onclick="obEdit(${c.id},'notes','textarea')" title="${esc(c.notes)}">${shortNotes?esc(shortNotes):'<span style="color:#D1D5DB">Set</span>'}</div></td>`;
 
     if(showUsage){
       row+=`
@@ -1395,8 +1417,8 @@ function obRenderTable(){
     if(showExpansion){
       row+=`
       <td class="ob-col-expansion"><div class="ob-editable" onclick="obEdit(${c.id},'expansion.possible','expansion')">${obExpansionBadge(c.expansion&&c.expansion.possible)}</div></td>
-      <td class="ob-col-expdetails"><div class="ob-editable" onclick="obEdit(${c.id},'expansion.details','text')">${esc(c.expansion&&c.expansion.details)||'<span style="color:var(--muted)">Set</span>'}</div></td>
-      <td class="ob-col-expremark"><div class="ob-editable" onclick="obEdit(${c.id},'expansion.remark','text')">${esc(c.expansion&&c.expansion.remark)||'<span style="color:var(--muted)">Set</span>'}</div></td>`;
+      <td class="ob-col-expdetails"><div class="ob-editable" onclick="obEdit(${c.id},'expansion.details','text')">${esc(c.expansion&&c.expansion.details)||'<span style="color:#D1D5DB">Set</span>'}</div></td>
+      <td class="ob-col-expremark"><div class="ob-editable" onclick="obEdit(${c.id},'expansion.remark','text')">${esc(c.expansion&&c.expansion.remark)||'<span style="color:#D1D5DB">Set</span>'}</div></td>`;
     }
 
     row+=`<td><button class="ob-delete-btn" onclick="obDeleteCompany(${c.id})" title="Delete">&times;</button></td></tr>`;
@@ -1405,7 +1427,7 @@ function obRenderTable(){
 }
 
 function obExpansionBadge(val){
-  if(!val) return '<span style="color:var(--muted)">Set</span>';
+  if(!val) return '<span style="color:#D1D5DB">Set</span>';
   if(val==='Yes') return '<span class="expansion-badge expansion-yes">Yes</span>';
   if(val==='No') return '<span class="expansion-badge expansion-no">No</span>';
   if(val==='Maybe') return '<span class="expansion-badge expansion-maybe">Maybe</span>';
@@ -1581,25 +1603,36 @@ function obEdit(companyId,field,type){
       <select onclick="event.stopPropagation()" onmousedown="event.stopPropagation()">${opts}</select>
       <input class="ob-edit-input" value="${String(currentVal).replace(/"/g,'&quot;')}" placeholder="Phone number">
     </div>`;
+    const phoneContainer=targetDiv.querySelector('.phone-group');
     const countrySelect=targetDiv.querySelector('select');
     const phoneInput=targetDiv.querySelector('input');
+    // Stop all clicks on the container from bubbling to document-level handlers
+    phoneContainer.addEventListener('click',function(e){e.stopPropagation();});
+    phoneContainer.addEventListener('mousedown',function(e){e.stopPropagation();});
     countrySelect.addEventListener('mousedown',function(e){e.stopPropagation();});
     countrySelect.addEventListener('click',function(e){e.stopPropagation();});
     countrySelect.addEventListener('focus',function(e){e.stopPropagation();});
-    countrySelect.addEventListener('change',function(e){e.stopPropagation();obSaveCountry(companyId,this.value);});
+    // Country change only saves data, does NOT re-render
+    countrySelect.addEventListener('change',function(e){
+      e.stopPropagation();
+      const comp=obCompanies.find(c=>c.id===companyId);
+      if(comp){comp.spocCountry=this.value;obScheduleSave();}
+    });
     phoneInput.addEventListener('keydown',function(e){
       e.stopPropagation();
       if(e.key==='Enter'){obSaveField(companyId,'spocPhone',this.value);}
       if(e.key==='Escape'){obEditingCompanyField=null;obRenderTable();}
     });
     phoneInput.addEventListener('blur',function(){
-      // Delay to allow select interaction
+      // Delay to allow select interaction — only save if focus didn't go to the country select
       const val=this.value;
       setTimeout(()=>{
+        // Check if focus went to the country select — if so, don't save yet
+        if(document.activeElement===countrySelect)return;
         if(obEditingCompanyField&&obEditingCompanyField.companyId===companyId&&obEditingCompanyField.field==='spocPhone'){
           obSaveField(companyId,'spocPhone',val);
         }
-      },200);
+      },250);
     });
     phoneInput.addEventListener('click',function(e){e.stopPropagation();});
     phoneInput.focus();
