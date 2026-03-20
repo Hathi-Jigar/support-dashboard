@@ -362,7 +362,7 @@ th {
 }
 
 .table, .ob-table, .task-table {
-  table-layout: fixed;
+  table-layout: auto;
 }
 
 @media(max-width:768px){
@@ -2289,16 +2289,34 @@ function initColumnResize() {
       e.stopPropagation();
       startX = e.clientX;
       startWidth = th.offsetWidth;
+      const table = th.closest('table');
+      const startTableWidth = table.offsetWidth;
       handle.classList.add('active');
+
+      // Freeze all column widths at current size so only dragged column changes
+      const allThs = Array.from(th.parentElement.children);
+      const frozenWidths = allThs.map(t => t.offsetWidth);
+      allThs.forEach((t, i) => {
+        t.style.width = frozenWidths[i] + 'px';
+        t.style.minWidth = frozenWidths[i] + 'px';
+      });
+
+      const idx = allThs.indexOf(th);
 
       const onMouseMove = (ev) => {
         const diff = ev.clientX - startX;
         const newWidth = Math.max(40, startWidth + diff);
+        const widthChange = newWidth - startWidth;
+
+        // Only change THIS column
         th.style.width = newWidth + 'px';
         th.style.minWidth = newWidth + 'px';
-        // Also set the corresponding td widths
-        const idx = Array.from(th.parentElement.children).indexOf(th);
-        th.closest('table').querySelectorAll('tbody tr').forEach(row => {
+
+        // Expand table total width proportionally
+        table.style.minWidth = (startTableWidth + widthChange) + 'px';
+
+        // Update td widths for this column only
+        table.querySelectorAll('tbody tr').forEach(row => {
           const td = row.cells[idx];
           if (td) {
             td.style.width = newWidth + 'px';
