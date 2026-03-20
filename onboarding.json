@@ -1,0 +1,328 @@
+{
+  "companies": [
+    {
+      "id": 1,
+      "org": "Kohinoor Developers",
+      "planType": "User Based",
+      "purchased": 50,
+      "spocName": "Manoj Varma",
+      "spocPhone": "",
+      "spocCountry": "IN",
+      "systemAdmin": "Kailas Gaikwad",
+      "introMeet": "2025-04-29",
+      "trainingSetup": "",
+      "liveSetup": "2025-05-09",
+      "dashboardSetup": "",
+      "payment": "50% Advance Payment Rs 96,250 + GST received",
+      "actionItems": [],
+      "notes": "",
+      "usage": {
+        "inspection": false,
+        "instruction": false,
+        "register": false
+      },
+      "expansion": {
+        "possible": "",
+        "details": "",
+        "remark": ""
+      }
+    },
+    {
+      "id": 2,
+      "org": "Achyut Realty",
+      "planType": "User Based",
+      "purchased": 10,
+      "spocName": "Abhimanyu Sir",
+      "spocPhone": "",
+      "spocCountry": "IN",
+      "systemAdmin": "",
+      "introMeet": "2025-09-08",
+      "trainingSetup": "2025-10-03",
+      "liveSetup": "",
+      "dashboardSetup": "",
+      "payment": "",
+      "actionItems": [],
+      "notes": "",
+      "usage": {
+        "inspection": false,
+        "instruction": false,
+        "register": false
+      },
+      "expansion": {
+        "possible": "",
+        "details": "",
+        "remark": ""
+      }
+    },
+    {
+      "id": 3,
+      "org": "Total Environment",
+      "planType": "User Based",
+      "purchased": 50,
+      "spocName": "Shuchi Mishra / Nissy K Ninan",
+      "spocPhone": "",
+      "spocCountry": "IN",
+      "systemAdmin": "",
+      "introMeet": "2025-09-24",
+      "trainingSetup": "2025-10-10",
+      "liveSetup": "",
+      "dashboardSetup": "",
+      "payment": "",
+      "actionItems": [],
+      "notes": "",
+      "usage": {
+        "inspection": false,
+        "instruction": false,
+        "register": false
+      },
+      "expansion": {
+        "possible": "",
+        "details": "",
+        "remark": ""
+      }
+    },
+    {
+      "id": 4,
+      "org": "Urbanac Projects",
+      "planType": "User Based",
+      "purchased": 70,
+      "spocName": "Jeyakumar / Vasanth",
+      "spocPhone": "",
+      "spocCountry": "IN",
+      "systemAdmin": "",
+      "introMeet": "2025-10-14",
+      "trainingSetup": "2025-10-29",
+      "liveSetup": "",
+      "dashboardSetup": "",
+      "payment": "",
+      "actionItems": [],
+      "notes": "",
+      "usage": {
+        "inspection": false,
+        "instruction": false,
+        "register": false
+      },
+      "expansion": {
+        "possible": "",
+        "details": "",
+        "remark": ""
+      }
+    },
+    {
+      "id": 5,
+      "org": "Ashish Interbuild",
+      "planType": "User Based",
+      "purchased": 100,
+      "spocName": "Dharmendra Chauhan",
+      "spocPhone": "",
+      "spocCountry": "IN",
+      "systemAdmin": "",
+      "introMeet": "2025-10-28",
+      "trainingSetup": "2025-11-04",
+      "liveSetup": "",
+      "dashboardSetup": "",
+      "payment": "One fourth payment received",
+      "actionItems": [],
+      "notes": "",
+      "usage": {
+        "inspection": false,
+        "instruction": false,
+        "register": false
+      },
+      "expansion": {
+        "possible": "",
+        "details": "",
+        "remark": ""
+      }
+    },
+    {
+      "id": 6,
+      "org": "BECIS",
+      "planType": "User Based",
+      "purchased": 30,
+      "spocName": "Vasudev Sir and Emerson Sir",
+      "spocPhone": "",
+      "spocCountry": "IN",
+      "systemAdmin": "",
+      "introMeet": "2025-11-14",
+      "trainingSetup": "2025-12-03",
+      "liveSetup": "",
+      "dashboardSetup": "",
+      "payment": "Full payment received",
+      "actionItems": [],
+      "notes": "",
+      "usage": {
+        "inspection": false,
+        "instruction": false,
+        "register": false
+      },
+      "expansion": {
+        "possible": "",
+        "details": "",
+        "remark": ""
+      }
+    },
+    {
+      "id": 7,
+      "org": "Suryam Developers",
+      "planType": "User Based",
+      "purchased": 100,
+      "spocName": "Neha Bhavsar",
+      "spocPhone": "",
+      "spocCountry": "IN",
+      "systemAdmin": "",
+      "introMeet": "",
+      "trainingSetup": "",
+      "liveSetup": "",
+      "dashboardSetup": "",
+      "payment": "Full payment received",
+      "actionItems": [],
+      "notes": "",
+      "usage": {
+        "inspection": false,
+        "instruction": false,
+        "register": false
+      },
+      "expansion": {
+        "possible": "",
+        "details": "",
+        "remark": ""
+      }
+    },
+    {
+      "id": 8,
+      "org": "Mano Project Consultants",
+      "planType": "User Based",
+      "purchased": 10,
+      "spocName": "Syed Arshal Qazi",
+      "spocPhone": "",
+      "spocCountry": "IN",
+      "systemAdmin": "",
+      "introMeet": "2025-12-30",
+      "trainingSetup": "2025-12-30",
+      "liveSetup": "",
+      "dashboardSetup": "",
+      "payment": "",
+      "actionItems": [],
+      "notes": "",
+      "usage": {
+        "inspection": false,
+        "instruction": false,
+        "register": false
+      },
+      "expansion": {
+        "possible": "",
+        "details": "",
+        "remark": ""
+      }
+    },
+    {
+      "id": 9,
+      "org": "Magicrete Building Solutions",
+      "planType": "User Based",
+      "purchased": 10,
+      "spocName": "Rahul Aneja / Lakshman Varma",
+      "spocPhone": "",
+      "spocCountry": "IN",
+      "systemAdmin": "",
+      "introMeet": "2026-01-08",
+      "trainingSetup": "2026-01-13",
+      "liveSetup": "2026-02-03",
+      "dashboardSetup": "",
+      "payment": "Full payment received",
+      "actionItems": [],
+      "notes": "",
+      "usage": {
+        "inspection": false,
+        "instruction": false,
+        "register": false
+      },
+      "expansion": {
+        "possible": "",
+        "details": "",
+        "remark": ""
+      }
+    },
+    {
+      "id": 10,
+      "org": "GR Infraprojects",
+      "planType": "User Based",
+      "purchased": 100,
+      "spocName": "Bimlesh Kumar Choubey",
+      "spocPhone": "",
+      "spocCountry": "IN",
+      "systemAdmin": "",
+      "introMeet": "2026-02-09",
+      "trainingSetup": "",
+      "liveSetup": "",
+      "dashboardSetup": "",
+      "payment": "A. 30% on Kick-off (Rs. 1,99,260). B. 50% on UAT (Rs. 3,32,100). C. 20% on Go-Live (Rs. 1,32,840). Total = Rs. 6,64,200 Plus GST.",
+      "actionItems": [],
+      "notes": "",
+      "usage": {
+        "inspection": false,
+        "instruction": false,
+        "register": false
+      },
+      "expansion": {
+        "possible": "",
+        "details": "",
+        "remark": ""
+      }
+    },
+    {
+      "id": 11,
+      "org": "Padam Interiors",
+      "planType": "User Based",
+      "purchased": 20,
+      "spocName": "Dilip Jangid / Mitul Ghosalkar",
+      "spocPhone": "",
+      "spocCountry": "IN",
+      "systemAdmin": "",
+      "introMeet": "2026-03-10",
+      "trainingSetup": "",
+      "liveSetup": "",
+      "dashboardSetup": "",
+      "payment": "Full payment received",
+      "actionItems": [],
+      "notes": "",
+      "usage": {
+        "inspection": false,
+        "instruction": false,
+        "register": false
+      },
+      "expansion": {
+        "possible": "",
+        "details": "",
+        "remark": ""
+      }
+    },
+    {
+      "id": 12,
+      "org": "Sumedha Infra Projects",
+      "planType": "User Based",
+      "purchased": 15,
+      "spocName": "Ritwik Dusane / Pravin Gatkawar",
+      "spocPhone": "",
+      "spocCountry": "IN",
+      "systemAdmin": "",
+      "introMeet": "2026-03-16",
+      "trainingSetup": "",
+      "liveSetup": "",
+      "dashboardSetup": "",
+      "payment": "Full payment received",
+      "actionItems": [],
+      "notes": "",
+      "usage": {
+        "inspection": false,
+        "instruction": false,
+        "register": false
+      },
+      "expansion": {
+        "possible": "",
+        "details": "",
+        "remark": ""
+      }
+    }
+  ]
+}
