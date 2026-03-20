@@ -507,11 +507,11 @@ th {
   <table class="task-table" id="taskTable">
     <thead>
       <tr>
-        <th>#</th><th>Task</th><th>Assignee</th><th>Status</th><th>Priority</th><th>Deadline</th><th>Remark</th><th>Created</th><th>Updated</th><th></th>
+        <th>#</th><th>Task</th><th>Assignee</th><th>Status</th><th>Priority</th><th>Deadline</th><th>Remark</th><th></th>
       </tr>
     </thead>
     <tbody id="taskTableBody">
-      <tr><td colspan="10"><div class="empty-state"><div class="icon">&#128260;</div><div class="title">Loading...</div></div></td></tr>
+      <tr><td colspan="8"><div class="empty-state"><div class="icon">&#128260;</div><div class="title">Loading...</div></div></td></tr>
     </tbody>
   </table>
 </div>
@@ -2003,24 +2003,32 @@ function taskRenderTable(){
   const tbody=document.getElementById('taskTableBody');
   const filtered=taskGetFiltered();
 
+  // Auto-tag overdue: if deadline is past and status is Open or Hold, mark as Overdue
+  const today = new Date(); today.setHours(0,0,0,0);
+  filtered.forEach(t => {
+    if (t.deadline && (t.status === 'Open' || t.status === 'Hold')) {
+      const dl = new Date(t.deadline); dl.setHours(0,0,0,0);
+      if (dl < today) { t.overdue = true; } else { t.overdue = false; }
+    } else { t.overdue = false; }
+  });
+
   if(filtered.length===0){
-    tbody.innerHTML=`<tr><td colspan="10"><div class="empty-state"><div class="icon">&#128203;</div><div class="title">No tasks in this category</div></div></td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="8"><div class="empty-state"><div class="icon">&#128203;</div><div class="title">No tasks in this category</div></div></td></tr>`;
     setTimeout(() => { initColumnResize(); restoreColumnWidths(); }, 50);
     return;
   }
 
   tbody.innerHTML=filtered.map((t,i)=>{
     const esc=s=>(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/\n/g,'<br>');
+    const overdueTag = t.overdue ? '<span style="display:inline-block;margin-left:6px;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;background:#FEE2E2;color:#991B1B">OVERDUE</span>' : '';
     return `<tr data-task-id="${t.id}">
       <td style="font-size:12px;color:#9CA3AF">${i+1}</td>
       <td><div class="ob-editable" onclick="taskEdit(${t.id},'task','textarea')" style="white-space:pre-wrap">${t.task?esc(t.task):'<span style="color:#D1D5DB">Set</span>'}</div></td>
       <td><div class="ob-editable" onclick="taskEdit(${t.id},'assignees','multiselect')">${taskRenderAssigneeChips(t.assignees)}</div></td>
       <td><div class="ob-editable" onclick="taskEdit(${t.id},'status','status-dropdown')">${taskStatusBadge(t.status)}</div></td>
       <td><div class="ob-editable" onclick="taskEdit(${t.id},'priority','priority-dropdown')">${taskPriorityBadge(t.priority)}</div></td>
-      <td><div class="ob-editable" onclick="taskEdit(${t.id},'deadline','date')">${t.deadline?taskFormatDate(t.deadline):'<span style="color:#D1D5DB">Set</span>'}</div></td>
+      <td><div class="ob-editable" onclick="taskEdit(${t.id},'deadline','date')">${t.deadline?taskFormatDate(t.deadline):'<span style="color:#D1D5DB">Set</span>'}${overdueTag}</div></td>
       <td><div class="ob-editable" onclick="taskEdit(${t.id},'remark','textarea')" style="white-space:pre-wrap">${t.remark?esc(t.remark):'<span style="color:#D1D5DB">Set</span>'}</div></td>
-      <td>${taskFormatDate(t.created)}</td>
-      <td>${taskFormatDate(t.updated)}</td>
       <td><button class="ob-delete-btn" onclick="taskDelete(${t.id})" title="Delete">&times;</button></td>
     </tr>`;
   }).join('');
