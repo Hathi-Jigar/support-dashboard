@@ -1054,14 +1054,14 @@ function renderTable(){
       <td><div class="bug-title">${b.title}</div><button class="view-btn" onclick="openDetail(${b.number})">View</button></td>
       <td class="inline-cell"><div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'tag')">${b.tag?`<span class="tag-badge tag-${b.tag.replace(/\s/g,'-')}">${b.tag}</span>`:'<span style="color:#D1D5DB">Set</span>'}</div></td>
       <td><div class="desc-cell" title="${esc(b.description)}" onclick="openDetail(${b.number})">${shortDesc||emptyDash}${b.description&&b.description.length>80?'\u2026':''}</div></td>
-      <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'solution')" title="Click to edit">${shortSol?`<span class="solution-cell filled">${shortSol}${b.solution.length>60?'\u2026':''}</span>`:'<span class="solution-cell empty">Add solution</span>'}</div>`:`<div class="solution-cell ${b.solution?'filled':'empty'}">${shortSol||'\u2014'}${b.solution&&b.solution.length>60?'\u2026':''}</div>`}</td>
+      <td class="inline-cell"><div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'solution')" title="Click to edit">${shortSol?`<span class="solution-cell filled">${shortSol}${b.solution.length>60?'\u2026':''}</span>`:'<span class="solution-cell empty">Add solution</span>'}</div></td>
       <td class="inline-cell"><div class="inline-val editable" onclick="event.stopPropagation();inlineStatusToggle(${b.number})"><span class="badge ${badgeCls}">${badgeText}</span></div></td>
-      <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'platform')">${b.platform?`<span class="platform-badge">${b.platform}</span>`:'<span style="color:#D1D5DB">Set</span>'}</div>`:`${b.platform?`<span class="platform-badge">${b.platform}</span>`:emptyDash}`}</td>
-      <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'version')">${b.version||'<span style="color:#D1D5DB">Set</span>'}</div>`:`${b.version||emptyDash}`}</td>
-      <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'org')">${b.org||'<span style="color:#D1D5DB">Add org</span>'}</div>`:`${b.org||emptyDash}`}</td>
+      <td class="inline-cell"><div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'platform')">${b.platform?`<span class="platform-badge">${b.platform}</span>`:'<span style="color:#D1D5DB">Set</span>'}</div></td>
+      <td class="inline-cell"><div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'version')">${b.version||'<span style="color:#D1D5DB">Set</span>'}</div></td>
+      <td class="inline-cell"><div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'org')">${b.org||'<span style="color:#D1D5DB">Add org</span>'}</div></td>
       <td>${b.reportedBy||emptyDash}</td>
       <td>${b.email?`<a href="mailto:${b.email}" onclick="event.stopPropagation()" style="color:var(--brand);text-decoration:none">${b.email}</a>`:emptyDash}</td>
-      <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'phone')">${b.phone||'<span style="color:#D1D5DB">Add</span>'}</div>`:`${b.phone||emptyDash}`}</td>
+      <td class="inline-cell"><div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'phone')">${b.phone||'<span style="color:#D1D5DB">Add</span>'}</div></td>
       <td>${formatDate(b.created_at)}</td>
       <td><span class="${tatCls}">${tat}</span></td>
       <td>${b.handledBy?`<div class="handler"><strong>${b.handledBy}</strong></div>`:emptyDash}</td>
@@ -1141,12 +1141,13 @@ function renderDetail(bug){
   document.getElementById('dpTag').value=bug.tag||'';
 
   const editable=isOpen;
-  document.getElementById('dpOrg').disabled=!editable;
-  document.getElementById('dpUserName').disabled=!editable;
-  document.getElementById('dpPhone').disabled=!editable;
-  document.getElementById('dpPlatform').disabled=!editable;
-  document.getElementById('dpVersion').disabled=!editable;
-  document.getElementById('dpSolution').disabled=!editable;
+  // All fields always editable
+  document.getElementById('dpOrg').disabled=false;
+  document.getElementById('dpUserName').disabled=false;
+  document.getElementById('dpPhone').disabled=false;
+  document.getElementById('dpPlatform').disabled=false;
+  document.getElementById('dpVersion').disabled=false;
+  document.getElementById('dpSolution').disabled=false;
   document.getElementById('dpTag').disabled=false;
   document.querySelector('.btn-save').style.display='';
 }
@@ -1215,7 +1216,7 @@ let inlineEditingCell=null;
 function inlineEdit(number,field){
   const bug=allBugs.find(b=>b.number===number);
   if(!bug)return;
-  if(bug.state==='closed'&&field!=='tag')return;
+  // All fields editable for both open and closed bugs
   if(inlineEditingCell){renderTable();inlineEditingCell=null;}
 
   const rows=document.querySelectorAll('#bugTableBody tr');
