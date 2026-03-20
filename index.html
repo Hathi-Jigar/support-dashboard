@@ -340,6 +340,31 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .multi-select-option:hover{background:#EEF2FF}
 .multi-select-option input[type="checkbox"]{margin:0}
 
+/* Column resize */
+th {
+  position: relative;
+}
+.col-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -1px;
+  width: 5px;
+  height: 100%;
+  cursor: col-resize;
+  background: transparent;
+  z-index: 10;
+  user-select: none;
+}
+.col-resize-handle:hover,
+.col-resize-handle.active {
+  background: #E8450A;
+  opacity: 0.5;
+}
+
+.table, .ob-table, .task-table {
+  table-layout: fixed;
+}
+
 @media(max-width:768px){
   .header,.stats-bar,.filter-bar,.table-wrap,.ob-sub-tabs,.ob-section-header{padding-left:16px;padding-right:16px}
   .detail-panel{width:100%}
@@ -1000,6 +1025,7 @@ function renderTable(){
 
   if(filtered.length===0){
     tbody.innerHTML=`<tr><td colspan="15"><div class="empty-state"><div class="icon">&#128269;</div><div class="title">No bugs found</div></div></td></tr>`;
+    setTimeout(() => { initColumnResize(); restoreColumnWidths(); }, 50);
     return;
   }
 
@@ -1033,6 +1059,7 @@ function renderTable(){
       <td>${b.handledBy?`<div class="handler"><strong>${b.handledBy}</strong></div>`:emptyDash}</td>
     </tr>`;
   }).join('');
+  setTimeout(() => { initColumnResize(); restoreColumnWidths(); }, 50);
 }
 
 function setFilter(f,el){
@@ -1470,6 +1497,7 @@ function obRenderTable(){
   if(filtered.length===0){
     const colSpan=15+(showUsage?3:0)+(showExpansion?3:0);
     tbody.innerHTML=`<tr><td colspan="${colSpan}"><div class="empty-state"><div class="icon">&#128203;</div><div class="title">No companies in this category</div></div></td></tr>`;
+    setTimeout(() => { initColumnResize(); restoreColumnWidths(); }, 50);
     return;
   }
 
@@ -1510,6 +1538,7 @@ function obRenderTable(){
     row+=`<td><button class="ob-delete-btn" onclick="obDeleteCompany(${c.id})" title="Delete">&times;</button></td></tr>`;
     return row;
   }).join('');
+  setTimeout(() => { initColumnResize(); restoreColumnWidths(); }, 50);
 }
 
 function obExpansionBadge(val){
@@ -1976,6 +2005,7 @@ function taskRenderTable(){
 
   if(filtered.length===0){
     tbody.innerHTML=`<tr><td colspan="10"><div class="empty-state"><div class="icon">&#128203;</div><div class="title">No tasks in this category</div></div></td></tr>`;
+    setTimeout(() => { initColumnResize(); restoreColumnWidths(); }, 50);
     return;
   }
 
@@ -1994,6 +2024,7 @@ function taskRenderTable(){
       <td><button class="ob-delete-btn" onclick="taskDelete(${t.id})" title="Delete">&times;</button></td>
     </tr>`;
   }).join('');
+  setTimeout(() => { initColumnResize(); restoreColumnWidths(); }, 50);
 }
 
 function taskEdit(taskId,field,type){
@@ -2229,6 +2260,107 @@ async function taskShareAs(format){
   if(addBtn)addBtn.style.display='';
   delBtns.forEach(b=>b.style.display='');
   if(shareBtnEl)shareBtnEl.style.display='';
+}
+
+// ============================================================
+// COLUMN RESIZE
+// ============================================================
+function initColumnResize() {
+  document.querySelectorAll('.table th, .ob-table th, .task-table th').forEach(th => {
+    // Remove existing handles to avoid duplicates
+    th.querySelectorAll('.col-resize-handle').forEach(h => h.remove());
+
+    const handle = document.createElement('div');
+    handle.className = 'col-resize-handle';
+    th.appendChild(handle);
+
+    let startX, startWidth;
+
+    handle.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      startX = e.clientX;
+      startWidth = th.offsetWidth;
+      handle.classList.add('active');
+
+      const onMouseMove = (ev) => {
+        const diff = ev.clientX - startX;
+        const newWidth = Math.max(40, startWidth + diff);
+        th.style.width = newWidth + 'px';
+        th.style.minWidth = newWidth + 'px';
+        // Also set the corresponding td widths
+        const idx = Array.from(th.parentElement.children).indexOf(th);
+        th.closest('table').querySelectorAll('tbody tr').forEach(row => {
+          const td = row.cells[idx];
+          if (td) {
+            td.style.width = newWidth + 'px';
+            td.style.minWidth = newWidth + 'px';
+          }
+        });
+      };
+
+      const onMouseUp = () => {
+        handle.classList.remove('active');
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+        saveColumnWidths();
+      };
+
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    });
+  });
+}
+
+function saveColumnWidths() {
+  const widths = {};
+  document.querySelectorAll('.table, .ob-table, .task-table').forEach(table => {
+    const key = getTableKey(table);
+    widths[key] = {};
+    table.querySelectorAll('thead th').forEach((th, i) => {
+      if (th.style.width) {
+        widths[key][i] = parseInt(th.style.width);
+      }
+    });
+  });
+  localStorage.setItem('col_widths', JSON.stringify(widths));
+}
+
+function restoreColumnWidths() {
+  try {
+    const widths = JSON.parse(localStorage.getItem('col_widths') || '{}');
+    document.querySelectorAll('.table, .ob-table, .task-table').forEach(table => {
+      const key = getTableKey(table);
+      if (widths[key]) {
+        table.querySelectorAll('thead th').forEach((th, i) => {
+          if (widths[key][i]) {
+            th.style.width = widths[key][i] + 'px';
+            th.style.minWidth = widths[key][i] + 'px';
+          }
+        });
+        // Apply to body cells too
+        Object.entries(widths[key]).forEach(([idx, w]) => {
+          table.querySelectorAll('tbody tr').forEach(row => {
+            const td = row.cells[parseInt(idx)];
+            if (td) {
+              td.style.width = w + 'px';
+              td.style.minWidth = w + 'px';
+            }
+          });
+        });
+      }
+    });
+  } catch(e) {}
+}
+
+function getTableKey(table) {
+  if (table.classList.contains('table')) return 'bug-tracker';
+  if (table.classList.contains('ob-table')) {
+    const activeSubtab = document.querySelector('.ob-sub-tab.active');
+    return 'onboarding-' + (activeSubtab ? activeSubtab.textContent.trim().split(' ')[0].toLowerCase() : 'all');
+  }
+  if (table.classList.contains('task-table')) return 'task-tracker';
+  return 'unknown';
 }
 
 // ============================================================
