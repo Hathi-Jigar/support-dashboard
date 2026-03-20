@@ -68,6 +68,13 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .badge-closed{background:var(--closed-bg);color:var(--closed)}
 
 .platform-badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;background:var(--bg);color:var(--sub);border:1px solid var(--border)}
+.tag-badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;display:inline-block}
+.tag-Bug{background:#FEE2E2;color:#991B1B;border:1px solid #FECACA}
+.tag-Knowledge-Gap{background:#DBEAFE;color:#1E40AF;border:1px solid #BFDBFE}
+.tag-Feedback{background:#FEF3C7;color:#92400E;border:1px solid #FCD34D}
+.tag-Other{background:#F3F4F6;color:#4B5563;border:1px solid #D1D5DB}
+.btn-reopen{background:#D97706;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-reopen:hover{background:#B45309}
 
 .tat-cell{font-size:12px;color:var(--sub);white-space:nowrap}
 .tat-cell.overdue{color:#DC2626;font-weight:600}
@@ -225,11 +232,12 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
         <th>Phone</th>
         <th>Reported</th>
         <th>TAT</th>
+        <th>Tag</th>
         <th>Handled By</th>
       </tr>
     </thead>
     <tbody id="bugTableBody">
-      <tr><td colspan="14"><div class="empty-state"><div class="icon">🔄</div><div class="title">Loading bugs...</div></div></td></tr>
+      <tr><td colspan="15"><div class="empty-state"><div class="icon">🔄</div><div class="title">Loading bugs...</div></div></td></tr>
     </tbody>
   </table>
 </div>
@@ -319,6 +327,16 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
           <input class="dp-input" id="dpVersion" placeholder="e.g. 3.15.0">
         </div>
         <div class="dp-field">
+          <div class="dp-label">Tag</div>
+          <select class="dp-select" id="dpTag">
+            <option value="">— Select Tag —</option>
+            <option value="Bug">Bug</option>
+            <option value="Knowledge Gap">Knowledge Gap</option>
+            <option value="Feedback">Feedback</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="dp-field">
           <div class="dp-label">Solution Given</div>
           <textarea class="dp-textarea" id="dpSolution" placeholder="Describe the solution or resolution..."></textarea>
         </div>
@@ -329,6 +347,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
       <button class="btn btn-secondary" onclick="closeDetail()">Cancel</button>
       <button class="btn btn-save" onclick="saveMeta()">Save</button>
       <button class="btn btn-close-issue" id="btnCloseIssue" onclick="closeIssue()">Close Bug</button>
+      <button class="btn btn-reopen" id="btnReopenIssue" onclick="reopenIssue()" style="display:none">Reopen Bug</button>
     </div>
   </div>
 </div>
@@ -443,6 +462,7 @@ async function loadIssues(){
         userName:meta.userName,
         phone:meta.phone||'',
         solution:meta.solution,
+        tag:meta.tag||'',
         handledBy:meta.handledBy,
         commentId:meta.commentId
       };
@@ -452,7 +472,7 @@ async function loadIssues(){
     updateStats();
     renderTable();
   }catch(e){
-    document.getElementById('bugTableBody').innerHTML=`<tr><td colspan="14"><div class="empty-state"><div class="icon">⚠️</div><div class="title">Failed to load — check access key</div></div></td></tr>`;
+    document.getElementById('bugTableBody').innerHTML=`<tr><td colspan="15"><div class="empty-state"><div class="icon">⚠️</div><div class="title">Failed to load — check access key</div></div></td></tr>`;
   }
 }
 
@@ -541,6 +561,7 @@ async function loadMeta(issueNumber){
       if(key.trim()==='Platform')meta.platform=val;
       if(key.trim()==='Version')meta.version=val;
       if(key.trim()==='Solution')meta.solution=val;
+      if(key.trim()==='Tag')meta.tag=val;
       if(key.trim()==='Handled By')meta.handledBy=val;
     });
     // If support meta has no phone but Gleap contact does, keep it
@@ -559,6 +580,7 @@ async function saveMeta(){
   const platform=document.getElementById('dpPlatform').value;
   const version=document.getElementById('dpVersion').value.trim();
   const solution=document.getElementById('dpSolution').value.trim();
+  const tag=document.getElementById('dpTag').value;
   const handledBy=getName();
 
   const body=`${META_TAG}
@@ -567,6 +589,7 @@ User: ${userName}
 Phone: ${phone}
 Platform: ${platform}
 Version: ${version}
+Tag: ${tag}
 Solution: ${solution}
 Handled By: ${handledBy}`;
 
@@ -589,7 +612,7 @@ Handled By: ${handledBy}`;
     }
     // Update local data
     currentBug.org=org;currentBug.userName=userName;currentBug.phone=phone;currentBug.platform=platform;
-    currentBug.version=version;currentBug.solution=solution;currentBug.handledBy=handledBy;
+    currentBug.version=version;currentBug.solution=solution;currentBug.tag=tag;currentBug.handledBy=handledBy;
     renderTable();
     showToast('Saved successfully','success');
   }catch(e){showToast('Failed to save','error')}
@@ -626,6 +649,33 @@ async function closeIssue(){
     renderDetail(currentBug);
     showToast('Bug closed — label updated to 🔒 Closed from Support','success');
   }catch(e){showToast('Failed to close: '+e.message,'error')}
+  showLoading(false);
+}
+
+// Reopen the issue
+async function reopenIssue(){
+  if(!currentBug||currentBug.state==='open')return;
+  if(!confirm('Reopen this bug? This will reopen the GitHub Issue in product-management.'))return;
+  showLoading(true);
+  try{
+    // Reopen issue + set labels: remove 🔒 Closed from Support, add 🔵 Open
+    const newLabels=currentBug.labels.filter(l=>l!=='🔒 Closed from Support');
+    if(!newLabels.includes('🔵 Open'))newLabels.push('🔵 Open');
+
+    await fetch(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues/${currentBug.number}`,{
+      method:'PATCH',
+      headers:{'Authorization':`token ${getToken()}`,'Content-Type':'application/json'},
+      body:JSON.stringify({state:'open',labels:newLabels})
+    });
+
+    currentBug.state='open';
+    currentBug.closed_at=null;
+    currentBug.labels=newLabels;
+    renderTable();
+    updateStats();
+    renderDetail(currentBug);
+    showToast('Bug reopened — label updated to 🔵 Open','success');
+  }catch(e){showToast('Failed to reopen: '+e.message,'error')}
   showLoading(false);
 }
 
@@ -689,7 +739,7 @@ function renderTable(){
   if(searchQuery)filtered=filtered.filter(b=>b.title.toLowerCase().includes(searchQuery.toLowerCase()));
 
   if(filtered.length===0){
-    tbody.innerHTML=`<tr><td colspan="14"><div class="empty-state"><div class="icon">🔍</div><div class="title">No bugs found</div></div></td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="15"><div class="empty-state"><div class="icon">🔍</div><div class="title">No bugs found</div></div></td></tr>`;
     return;
   }
 
@@ -717,6 +767,7 @@ function renderTable(){
       <td class="inline-cell">${isOpen?`<div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'phone')">${b.phone||'<span style="color:var(--muted)">Add</span>'}</div>`:`<span style="font-size:12px;color:var(--sub)">${b.phone||'—'}</span>`}</td>
       <td style="font-size:12px;color:var(--sub)">${formatDate(b.created_at)}</td>
       <td><span class="${tatCls}">${tat}</span></td>
+      <td class="inline-cell"><div class="inline-val editable" onclick="event.stopPropagation();inlineEdit(${b.number},'tag')">${b.tag?`<span class="tag-badge tag-${b.tag.replace(/\s/g,'-')}">${b.tag}</span>`:'<span style="color:var(--muted)">Set</span>'}</div></td>
       <td>${b.handledBy?`<div class="handler"><strong>${b.handledBy}</strong></div>`:'<span style="color:var(--muted)">—</span>'}</td>
     </tr>`;
   }).join('');
@@ -791,8 +842,12 @@ function renderDetail(bug){
   document.getElementById('dpSolution').value=bug.solution||'';
   document.getElementById('addOrgRow').style.display='none';
 
-  // Close button visibility
+  // Close/Reopen button visibility
   document.getElementById('btnCloseIssue').style.display=isOpen?'':'none';
+  document.getElementById('btnReopenIssue').style.display=isOpen?'none':'';
+
+  // Tag
+  document.getElementById('dpTag').value=bug.tag||'';
 
   // Disable editing for closed bugs
   const editable=isOpen;
@@ -802,7 +857,8 @@ function renderDetail(bug){
   document.getElementById('dpPlatform').disabled=!editable;
   document.getElementById('dpVersion').disabled=!editable;
   document.getElementById('dpSolution').disabled=!editable;
-  document.querySelector('.btn-save').style.display=editable?'':'none';
+  document.getElementById('dpTag').disabled=false; // Tag always editable
+  document.querySelector('.btn-save').style.display='';
 }
 
 function closeDetail(){
@@ -847,7 +903,9 @@ let inlineEditingCell=null;
 
 function inlineEdit(number,field){
   const bug=allBugs.find(b=>b.number===number);
-  if(!bug||bug.state==='closed')return;
+  if(!bug)return;
+  // Allow tag editing even for closed bugs; block other fields
+  if(bug.state==='closed'&&field!=='tag')return;
 
   // Close any existing inline edit
   if(inlineEditingCell){renderTable();inlineEditingCell=null;}
@@ -862,7 +920,7 @@ function inlineEdit(number,field){
   if(!targetRow)return;
 
   // Column index mapping (0-based)
-  const colMap={solution:3,org:5,platform:6,version:7,phone:10};
+  const colMap={solution:3,org:5,platform:6,version:7,phone:10,tag:13};
   const colIdx=colMap[field];
   if(colIdx===undefined)return;
   const cell=targetRow.cells[colIdx];
@@ -875,6 +933,14 @@ function inlineEdit(number,field){
     html=`<select class="inline-select" onchange="inlineSave(${number},'org',this.value)">
       <option value="">— Select —</option>${opts}
       <option value="__add_new__">+ Add New</option>
+    </select>`;
+  }else if(field==='tag'){
+    html=`<select class="inline-select" onchange="inlineSave(${number},'tag',this.value)">
+      <option value="">— Select —</option>
+      <option value="Bug" ${bug.tag==='Bug'?'selected':''}>Bug</option>
+      <option value="Knowledge Gap" ${bug.tag==='Knowledge Gap'?'selected':''}>Knowledge Gap</option>
+      <option value="Feedback" ${bug.tag==='Feedback'?'selected':''}>Feedback</option>
+      <option value="Other" ${bug.tag==='Other'?'selected':''}>Other</option>
     </select>`;
   }else if(field==='platform'){
     html=`<select class="inline-select" onchange="inlineSave(${number},'platform',this.value)">
