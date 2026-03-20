@@ -362,7 +362,15 @@ th {
 }
 
 .table, .ob-table, .task-table {
-  table-layout: auto;
+  table-layout: fixed;
+}
+.table td, .ob-table td, .task-table td,
+.table th, .ob-table th, .task-table th {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
 }
 
 @media(max-width:768px){
@@ -2293,36 +2301,25 @@ function initColumnResize() {
       const startTableWidth = table.offsetWidth;
       handle.classList.add('active');
 
-      // Freeze all column widths at current size so only dragged column changes
+      // With table-layout:fixed, set all column widths explicitly so they don't shift
       const allThs = Array.from(th.parentElement.children);
-      const frozenWidths = allThs.map(t => t.offsetWidth);
-      allThs.forEach((t, i) => {
-        t.style.width = frozenWidths[i] + 'px';
-        t.style.minWidth = frozenWidths[i] + 'px';
+      allThs.forEach(t => {
+        const w = t.offsetWidth;
+        t.style.width = w + 'px';
       });
+      table.style.width = startTableWidth + 'px';
 
       const idx = allThs.indexOf(th);
 
       const onMouseMove = (ev) => {
         const diff = ev.clientX - startX;
         const newWidth = Math.max(40, startWidth + diff);
-        const widthChange = newWidth - startWidth;
 
-        // Only change THIS column
+        // Only change THIS column width
         th.style.width = newWidth + 'px';
-        th.style.minWidth = newWidth + 'px';
 
-        // Expand table total width proportionally
-        table.style.minWidth = (startTableWidth + widthChange) + 'px';
-
-        // Update td widths for this column only
-        table.querySelectorAll('tbody tr').forEach(row => {
-          const td = row.cells[idx];
-          if (td) {
-            td.style.width = newWidth + 'px';
-            td.style.minWidth = newWidth + 'px';
-          }
-        });
+        // Grow table width by the same amount
+        table.style.width = (startTableWidth + (newWidth - startWidth)) + 'px';
       };
 
       const onMouseUp = () => {
