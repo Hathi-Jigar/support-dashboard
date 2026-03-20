@@ -27,7 +27,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .reviewer-name{font-weight:600;color:var(--text)}
 
 /* Main Tab Bar */
-.main-tab-bar{background:var(--white);border-bottom:1px solid var(--border);padding:0 28px;display:flex;gap:0}
+.main-tab-bar{background:var(--white);border-bottom:1px solid var(--border);padding:0 28px;display:flex;gap:0;position:sticky;top:56px;z-index:95}
 .main-tab{padding:14px 24px;font-size:14px;font-weight:600;color:var(--sub);cursor:pointer;border:none;background:none;border-bottom:3px solid transparent;font-family:inherit;transition:all .15s}
 .main-tab:hover{color:var(--text)}
 .main-tab.active{color:var(--brand);border-bottom-color:var(--brand)}
@@ -42,7 +42,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 
 /* Stats */
 .stats-bar{padding:20px 28px 12px;display:flex;gap:12px;flex-wrap:wrap}
-.stat-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px 20px;min-width:120px;flex:1}
+.stat-card{background:var(--white);border:1px solid #F0F2F5;border-radius:10px;padding:14px 20px;min-width:120px;flex:1;margin-bottom:20px}
 .stat-value{font-size:24px;font-weight:800}
 .stat-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
 .stat-card.open .stat-value{color:#D97706}
@@ -60,23 +60,24 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .refresh-btn:hover{border-color:var(--brand);color:var(--brand)}
 
 /* Table */
-.table-wrap{padding:0 28px 28px;overflow-x:auto}
-.table{width:100%;border-collapse:collapse;background:var(--white);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--border);min-width:1200px}
-.table th{background:var(--bg);padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap}
-.table td{padding:12px 14px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:top}
+.table-wrap{padding:0 28px 28px;overflow-x:auto;margin-bottom:20px}
+.table{width:100%;border-collapse:collapse;background:var(--white);border-radius:var(--radius);overflow:hidden;border:1px solid #F0F2F5;min-width:1200px}
+.table th{background:var(--bg);padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #F0F2F5;white-space:nowrap}
+.table td{padding:8px 10px;border-bottom:1px solid #F0F2F5;font-size:12px;line-height:1.4;vertical-align:top}
 .table tr:last-child td{border-bottom:none}
 .table tr:hover td{background:#FAFBFC}
+.table td:nth-child(9),.table td:nth-child(13),.table td:nth-child(14){white-space:normal;word-wrap:break-word}
 .table tr.clickable{cursor:pointer}
 
-.bug-title{font-weight:600;color:var(--text);font-size:13px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bug-title{font-weight:600;color:var(--text);font-size:12px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:normal;word-wrap:break-word}
 .bug-id{font-size:11px;color:var(--muted)}
 
-.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap}
 .badge-open{background:var(--open-bg);color:var(--open)}
 .badge-closed{background:var(--closed-bg);color:var(--closed)}
 
-.platform-badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;background:var(--bg);color:var(--sub);border:1px solid var(--border)}
-.tag-badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;display:inline-block}
+.platform-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;background:var(--bg);color:var(--sub);border:1px solid #F0F2F5}
+.tag-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;display:inline-block}
 .tag-Bug{background:#FEE2E2;color:#991B1B;border:1px solid #FECACA}
 .tag-Knowledge-Gap{background:#DBEAFE;color:#1E40AF;border:1px solid #BFDBFE}
 .tag-Feedback{background:#FEF3C7;color:#92400E;border:1px solid #FCD34D}
@@ -171,9 +172,9 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .inline-cancel{background:var(--bg);color:var(--sub);border:1px solid var(--border);padding:2px 8px;border-radius:3px;font-size:10px;cursor:pointer;font-family:inherit}
 
 /* Description cell */
-.desc-cell{max-width:180px;font-size:12px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.desc-cell{max-width:180px;font-size:12px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:normal;word-wrap:break-word;cursor:pointer}
 .desc-cell:hover{color:var(--text)}
-.solution-cell{max-width:160px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.solution-cell{max-width:160px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:normal;word-wrap:break-word}
 .solution-cell.empty{color:var(--muted);font-style:italic}
 .solution-cell.filled{color:var(--text)}
 
@@ -205,9 +206,9 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .share-dropdown button:hover{background:var(--bg)}
 
 /* Onboarding table */
-.ob-table{width:100%;border-collapse:collapse;background:var(--white);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--border);min-width:2200px}
-.ob-table th{background:var(--bg);padding:10px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap}
-.ob-table td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:top}
+.ob-table{width:100%;border-collapse:collapse;background:var(--white);border-radius:var(--radius);overflow:hidden;border:1px solid #F0F2F5;min-width:2200px}
+.ob-table th{background:var(--bg);padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #F0F2F5;white-space:nowrap}
+.ob-table td{padding:8px 10px;border-bottom:1px solid #F0F2F5;font-size:12px;line-height:1.4;vertical-align:top}
 .ob-table tr:last-child td{border-bottom:none}
 .ob-table tr:hover td{background:#FAFBFC}
 .ob-table tr:hover .ob-delete-btn{opacity:1}
@@ -224,13 +225,18 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .ob-table th:nth-child(9),.ob-table td:nth-child(9){min-width:110px;white-space:nowrap}
 .ob-table th:nth-child(10),.ob-table td:nth-child(10){min-width:110px;white-space:nowrap}
 .ob-table th:nth-child(11),.ob-table td:nth-child(11){min-width:110px;white-space:nowrap}
-.ob-table td.ob-col-payment{min-width:200px}
-.ob-table td.ob-col-action{min-width:200px}
-.ob-table td.ob-col-notes{min-width:150px}
+.ob-table td.ob-col-payment{min-width:200px;max-width:250px;white-space:normal;word-wrap:break-word}
+.ob-table td.ob-col-action{min-width:200px;max-width:250px;white-space:normal;word-wrap:break-word}
+.ob-table td.ob-col-notes{min-width:150px;max-width:200px;white-space:normal;word-wrap:break-word}
 .ob-table td.ob-col-usage{min-width:40px;width:40px;white-space:nowrap}
 .ob-table td.ob-col-expansion{min-width:80px}
-.ob-table td.ob-col-expdetails{min-width:120px}
-.ob-table td.ob-col-expremark{min-width:120px}
+.ob-table td.ob-col-expdetails{min-width:120px;white-space:normal;word-wrap:break-word}
+.ob-table td.ob-col-expremark{min-width:120px;white-space:normal;word-wrap:break-word}
+
+/* Auto-wrap text columns in onboarding table */
+.ob-table td:nth-child(2){white-space:normal;word-wrap:break-word} /* Organisation */
+.ob-table td:nth-child(5){white-space:normal;word-wrap:break-word} /* SPOC Name */
+.ob-table td:nth-child(7){white-space:normal;word-wrap:break-word} /* System Admin */
 
 .ob-delete-btn{opacity:0;background:none;border:none;color:#DC2626;cursor:pointer;font-size:16px;padding:2px 6px;border-radius:4px;transition:opacity .15s}
 .ob-delete-btn:hover{background:#FEE2E2}
@@ -263,7 +269,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .action-add-btn:hover{background:#C73509}
 
 /* Expansion dropdown */
-.expansion-badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;display:inline-block}
+.expansion-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;display:inline-block}
 .expansion-yes{background:#DCFCE7;color:#166534;border:1px solid #BBF7D0}
 .expansion-no{background:#FEE2E2;color:#991B1B;border:1px solid #FECACA}
 .expansion-maybe{background:#FEF3C7;color:#92400E;border:1px solid #FCD34D}
@@ -362,14 +368,15 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 </div>
 
 <div class="ob-section-header">
-  <div class="left-btns">
+  <div></div>
+  <div style="display:flex;align-items:center;gap:8px">
     <button class="ob-add-btn" onclick="obAddCompany()">+ Add Organisation</button>
-  </div>
-  <div style="position:relative">
-    <button class="ob-share-btn" onclick="toggleShareDropdown(this)">&#128424; Share</button>
-    <div class="share-dropdown" id="obShareDropdown">
-      <button onclick="obShareAs('pdf')">&#128196; Export as PDF</button>
-      <button onclick="obShareAs('photo')">&#128247; Export as Photo</button>
+    <div style="position:relative">
+      <button class="ob-share-btn" onclick="toggleShareDropdown(this)">&#128424; Share</button>
+      <div class="share-dropdown" id="obShareDropdown">
+        <button onclick="obShareAs('pdf')">&#128196; Export as PDF</button>
+        <button onclick="obShareAs('photo')">&#128247; Export as Photo</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1213,26 +1220,26 @@ let obSaveTimer = null;
 let obEditingCompanyField = null; // Track active inline edit to prevent re-render destroying it
 
 const COUNTRY_CODES = [
-  {code:'IN',dial:'+91',name:'India'},
-  {code:'US',dial:'+1',name:'US'},
-  {code:'GB',dial:'+44',name:'UK'},
-  {code:'AE',dial:'+971',name:'UAE'},
-  {code:'SG',dial:'+65',name:'Singapore'},
-  {code:'AU',dial:'+61',name:'Australia'},
-  {code:'CA',dial:'+1',name:'Canada'},
-  {code:'DE',dial:'+49',name:'Germany'},
-  {code:'FR',dial:'+33',name:'France'},
-  {code:'SA',dial:'+966',name:'Saudi Arabia'},
-  {code:'QA',dial:'+974',name:'Qatar'},
-  {code:'OM',dial:'+968',name:'Oman'},
-  {code:'KW',dial:'+965',name:'Kuwait'},
-  {code:'BH',dial:'+973',name:'Bahrain'},
-  {code:'MY',dial:'+60',name:'Malaysia'},
-  {code:'ID',dial:'+62',name:'Indonesia'},
-  {code:'JP',dial:'+81',name:'Japan'},
-  {code:'KR',dial:'+82',name:'South Korea'},
-  {code:'BR',dial:'+55',name:'Brazil'},
-  {code:'ZA',dial:'+27',name:'South Africa'}
+  {code:'IN',dial:'+91',flag:'\u{1F1EE}\u{1F1F3}'},
+  {code:'US',dial:'+1',flag:'\u{1F1FA}\u{1F1F8}'},
+  {code:'GB',dial:'+44',flag:'\u{1F1EC}\u{1F1E7}'},
+  {code:'AE',dial:'+971',flag:'\u{1F1E6}\u{1F1EA}'},
+  {code:'SG',dial:'+65',flag:'\u{1F1F8}\u{1F1EC}'},
+  {code:'AU',dial:'+61',flag:'\u{1F1E6}\u{1F1FA}'},
+  {code:'CA',dial:'+1',flag:'\u{1F1E8}\u{1F1E6}'},
+  {code:'DE',dial:'+49',flag:'\u{1F1E9}\u{1F1EA}'},
+  {code:'FR',dial:'+33',flag:'\u{1F1EB}\u{1F1F7}'},
+  {code:'SA',dial:'+966',flag:'\u{1F1F8}\u{1F1E6}'},
+  {code:'QA',dial:'+974',flag:'\u{1F1F6}\u{1F1E6}'},
+  {code:'OM',dial:'+968',flag:'\u{1F1F4}\u{1F1F2}'},
+  {code:'KW',dial:'+965',flag:'\u{1F1F0}\u{1F1FC}'},
+  {code:'BH',dial:'+973',flag:'\u{1F1E7}\u{1F1ED}'},
+  {code:'MY',dial:'+60',flag:'\u{1F1F2}\u{1F1FE}'},
+  {code:'ID',dial:'+62',flag:'\u{1F1EE}\u{1F1E9}'},
+  {code:'JP',dial:'+81',flag:'\u{1F1EF}\u{1F1F5}'},
+  {code:'KR',dial:'+82',flag:'\u{1F1F0}\u{1F1F7}'},
+  {code:'BR',dial:'+55',flag:'\u{1F1E7}\u{1F1F7}'},
+  {code:'ZA',dial:'+27',flag:'\u{1F1FF}\u{1F1E6}'}
 ];
 
 const DEFAULT_COMPANIES = [
@@ -1360,8 +1367,8 @@ function obRenderTable(){
 
   tbody.innerHTML=filtered.map((c,i)=>{
     const esc=s=>(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    const shortPayment=(c.payment||'').substring(0,40);
-    const shortNotes=(c.notes||'').substring(0,40);
+    const shortPayment=c.payment||'';
+    const shortNotes=c.notes||'';
 
     let row=`<tr data-id="${c.id}">
       <td style="font-size:11px;color:var(--muted)">${i+1}</td>
@@ -1370,14 +1377,14 @@ function obRenderTable(){
       <td><div class="ob-editable" onclick="obEdit(${c.id},'purchased','number')">${c.purchased||'<span style="color:var(--muted)">0</span>'}</div></td>
       <td><div class="ob-editable" onclick="obEdit(${c.id},'spocName','text')">${esc(c.spocName)||'<span style="color:var(--muted)">Set</span>'}</div></td>
       <td><div class="ob-editable" onclick="obEdit(${c.id},'spocPhone','phone')">${c.spocPhone||'<span style="color:var(--muted)">Set</span>'}</div></td>
-      <td><div class="ob-editable" onclick="obEdit(${c.id},'systemAdmin','text')">${esc(c.systemAdmin)||'<span style="color:var(--muted)">Set</span>'}</div></td>
+      <td><div class="ob-editable" onclick="obEdit(${c.id},'systemAdmin','text')">${c.systemAdmin?c.systemAdmin.split(',').map(n=>n.trim()).filter(n=>n).map(n=>'<span style="display:inline-block;background:#EEF2FF;color:#4338CA;padding:1px 8px;border-radius:12px;font-size:11px;margin:1px 2px;white-space:nowrap">'+esc(n)+'</span>').join(''):'<span style="color:var(--muted)">Set</span>'}</div></td>
       <td><div class="ob-editable" onclick="obEdit(${c.id},'introMeet','date')">${c.introMeet?obFormatDate(c.introMeet):'<span style="color:var(--muted)">Set</span>'}</div></td>
       <td><div class="ob-editable" onclick="obEdit(${c.id},'trainingSetup','date')">${c.trainingSetup?obFormatDate(c.trainingSetup):'<span style="color:var(--muted)">Set</span>'}</div></td>
       <td><div class="ob-editable" onclick="obEdit(${c.id},'liveSetup','date')">${c.liveSetup?obFormatDate(c.liveSetup):'<span style="color:var(--muted)">Set</span>'}</div></td>
       <td><div class="ob-editable" onclick="obEdit(${c.id},'dashboardSetup','date')">${c.dashboardSetup?obFormatDate(c.dashboardSetup):'<span style="color:var(--muted)">Set</span>'}</div></td>
-      <td class="ob-col-payment"><div class="ob-editable" onclick="obEdit(${c.id},'payment','textarea')" title="${esc(c.payment)}">${shortPayment?esc(shortPayment)+(c.payment.length>40?'...':''):'<span style="color:var(--muted)">Set</span>'}</div></td>
+      <td class="ob-col-payment"><div class="ob-editable" onclick="obEdit(${c.id},'payment','textarea')" title="${esc(c.payment)}">${shortPayment?esc(shortPayment):'<span style="color:var(--muted)">Set</span>'}</div></td>
       <td class="action-items-cell ob-col-action">${obRenderActionItems(c)}</td>
-      <td class="ob-col-notes"><div class="ob-editable" onclick="obEdit(${c.id},'notes','textarea')" title="${esc(c.notes)}">${shortNotes?esc(shortNotes)+(c.notes&&c.notes.length>40?'...':''):'<span style="color:var(--muted)">Set</span>'}</div></td>`;
+      <td class="ob-col-notes"><div class="ob-editable" onclick="obEdit(${c.id},'notes','textarea')" title="${esc(c.notes)}">${shortNotes?esc(shortNotes):'<span style="color:var(--muted)">Set</span>'}</div></td>`;
 
     if(showUsage){
       row+=`
@@ -1408,7 +1415,7 @@ function obExpansionBadge(val){
 function obRenderActionItems(company){
   const items=company.actionItems||[];
   if(items.length===0){
-    return `<button class="action-add-btn" onclick="obAddActionItem(${company.id})">+ Add This Week</button>`;
+    return `<button class="action-add-btn" onclick="obAddActionItem(${company.id})">+ Add</button>`;
   }
   // Show items in reverse (most recent first)
   const sorted=[...items].reverse();
@@ -1426,7 +1433,7 @@ function obRenderActionItems(company){
       </div>
     </div>`;
   });
-  html+=`<button class="action-add-btn" onclick="obAddActionItem(${company.id})">+ Add This Week</button>`;
+  html+=`<button class="action-add-btn" onclick="obAddActionItem(${company.id})">+ Add</button>`;
   return html;
 }
 
@@ -1569,22 +1576,31 @@ function obEdit(companyId,field,type){
     ta.addEventListener('click',function(e){e.stopPropagation();});
   }else if(type==='phone'){
     const countryCode=company.spocCountry||'IN';
-    const opts=COUNTRY_CODES.map(cc=>`<option value="${cc.code}" ${cc.code===countryCode?'selected':''}>${cc.dial} ${cc.name}</option>`).join('');
-    targetDiv.innerHTML=`<div class="phone-group">
-      <select>${opts}</select>
+    const opts=COUNTRY_CODES.map(cc=>`<option value="${cc.code}" ${cc.code===countryCode?'selected':''}>${cc.flag} ${cc.dial}</option>`).join('');
+    targetDiv.innerHTML=`<div class="phone-group" onclick="event.stopPropagation()">
+      <select onclick="event.stopPropagation()" onmousedown="event.stopPropagation()">${opts}</select>
       <input class="ob-edit-input" value="${String(currentVal).replace(/"/g,'&quot;')}" placeholder="Phone number">
     </div>`;
     const countrySelect=targetDiv.querySelector('select');
     const phoneInput=targetDiv.querySelector('input');
     countrySelect.addEventListener('mousedown',function(e){e.stopPropagation();});
     countrySelect.addEventListener('click',function(e){e.stopPropagation();});
+    countrySelect.addEventListener('focus',function(e){e.stopPropagation();});
     countrySelect.addEventListener('change',function(e){e.stopPropagation();obSaveCountry(companyId,this.value);});
     phoneInput.addEventListener('keydown',function(e){
       e.stopPropagation();
       if(e.key==='Enter'){obSaveField(companyId,'spocPhone',this.value);}
       if(e.key==='Escape'){obEditingCompanyField=null;obRenderTable();}
     });
-    phoneInput.addEventListener('blur',function(){obSaveField(companyId,'spocPhone',this.value);});
+    phoneInput.addEventListener('blur',function(){
+      // Delay to allow select interaction
+      const val=this.value;
+      setTimeout(()=>{
+        if(obEditingCompanyField&&obEditingCompanyField.companyId===companyId&&obEditingCompanyField.field==='spocPhone'){
+          obSaveField(companyId,'spocPhone',val);
+        }
+      },200);
+    });
     phoneInput.addEventListener('click',function(e){e.stopPropagation();});
     phoneInput.focus();
   }
