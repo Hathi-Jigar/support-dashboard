@@ -1,0 +1,202 @@
+{
+  "tasks": [
+    {
+      "id": 1,
+      "task": "Monitoring register — follow up on where it was created.",
+      "assignees": [],
+      "status": "Open",
+      "priority": "Medium",
+      "deadline": "",
+      "remark": "Taking follow-up one by one",
+      "created": "2026-03-20",
+      "updated": "2026-03-20"
+    },
+    {
+      "id": 2,
+      "task": "Ask Hussain Bhai for organisation custom dashboard for SSACT.",
+      "assignees": [],
+      "status": "Open",
+      "priority": "Medium",
+      "deadline": "",
+      "remark": "",
+      "created": "2026-03-20",
+      "updated": "2026-03-20"
+    },
+    {
+      "id": 3,
+      "task": "Contact Hardik from Sangiini Epitome — sequence: (1) Setup pour card register, (2) Schedule call for team bifurcation and set register approver, (3) Schedule call with team and contractor for instruction and register flow.",
+      "assignees": [],
+      "status": "Open",
+      "priority": "High",
+      "deadline": "",
+      "remark": "Pending from Hardik Sir from Epitome",
+      "created": "2026-03-20",
+      "updated": "2026-03-20"
+    },
+    {
+      "id": 4,
+      "task": "Call Vishesh Sir from Trehan Iris regarding case study and testimonial.",
+      "assignees": [],
+      "status": "Open",
+      "priority": "Medium",
+      "deadline": "",
+      "remark": "He will call once he rejoins the office",
+      "created": "2026-03-20",
+      "updated": "2026-03-20"
+    },
+    {
+      "id": 5,
+      "task": "Prepare project plan format as part of onboarding process and send after Introduction Meeting.",
+      "assignees": [],
+      "status": "Open",
+      "priority": "High",
+      "deadline": "",
+      "remark": "Prepared and shared with Jigar Sir for approval",
+      "created": "2026-03-20",
+      "updated": "2026-03-20"
+    },
+    {
+      "id": 6,
+      "task": "Prepare Constera dashboard after meeting with Jilay Bhai as early as possible.",
+      "assignees": [],
+      "status": "Open",
+      "priority": "High",
+      "deadline": "",
+      "remark": "Message shared in group with Sumant Sir and Jigar Sir",
+      "created": "2026-03-20",
+      "updated": "2026-03-20"
+    },
+    {
+      "id": 7,
+      "task": "Start weekly feature awareness sessions (covering new features and features not being used).",
+      "assignees": [],
+      "status": "Open",
+      "priority": "Medium",
+      "deadline": "",
+      "remark": "",
+      "created": "2026-03-20",
+      "updated": "2026-03-20"
+    },
+    {
+      "id": 8,
+      "task": "Follow up with Srinivasa Murthy from Welkin Park (Adarsh Group) for Inspection & Instruction usage and payment of 30 users.",
+      "assignees": [],
+      "status": "Open",
+      "priority": "High",
+      "deadline": "",
+      "remark": "They have started; payment is in process",
+      "created": "2026-03-20",
+      "updated": "2026-03-20"
+    },
+    {
+      "id": 9,
+      "task": "Schedule meeting with Saheel Property team regarding system admin — as discussed with Sambhaji Sir.",
+      "assignees": [],
+      "status": "Open",
+      "priority": "Medium",
+      "deadline": "",
+      "remark": "Meeting scheduled on 20/03/2026 from 12 PM to 1 PM",
+      "created": "2026-03-20",
+      "updated": "2026-03-20"
+    },
+    {
+      "id": 10,
+      "task": "Inform all old clients about the Register module.",
+      "assignees": [],
+      "status": "Open",
+      "priority": "Medium",
+      "deadline": "",
+      "remark": "",
+      "created": "2026-03-20",
+      "updated": "2026-03-20"
+    },
+    {
+      "id": 11,
+      "task": "Check if Trehan Iris is using Register. Every email should include REMINDER about complimentary Register access. Schedule 1:1 call for replicate option, deactivating users, and Register usage.",
+      "assignees": [],
+      "status": "Open",
+      "priority": "Medium",
+      "deadline": "",
+      "remark": "Need to schedule a 1:1 webcall",
+      "created": "2026-03-20",
+      "updated": "2026-03-20"
+    },
+    {
+      "id": 12,
+      "task": "NIT-Warangal SOP — needs to be finalised.",
+      "assignees": [],
+      "status": "Open",
+      "priority": "Medium",
+      "deadline": "",
+      "remark": "",
+      "created": "2026-03-20",
+      "updated": "2026-03-20"
+    },
+    {
+      "id": 13,
+      "task": "Webcall with Sumant Sir for onboarding Register, COQ, and custom types in Vascon.",
+      "assignees": [],
+      "status": "Open",
+      "priority": "Medium",
+      "deadline": "",
+      "remark": "",
+      "created": "2026-03-20",
+      "updated": "2026-03-20"
+    },
+    {
+      "id": 14,
+      "task": "Schedule meeting with Omkar from Saheel Property regarding Handover Checklist process and validate option.",
+      "assignees": [],
+      "status": "Open",
+      "priority": "Medium",
+      "deadline": "",
+      "remark": "",
+      "created": "2026-03-20",
+      "updated": "2026-03-20"
+    },
+    {
+      "id": 15,
+      "task": "Talk with Amit Sir from Schueco for webcall to set up the answer type.",
+      "assignees": [],
+      "status": "Open",
+      "priority": "Medium",
+      "deadline": "",
+      "remark": "",
+      "created": "2026-03-20",
+      "updated": "2026-03-20"
+    },
+    {
+      "id": 16,
+      "task": "User limit exceeded error when one or two paid user slots are available in Setup.",
+      "assignees": [],
+      "status": "Open",
+      "priority": "High",
+      "deadline": "",
+      "remark": "Bug ticket raised in Gleap and ClickUp",
+      "created": "2026-03-20",
+      "updated": "2026-03-20"
+    },
+    {
+      "id": 17,
+      "task": "Raymond site visit — schedule with Asavari Ma’am and update date for Address by GS2 Thane site.",
+      "assignees": [],
+      "status": "Completed",
+      "priority": "Medium",
+      "deadline": "",
+      "remark": "Visit confirmed for 18th March on site",
+      "created": "2026-03-20",
+      "updated": "2026-03-20"
+    },
+    {
+      "id": 18,
+      "task": "Auto logout issue — informed to Varun Bhai, they are checking.",
+      "assignees": [],
+      "status": "Completed",
+      "priority": "High",
+      "deadline": "",
+      "remark": "Bug ticket raised in Gleap and ClickUp",
+      "created": "2026-03-20",
+      "updated": "2026-03-20"
+    }
+  ]
+}
