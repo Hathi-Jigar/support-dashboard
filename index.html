@@ -59,6 +59,19 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .refresh-btn{background:var(--white);border:1px solid var(--border);padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--sub)}
 .refresh-btn:hover{border-color:var(--brand);color:var(--brand)}
 
+/* Date Filter */
+.date-filter-bar{padding:0 28px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.date-preset{padding:5px 12px;border-radius:16px;border:1px solid var(--border);background:var(--white);font-size:11px;font-weight:600;cursor:pointer;color:var(--sub);font-family:inherit;transition:all .15s}
+.date-preset:hover{border-color:var(--sub)}
+.date-preset.active{background:#2563EB;color:var(--white);border-color:#2563EB}
+.date-sep{width:1px;height:20px;background:var(--border);margin:0 4px}
+.date-range-group{display:flex;align-items:center;gap:6px}
+.date-range-label{font-size:11px;font-weight:600;color:var(--muted)}
+.date-range-input{padding:5px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;outline:none;color:var(--text)}
+.date-range-input:focus{border-color:#2563EB}
+.date-clear-btn{padding:5px 12px;border-radius:16px;border:1px solid var(--border);background:var(--white);font-size:11px;font-weight:600;cursor:pointer;color:#DC2626;font-family:inherit;transition:all .15s}
+.date-clear-btn:hover{border-color:#DC2626;background:#FEF2F2}
+
 /* Table */
 .table-wrap{padding:0 28px 28px;overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px;margin-bottom:20px}
 .table{width:100%;border-collapse:collapse;background:var(--white);border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);min-width:1800px}
@@ -372,7 +385,7 @@ th {
 }
 
 @media(max-width:768px){
-  .header,.stats-bar,.filter-bar,.table-wrap,.ob-sub-tabs,.ob-section-header{padding-left:16px;padding-right:16px}
+  .header,.stats-bar,.filter-bar,.date-filter-bar,.table-wrap,.ob-sub-tabs,.ob-section-header{padding-left:16px;padding-right:16px}
   .detail-panel{width:100%}
   .search-input{width:150px}
 }
@@ -421,6 +434,23 @@ th {
   <button class="filter-chip" onclick="setFilter('open',this)">Open</button>
   <button class="filter-chip" onclick="setFilter('closed',this)">Closed</button>
   <input class="search-input" placeholder="Search by title..." oninput="searchBugs(this.value)" id="searchBox">
+</div>
+
+<div class="date-filter-bar">
+  <button class="date-preset" onclick="setDatePreset('today',this)">Today</button>
+  <button class="date-preset" onclick="setDatePreset('this-week',this)">This Week</button>
+  <button class="date-preset" onclick="setDatePreset('last-week',this)">Last Week</button>
+  <button class="date-preset" onclick="setDatePreset('this-month',this)">This Month</button>
+  <button class="date-preset" onclick="setDatePreset('last-month',this)">Last Month</button>
+  <button class="date-preset active" onclick="setDatePreset('last-30',this)">Last 30 Days</button>
+  <div class="date-sep"></div>
+  <div class="date-range-group">
+    <span class="date-range-label">From</span>
+    <input type="date" class="date-range-input" id="dateFrom" onchange="onDateRangeChange()">
+    <span class="date-range-label">To</span>
+    <input type="date" class="date-range-input" id="dateTo" onchange="onDateRangeChange()">
+  </div>
+  <button class="date-clear-btn" onclick="clearDateFilter()">Clear dates</button>
 </div>
 
 <div class="table-wrap">
@@ -744,6 +774,81 @@ let currentFilter = 'all';
 let searchQuery = '';
 let currentBug = null;
 let configSha = null;
+let dateFrom = null;
+let dateTo = null;
+
+function getDateRange(preset){
+  const now=new Date();
+  const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  const dayOfWeek=(today.getDay()+6)%7; // Mon=0
+  let from,to;
+  switch(preset){
+    case 'today':
+      from=new Date(today); to=new Date(today);
+      to.setHours(23,59,59,999);
+      break;
+    case 'this-week':
+      from=new Date(today); from.setDate(from.getDate()-dayOfWeek);
+      to=new Date(from); to.setDate(to.getDate()+6); to.setHours(23,59,59,999);
+      break;
+    case 'last-week':
+      from=new Date(today); from.setDate(from.getDate()-dayOfWeek-7);
+      to=new Date(from); to.setDate(to.getDate()+6); to.setHours(23,59,59,999);
+      break;
+    case 'this-month':
+      from=new Date(today.getFullYear(),today.getMonth(),1);
+      to=new Date(today.getFullYear(),today.getMonth()+1,0); to.setHours(23,59,59,999);
+      break;
+    case 'last-month':
+      from=new Date(today.getFullYear(),today.getMonth()-1,1);
+      to=new Date(today.getFullYear(),today.getMonth(),0); to.setHours(23,59,59,999);
+      break;
+    case 'last-30':
+      from=new Date(today); from.setDate(from.getDate()-30);
+      to=new Date(today); to.setHours(23,59,59,999);
+      break;
+  }
+  return {from,to};
+}
+
+function setDatePreset(preset,el){
+  document.querySelectorAll('.date-preset').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  const range=getDateRange(preset);
+  dateFrom=range.from; dateTo=range.to;
+  document.getElementById('dateFrom').value=toISODate(dateFrom);
+  document.getElementById('dateTo').value=toISODate(dateTo);
+  renderTable(); updateStats();
+}
+
+function onDateRangeChange(){
+  const f=document.getElementById('dateFrom').value;
+  const t=document.getElementById('dateTo').value;
+  document.querySelectorAll('.date-preset').forEach(b=>b.classList.remove('active'));
+  if(f){dateFrom=new Date(f)}else{dateFrom=null}
+  if(t){dateTo=new Date(t);dateTo.setHours(23,59,59,999)}else{dateTo=null}
+  renderTable(); updateStats();
+}
+
+function clearDateFilter(){
+  dateFrom=null; dateTo=null;
+  document.getElementById('dateFrom').value='';
+  document.getElementById('dateTo').value='';
+  document.querySelectorAll('.date-preset').forEach(b=>b.classList.remove('active'));
+  renderTable(); updateStats();
+}
+
+function toISODate(d){return d.toISOString().slice(0,10)}
+
+function applyDefaultDateFilter(){
+  const range=getDateRange('last-30');
+  dateFrom=range.from; dateTo=range.to;
+  document.getElementById('dateFrom').value=toISODate(dateFrom);
+  document.getElementById('dateTo').value=toISODate(dateTo);
+  document.querySelectorAll('.date-preset').forEach(b=>{
+    b.classList.toggle('active',b.textContent.trim()==='Last 30 Days');
+  });
+}
 
 async function loadConfig(){
   try{
@@ -809,6 +914,7 @@ async function loadIssues(){
     }));
 
     allBugs.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+    applyDefaultDateFilter();
     updateStats();
     renderTable();
   }catch(e){
@@ -1007,12 +1113,15 @@ document.getElementById('dpOrg').addEventListener('change',function(){
 });
 
 function updateStats(){
-  const open=allBugs.filter(b=>b.state==='open').length;
-  const closed=allBugs.filter(b=>b.state==='closed').length;
-  document.getElementById('statTotal').textContent=allBugs.length;
+  let bugs=allBugs;
+  if(dateFrom)bugs=bugs.filter(b=>new Date(b.created_at)>=dateFrom);
+  if(dateTo)bugs=bugs.filter(b=>new Date(b.created_at)<=dateTo);
+  const open=bugs.filter(b=>b.state==='open').length;
+  const closed=bugs.filter(b=>b.state==='closed').length;
+  document.getElementById('statTotal').textContent=bugs.length;
   document.getElementById('statOpen').textContent=open;
   document.getElementById('statClosed').textContent=closed;
-  const closedBugs=allBugs.filter(b=>b.state==='closed'&&b.closed_at);
+  const closedBugs=bugs.filter(b=>b.state==='closed'&&b.closed_at);
   if(closedBugs.length>0){
     const totalMs=closedBugs.reduce((sum,b)=>sum+(new Date(b.closed_at)-new Date(b.created_at)),0);
     const avgMs=totalMs/closedBugs.length;
@@ -1028,6 +1137,8 @@ function renderTable(){
   if(currentFilter==='open')filtered=filtered.filter(b=>b.state==='open');
   if(currentFilter==='closed')filtered=filtered.filter(b=>b.state==='closed');
   if(searchQuery)filtered=filtered.filter(b=>b.title.toLowerCase().includes(searchQuery.toLowerCase()));
+  if(dateFrom)filtered=filtered.filter(b=>new Date(b.created_at)>=dateFrom);
+  if(dateTo)filtered=filtered.filter(b=>new Date(b.created_at)<=dateTo);
 
   if(filtered.length===0){
     tbody.innerHTML=`<tr><td colspan="15"><div class="empty-state"><div class="icon">&#128269;</div><div class="title">No bugs found</div></div></td></tr>`;
