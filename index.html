@@ -73,9 +73,9 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .date-clear-btn:hover{border-color:#DC2626;background:#FEF2F2}
 
 /* Table */
-.table-wrap{padding:0 28px 28px;overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px;margin-bottom:20px}
+.table-wrap{padding:0 28px 28px;overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 200px);-webkit-overflow-scrolling:touch;border-radius:8px;margin-bottom:20px}
 .table{width:100%;border-collapse:collapse;background:var(--white);border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);min-width:1800px}
-.table th{background:#F9FAFB;padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:#6B7280;text-transform:uppercase;letter-spacing:0.6px;border-bottom:2px solid #E5E7EB;white-space:nowrap}
+.table th{background:#F9FAFB;padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:#6B7280;text-transform:uppercase;letter-spacing:0.6px;border-bottom:2px solid #E5E7EB;white-space:nowrap;position:sticky;top:0;z-index:2}
 .table td{padding:12px 14px;border-bottom:1px solid #E5E7EB;font-size:13px;color:#374151;line-height:1.5;vertical-align:top}
 .table tr:last-child td{border-bottom:none}
 .table tr:hover td{background:#F9FAFB}
@@ -237,7 +237,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 
 /* Onboarding table */
 .ob-table{width:100%;border-collapse:collapse;background:var(--white);border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,0.04);min-width:2200px}
-.ob-table th{background:#F9FAFB;padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:#6B7280;text-transform:uppercase;letter-spacing:0.6px;border-bottom:2px solid #E5E7EB;white-space:nowrap}
+.ob-table th{background:#F9FAFB;padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:#6B7280;text-transform:uppercase;letter-spacing:0.6px;border-bottom:2px solid #E5E7EB;white-space:nowrap;position:sticky;top:0;z-index:2}
 .ob-table td{padding:12px 14px;border-bottom:1px solid #E5E7EB;font-size:13px;color:#374151;line-height:1.5;vertical-align:top}
 .ob-table tr:last-child td{border-bottom:none}
 .ob-table tr:hover td{background:#F9FAFB}
@@ -282,9 +282,9 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .ob-edit-textarea{width:100%;padding:4px 6px;border:1.5px solid var(--brand);border-radius:4px;font-size:13px;font-family:inherit;outline:none;background:var(--white);color:var(--text);resize:vertical;min-height:60px}
 
 /* Phone input group */
-.phone-group{display:flex;gap:4px;align-items:center}
+.phone-group{display:flex;gap:4px;align-items:center;min-width:200px}
 .phone-group select{min-width:80px;width:auto;padding:3px 4px;border:1.5px solid var(--brand);border-radius:4px;font-size:11px;font-family:inherit;outline:none}
-.phone-group input{flex:1}
+.phone-group input{flex:1;min-width:100px}
 
 /* Usage toggles */
 .usage-toggle{cursor:pointer;font-size:16px;padding:2px 6px;border-radius:4px;border:none;background:none;transition:background .1s}
@@ -313,7 +313,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 
 /* ============ TASK TRACKER STYLES ============ */
 .task-table{width:100%;border-collapse:collapse;background:var(--white);border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,0.04);min-width:1400px}
-.task-table th{background:#F9FAFB;padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:#6B7280;text-transform:uppercase;letter-spacing:0.6px;border-bottom:2px solid #E5E7EB;white-space:nowrap}
+.task-table th{background:#F9FAFB;padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:#6B7280;text-transform:uppercase;letter-spacing:0.6px;border-bottom:2px solid #E5E7EB;white-space:nowrap;position:sticky;top:0;z-index:2}
 .task-table td{padding:12px 14px;border-bottom:1px solid #E5E7EB;font-size:13px;color:#374151;line-height:1.5;vertical-align:top}
 .task-table tr:last-child td{border-bottom:none}
 .task-table tr:hover td{background:#F9FAFB}
@@ -1600,7 +1600,7 @@ function obRenderTable(){
   // Build header
   let headerHtml=`<tr>
     <th>#</th><th>Organisation</th><th>Plan</th><th>Purchased</th>
-    <th>SPOC Name</th><th>SPOC Phone</th><th>System Admin</th>
+    <th>SPOC Name</th><th style="min-width:200px">SPOC Phone</th><th>System Admin</th>
     <th>Intro Meet</th><th>Training Setup</th><th>Live Setup</th><th>Dashboard Setup</th>
     <th>Payment</th><th>Action Items</th><th>Notes</th>`;
   if(showUsage){
