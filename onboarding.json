@@ -280,7 +280,13 @@
       "liveSetup": "",
       "dashboardSetup": "",
       "payment": "A. 30% on Kick-off (Rs. 1,99,260). B. 50% on UAT (Rs. 3,32,100). C. 20% on Go-Live (Rs. 1,32,840). Total = Rs. 6,64,200 Plus GST.",
-      "actionItems": [],
+      "actionItems": [
+        {
+          "week": "23 Mar 2026",
+          "items": "not to start till payment not receive",
+          "addedBy": "Hardik"
+        }
+      ],
       "notes": "2 highway project setup is done and user traning giving but they want to integrated with DATALAKE appliction of NHAI",
       "usage": {
         "inspection": false,
