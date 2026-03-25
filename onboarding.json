@@ -213,39 +213,6 @@
       }
     },
     {
-      "id": 8,
-      "org": "Mano Project Consultants",
-      "planType": "User Based",
-      "purchased": 10,
-      "spocName": "Syed Arshal Qazi",
-      "spocPhone": "8871979717",
-      "spocCountry": "IN",
-      "systemAdmin": "Syed Arshal Qazi",
-      "introMeet": "2025-12-30",
-      "trainingSetup": "2025-12-30",
-      "liveSetup": "",
-      "dashboardSetup": "",
-      "payment": "Partner",
-      "actionItems": [
-        {
-          "week": "23 Mar 2026",
-          "items": "need to remove",
-          "addedBy": "Hardik"
-        }
-      ],
-      "notes": "",
-      "usage": {
-        "inspection": false,
-        "instruction": false,
-        "register": false
-      },
-      "expansion": {
-        "possible": "",
-        "details": "",
-        "remark": ""
-      }
-    },
-    {
       "id": 9,
       "org": "Magicrete Building Solutions",
       "planType": "User Based",
