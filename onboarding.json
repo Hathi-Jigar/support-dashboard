@@ -133,7 +133,13 @@
       "liveSetup": "",
       "dashboardSetup": "",
       "payment": "One fourth payment received",
-      "actionItems": [],
+      "actionItems": [
+        {
+          "week": "23 Mar 2026",
+          "items": "need to drop the email regarding the credit",
+          "addedBy": "Hardik"
+        }
+      ],
       "notes": "",
       "usage": {
         "inspection": false,
