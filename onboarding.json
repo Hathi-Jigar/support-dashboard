@@ -161,7 +161,7 @@
       "dashboardSetup": "",
       "payment": "Full payment received",
       "actionItems": [],
-      "notes": "",
+      "notes": "Need to send the dashboard email",
       "usage": {
         "inspection": false,
         "instruction": false,
