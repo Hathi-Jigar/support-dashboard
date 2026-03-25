@@ -160,7 +160,13 @@
       "liveSetup": "",
       "dashboardSetup": "",
       "payment": "Full payment received",
-      "actionItems": [],
+      "actionItems": [
+        {
+          "week": "23 Mar 2026",
+          "items": "Email for dashbord need to do",
+          "addedBy": "Hardik"
+        }
+      ],
       "notes": "Need to send the dashboard email",
       "usage": {
         "inspection": false,
