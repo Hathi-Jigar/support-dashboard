@@ -220,7 +220,13 @@
       "liveSetup": "",
       "dashboardSetup": "",
       "payment": "Partner",
-      "actionItems": [],
+      "actionItems": [
+        {
+          "week": "23 Mar 2026",
+          "items": "need to remove",
+          "addedBy": "Hardik"
+        }
+      ],
       "notes": "",
       "usage": {
         "inspection": false,
