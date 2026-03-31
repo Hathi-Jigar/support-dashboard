@@ -181,18 +181,6 @@
       "overdue": false
     },
     {
-      "id": 16,
-      "task": "User limit exceeded error when one or two paid user slots are available in Setup.",
-      "assignees": [],
-      "status": "Open",
-      "priority": "High",
-      "deadline": "",
-      "remark": "Bug ticket raised in Gleap and ClickUp",
-      "created": "2026-03-20",
-      "updated": "2026-03-20",
-      "overdue": false
-    },
-    {
       "id": 17,
       "task": "Raymond site visit — schedule with Asavari Ma’am and update date for Address by GS2 Thane site.",
       "assignees": [],
