@@ -12,25 +12,55 @@ jobs:
     steps:
       - name: Fetch Metabase Public Query
         run: |
-          echo "=== Trying POST to Metabase public card API ==="
+          echo "=== Trying Metabase public card API ==="
+
+          # Try GET first (standard public question endpoint)
           HTTP_CODE=$(curl -sL \
             -o /tmp/result.json \
             -w "%{http_code}" \
-            -X POST \
+            -X GET \
             -H "Content-Type: application/json" \
-            -d '{}' \
-            "http://metabase-v2.digiqc.com/api/public/card/e9331eaf-825d-46f8-a865-64f6727b3801/query/json")
+            "http://metabase-v2.digiqc.com/api/public/card/e9331eaf-825d-46f8-a865-64f6727b3801/query")
 
-          echo "HTTP Status: $HTTP_CODE"
+          echo "GET /query → HTTP Status: $HTTP_CODE"
           echo "File size: $(wc -c < /tmp/result.json) bytes"
-          echo "=== Response (first 1000 chars) ==="
-          head -c 1000 /tmp/result.json
+          echo "=== Response ==="
+          cat /tmp/result.json
           echo ""
 
-          if [ "$HTTP_CODE" != "202" ] && [ "$HTTP_CODE" != "200" ]; then
-            echo "❌ Unexpected HTTP status: $HTTP_CODE"
+          # If 404, try the /query/json variant
+          if [ "$HTTP_CODE" = "404" ]; then
+            echo "=== Trying /query/json variant ==="
+            HTTP_CODE=$(curl -sL \
+              -o /tmp/result.json \
+              -w "%{http_code}" \
+              -X GET \
+              "http://metabase-v2.digiqc.com/api/public/card/e9331eaf-825d-46f8-a865-64f6727b3801/query/json")
+            echo "GET /query/json → HTTP Status: $HTTP_CODE"
+            echo "File size: $(wc -c < /tmp/result.json) bytes"
+            echo "=== Response ==="
+            cat /tmp/result.json
+            echo ""
+          fi
+
+          # If still 404, try the embed/card path
+          if [ "$HTTP_CODE" = "404" ]; then
+            echo "=== Trying /api/public/card/:uuid (card metadata) ==="
+            HTTP_CODE=$(curl -sL \
+              -o /tmp/meta.json \
+              -w "%{http_code}" \
+              "http://metabase-v2.digiqc.com/api/public/card/e9331eaf-825d-46f8-a865-64f6727b3801")
+            echo "GET card metadata → HTTP Status: $HTTP_CODE"
+            cat /tmp/meta.json
+            echo ""
+          fi
+
+          if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "202" ]; then
+            echo "❌ All Metabase endpoints returned non-200. Final status: $HTTP_CODE"
             exit 1
           fi
+
+          echo "✅ Got valid response!"
 
       - name: Check Inactivity & Notify Google Chat
         run: |
@@ -45,7 +75,7 @@ jobs:
               sys.exit(1)
           print(f"✅ Webhook secret found (length: {len(webhook)})")
 
-          # ── Load + parse Metabase response ──
+          # ── Load + parse response ──
           with open("/tmp/result.json") as f:
               content = f.read().strip()
 
@@ -66,17 +96,27 @@ jobs:
               print(f"❌ Metabase error: {raw['error']}")
               sys.exit(1)
 
-          if "data" not in raw:
-              print(f"❌ No 'data' key. Keys found: {list(raw.keys())}")
+          # Handle both response formats:
+          # Format A: {"data": {"cols": [...], "rows": [...]}}
+          # Format B: [{"col1": val, ...}, ...]  (direct JSON array)
+          if isinstance(raw, list):
+              rows = raw
+              print(f"Format: direct JSON array")
+              print(f"Total rows: {len(rows)}")
+              if rows:
+                  print(f"Sample row: {rows[0]}")
+          elif "data" in raw:
+              cols = [col["name"] for col in raw["data"]["cols"]]
+              rows = [dict(zip(cols, row)) for row in raw["data"]["rows"]]
+              print(f"Format: nested data object")
+              print(f"Columns: {cols}")
+              print(f"Total rows: {len(rows)}")
+              if rows:
+                  print(f"Sample row: {rows[0]}")
+          else:
+              print(f"❌ Unexpected response structure. Keys: {list(raw.keys())}")
+              print(f"Full response: {content[:500]}")
               sys.exit(1)
-
-          # ── Map columns → rows ──
-          cols = [col["name"] for col in raw["data"]["cols"]]
-          rows = [dict(zip(cols, row)) for row in raw["data"]["rows"]]
-          print(f"Columns   : {cols}")
-          print(f"Total rows: {len(rows)}")
-          if rows:
-              print(f"Sample row: {rows[0]}")
 
           # ── Filter inactive > 5 days ──
           alerts = [
@@ -122,7 +162,7 @@ jobs:
               }
           }
 
-          # ── Google Chat Card payload ──
+          # ── Google Chat Card ──
           payload = {
               "cardsV2": [{
                   "card": {
@@ -161,7 +201,7 @@ jobs:
               }]
           }
 
-          # ── Send to Google Chat ──
+          # ── Send ──
           data = json.dumps(payload).encode()
           req = urllib.request.Request(webhook, data=data,
                 headers={"Content-Type": "application/json"})
