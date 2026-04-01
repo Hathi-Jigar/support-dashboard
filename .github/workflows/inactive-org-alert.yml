@@ -12,55 +12,21 @@ jobs:
     steps:
       - name: Fetch Metabase Public Query
         run: |
-          echo "=== Trying Metabase public card API ==="
-
-          # Try GET first (standard public question endpoint)
+          echo "=== Fetching Metabase public card ==="
           HTTP_CODE=$(curl -sL \
             -o /tmp/result.json \
             -w "%{http_code}" \
             -X GET \
-            -H "Content-Type: application/json" \
             "http://metabase-v2.digiqc.com/api/public/card/e9331eaf-825d-46f8-a865-64f6727b3801/query")
 
-          echo "GET /query → HTTP Status: $HTTP_CODE"
+          echo "HTTP Status: $HTTP_CODE"
           echo "File size: $(wc -c < /tmp/result.json) bytes"
-          echo "=== Response ==="
-          cat /tmp/result.json
-          echo ""
-
-          # If 404, try the /query/json variant
-          if [ "$HTTP_CODE" = "404" ]; then
-            echo "=== Trying /query/json variant ==="
-            HTTP_CODE=$(curl -sL \
-              -o /tmp/result.json \
-              -w "%{http_code}" \
-              -X GET \
-              "http://metabase-v2.digiqc.com/api/public/card/e9331eaf-825d-46f8-a865-64f6727b3801/query/json")
-            echo "GET /query/json → HTTP Status: $HTTP_CODE"
-            echo "File size: $(wc -c < /tmp/result.json) bytes"
-            echo "=== Response ==="
-            cat /tmp/result.json
-            echo ""
-          fi
-
-          # If still 404, try the embed/card path
-          if [ "$HTTP_CODE" = "404" ]; then
-            echo "=== Trying /api/public/card/:uuid (card metadata) ==="
-            HTTP_CODE=$(curl -sL \
-              -o /tmp/meta.json \
-              -w "%{http_code}" \
-              "http://metabase-v2.digiqc.com/api/public/card/e9331eaf-825d-46f8-a865-64f6727b3801")
-            echo "GET card metadata → HTTP Status: $HTTP_CODE"
-            cat /tmp/meta.json
-            echo ""
-          fi
 
           if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "202" ]; then
-            echo "❌ All Metabase endpoints returned non-200. Final status: $HTTP_CODE"
+            echo "❌ HTTP $HTTP_CODE from Metabase"
             exit 1
           fi
-
-          echo "✅ Got valid response!"
+          echo "✅ Data fetched!"
 
       - name: Check Inactivity & Notify Google Chat
         run: |
@@ -68,55 +34,51 @@ jobs:
           import json, os, sys, urllib.request, urllib.error
           from datetime import date
 
-          # ── Validate webhook secret ──
+          # ── Validate webhook ──
           webhook = os.environ.get("GOOGLE_CHAT_WEBHOOK", "").strip()
           if not webhook:
               print("❌ GOOGLE_CHAT_WEBHOOK secret is not set!")
               sys.exit(1)
           print(f"✅ Webhook secret found (length: {len(webhook)})")
 
-          # ── Load + parse response ──
+          # ── Load response ──
           with open("/tmp/result.json") as f:
               content = f.read().strip()
-
-          print(f"Response length: {len(content)} chars")
-
-          if not content:
-              print("❌ Empty response from Metabase!")
-              sys.exit(1)
 
           try:
               raw = json.loads(content)
           except json.JSONDecodeError as e:
-              print(f"❌ JSON parse error: {e}")
-              print(f"Raw: {content[:500]}")
+              print(f"❌ JSON parse error: {e} | Raw: {content[:300]}")
               sys.exit(1)
 
-          if "error" in raw:
-              print(f"❌ Metabase error: {raw['error']}")
-              sys.exit(1)
-
-          # Handle both response formats:
-          # Format A: {"data": {"cols": [...], "rows": [...]}}
-          # Format B: [{"col1": val, ...}, ...]  (direct JSON array)
+          # ── Parse rows ──
           if isinstance(raw, list):
               rows = raw
-              print(f"Format: direct JSON array")
-              print(f"Total rows: {len(rows)}")
-              if rows:
-                  print(f"Sample row: {rows[0]}")
           elif "data" in raw:
               cols = [col["name"] for col in raw["data"]["cols"]]
               rows = [dict(zip(cols, row)) for row in raw["data"]["rows"]]
-              print(f"Format: nested data object")
-              print(f"Columns: {cols}")
-              print(f"Total rows: {len(rows)}")
-              if rows:
-                  print(f"Sample row: {rows[0]}")
           else:
-              print(f"❌ Unexpected response structure. Keys: {list(raw.keys())}")
-              print(f"Full response: {content[:500]}")
+              print(f"❌ Unexpected structure: {list(raw.keys())}")
               sys.exit(1)
+
+          print(f"Total rows: {len(rows)}")
+          if rows:
+              print(f"Columns available: {list(rows[0].keys())}")
+
+          # ── Auto-detect org name column ──
+          # Try common variations of the column name
+          ORG_COL = None
+          for candidate in ["Organization Name", "organization_name", "org_name",
+                            "Organisation Name", "organisation_name", "name", "Name"]:
+              if rows and candidate in rows[0]:
+                  ORG_COL = candidate
+                  break
+
+          if not ORG_COL:
+              # Use the first string column as fallback
+              ORG_COL = list(rows[0].keys())[0] if rows else "Unknown"
+
+          print(f"Using org column: '{ORG_COL}'")
 
           # ── Filter inactive > 5 days ──
           alerts = [
@@ -134,20 +96,19 @@ jobs:
           high     = [r for r in alerts if 14 < float(r["inactive_days"]) <= 30]
           watch    = [r for r in alerts if  5 < float(r["inactive_days"]) <= 14]
 
-          # ── Per-org widgets ──
+          # ── Per-org widgets (no last activity date) ──
           widgets = []
           for row in alerts:
               days = float(row.get("inactive_days", 0))
-              org  = row.get("Organization Name", "Unknown")
-              last = row.get("last_activity_date", "Never")
+              org  = row.get(ORG_COL, "Unknown")
               if days > 30:   emoji, label = "🔴", "Critical"
               elif days > 14: emoji, label = "🟠", "High"
               else:           emoji, label = "🟡", "Watch"
               widgets.append({
                   "decoratedText": {
-                      "topLabel": f"{emoji} {label}  ·  {org}",
-                      "text": f"<b>{days:.0f} days</b> inactive",
-                      "bottomLabel": f"Last activity: {last}"
+                      "topLabel": f"{emoji} {label}",
+                      "text": f"<b>{org}</b>",
+                      "bottomLabel": f"{days:.0f} days inactive"
                   }
               })
 
@@ -207,7 +168,7 @@ jobs:
                 headers={"Content-Type": "application/json"})
           try:
               resp = urllib.request.urlopen(req)
-              print(f"✅ Alert sent! Status: {resp.status} — {len(alerts)} org(s) flagged.")
+              print(f"✅ Alert sent! {len(alerts)} org(s) flagged.")
           except urllib.error.HTTPError as e:
               print(f"❌ Webhook error: {e.code} — {e.read().decode()}")
               sys.exit(1)
