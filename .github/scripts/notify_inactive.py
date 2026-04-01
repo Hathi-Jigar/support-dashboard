@@ -1,0 +1,91 @@
+import json, os, sys, urllib.request, urllib.error
+from datetime import date
+
+webhook = os.environ.get("GOOGLE_CHAT_WEBHOOK", "").strip()
+if not webhook:
+    print("ERROR: GOOGLE_CHAT_WEBHOOK not set")
+    sys.exit(1)
+print(f"Webhook length: {len(webhook)}")
+
+with open("/tmp/result.json") as f:
+    raw = json.load(f)
+
+if isinstance(raw, list):
+    rows = raw
+elif "data" in raw:
+    cols = [c["name"] for c in raw["data"]["cols"]]
+    rows = [dict(zip(cols, r)) for r in raw["data"]["rows"]]
+else:
+    print(f"Unexpected structure: {list(raw.keys())}")
+    sys.exit(1)
+
+print(f"Rows: {len(rows)}")
+if rows:
+    print(f"Cols: {list(rows[0].keys())}")
+
+ORG_COL = None
+for c in ["Organization Name", "organization_name", "Organisation Name", "name", "Name"]:
+    if rows and c in rows[0]:
+        ORG_COL = c
+        break
+if not ORG_COL:
+    ORG_COL = list(rows[0].keys())[0] if rows else "col0"
+print(f"Org col: {ORG_COL}")
+
+alerts   = [r for r in rows if r.get("inactive_days") and float(r["inactive_days"]) > 5]
+critical = [r for r in alerts if float(r["inactive_days"]) > 30]
+high     = [r for r in alerts if 14 < float(r["inactive_days"]) <= 30]
+watch    = [r for r in alerts if  5 < float(r["inactive_days"]) <= 14]
+print(f"Alerts: {len(alerts)} | Critical: {len(critical)} | High: {len(high)} | Watch: {len(watch)}")
+
+if not alerts:
+    print("No alerts today.")
+    sys.exit(0)
+
+widgets = []
+for r in alerts:
+    days = float(r["inactive_days"])
+    org  = r.get(ORG_COL, "Unknown")
+    if   days > 30: emoji, lbl = "\U0001f534", "Critical"
+    elif days > 14: emoji, lbl = "\U0001f7e0", "High"
+    else:           emoji, lbl = "\U0001f7e1", "Watch"
+    widgets.append({"decoratedText": {
+        "topLabel": f"{emoji} {lbl}",
+        "text": f"<b>{org}</b>",
+        "bottomLabel": f"{int(days)} days inactive"
+    }})
+
+payload = {"cardsV2": [{"card": {
+    "header": {
+        "title": "digiQC Inactivity Report",
+        "subtitle": f"{date.today().strftime('%d %b %Y')} - {len(alerts)} org(s) inactive > 5 days",
+        "imageType": "CIRCLE"
+    },
+    "sections": [
+        {
+            "header": f"Inactive Orgs ({len(alerts)})",
+            "collapsible": True,
+            "uncollapsibleWidgetsCount": 5,
+            "widgets": widgets
+        },
+        {"header": "Summary", "widgets": [{"columns": {"columnItems": [
+            {"widgets": [{"decoratedText": {"topLabel": "\U0001f534 Critical >30d", "text": f"<b>{len(critical)}</b>"}}]},
+            {"widgets": [{"decoratedText": {"topLabel": "\U0001f7e0 High >14d",     "text": f"<b>{len(high)}</b>"}}]},
+            {"widgets": [{"decoratedText": {"topLabel": "\U0001f7e1 Watch >5d",     "text": f"<b>{len(watch)}</b>"}}]}
+        ]}}]},
+        {"widgets": [{"buttonList": {"buttons": [{"text": "Open Metabase", "onClick": {"openLink": {
+            "url": "http://metabase-v2.digiqc.com/public/question/e9331eaf-825d-46f8-a865-64f6727b3801"
+        }}}]}}]}
+    ]
+}}]}
+
+req = urllib.request.Request(
+    webhook, data=json.dumps(payload).encode(),
+    headers={"Content-Type": "application/json"}
+)
+try:
+    resp = urllib.request.urlopen(req)
+    print(f"Sent! Status: {resp.status}")
+except urllib.error.HTTPError as e:
+    print(f"Webhook error: {e.code} - {e.read().decode()}")
+    sys.exit(1)
