@@ -17,17 +17,16 @@ jobs:
             -X GET \
             "http://metabase-v2.digiqc.com/api/public/card/e9331eaf-825d-46f8-a865-64f6727b3801/query")
           echo "HTTP Status: $HTTP_CODE"
-          cat /tmp/result.json | head -c 200
           if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "202" ]; then
             echo "Failed: HTTP $HTTP_CODE"
+            cat /tmp/result.json
             exit 1
           fi
+          echo "Fetch OK"
 
-      - name: Notify Google Chat
-        env:
-          GOOGLE_CHAT_WEBHOOK: ${{ secrets.GOOGLE_CHAT_WEBHOOK }}
+      - name: Write Python Script
         run: |
-          python3 - <<'PYEOF'
+          cat > /tmp/notify.py << 'SCRIPTEOF'
 import json, os, sys, urllib.request, urllib.error
 from datetime import date
 
@@ -35,6 +34,7 @@ webhook = os.environ.get("GOOGLE_CHAT_WEBHOOK", "").strip()
 if not webhook:
     print("ERROR: GOOGLE_CHAT_WEBHOOK not set")
     sys.exit(1)
+print(f"Webhook length: {len(webhook)}")
 
 with open("/tmp/result.json") as f:
     raw = json.load(f)
@@ -45,22 +45,26 @@ elif "data" in raw:
     cols = [c["name"] for c in raw["data"]["cols"]]
     rows = [dict(zip(cols, r)) for r in raw["data"]["rows"]]
 else:
-    print("Unexpected response structure")
+    print(f"Unexpected: {list(raw.keys())}")
     sys.exit(1)
 
-print(f"Rows: {len(rows)}, Cols: {list(rows[0].keys()) if rows else []}")
+print(f"Rows: {len(rows)}")
+if rows:
+    print(f"Cols: {list(rows[0].keys())}")
 
-ORG_COL = next(
-    (c for c in ["Organization Name","organization_name","Organisation Name","name","Name"]
-     if rows and c in rows[0]),
-    list(rows[0].keys())[0] if rows else "col0"
-)
+ORG_COL = None
+for c in ["Organization Name","organization_name","Organisation Name","name","Name"]:
+    if rows and c in rows[0]:
+        ORG_COL = c
+        break
+if not ORG_COL:
+    ORG_COL = list(rows[0].keys())[0] if rows else "col0"
+print(f"Org col: {ORG_COL}")
 
-alerts  = [r for r in rows if r.get("inactive_days") and float(r["inactive_days"]) > 5]
-critical= [r for r in alerts if float(r["inactive_days"]) > 30]
-high    = [r for r in alerts if 14 < float(r["inactive_days"]) <= 30]
-watch   = [r for r in alerts if  5 < float(r["inactive_days"]) <= 14]
-
+alerts   = [r for r in rows if r.get("inactive_days") and float(r["inactive_days"]) > 5]
+critical = [r for r in alerts if float(r["inactive_days"]) > 30]
+high     = [r for r in alerts if 14 < float(r["inactive_days"]) <= 30]
+watch    = [r for r in alerts if  5 < float(r["inactive_days"]) <= 14]
 print(f"Alerts: {len(alerts)} | Critical: {len(critical)} | High: {len(high)} | Watch: {len(watch)}")
 
 if not alerts:
@@ -114,4 +118,10 @@ try:
 except urllib.error.HTTPError as e:
     print(f"Webhook error: {e.code} - {e.read().decode()}")
     sys.exit(1)
-PYEOF
+SCRIPTEOF
+          echo "Script written OK"
+
+      - name: Run Notify Script
+        env:
+          GOOGLE_CHAT_WEBHOOK: ${{ secrets.GOOGLE_CHAT_WEBHOOK }}
+        run: python3 /tmp/notify.py
