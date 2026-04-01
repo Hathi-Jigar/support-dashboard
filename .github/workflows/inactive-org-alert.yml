@@ -1,0 +1,137 @@
+name: Inactive Org Alert — digiQC
+
+on:
+  schedule:
+    - cron: '30 13 * * *'  # 7:00 PM IST (13:30 UTC) daily
+  workflow_dispatch:        # Manual trigger from GitHub Actions UI
+
+jobs:
+  check-inactive-orgs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Fetch Metabase Public Query
+        run: |
+          curl -s \
+            "http://metabase-v2.digiqc.com/api/public/card/e9331eaf-825d-46f8-a865-64f6727b3801/query/json" \
+            > /tmp/result.json
+
+          echo "--- Raw API Response ---"
+          cat /tmp/result.json
+
+      - name: Check Inactivity & Notify Google Chat
+        run: |
+          python3 << 'EOF'
+          import json, os, urllib.request
+          from datetime import date
+
+          with open("/tmp/result.json") as f:
+              raw = json.load(f)
+
+          # Map column names to row dicts
+          cols = [col["name"] for col in raw["data"]["cols"]]
+          rows = [dict(zip(cols, row)) for row in raw["data"]["rows"]]
+
+          print(f"Columns  : {cols}")
+          print(f"Total rows: {len(rows)}")
+
+          # Filter orgs inactive > 5 days
+          alerts = [
+              r for r in rows
+              if r.get("inactive_days") is not None and float(r["inactive_days"]) > 5
+          ]
+
+          print(f"Alerts (>5 days): {len(alerts)}")
+
+          if not alerts:
+              print("✅ All orgs active within 5 days — no alert sent.")
+              exit(0)
+
+          # ── Severity buckets ──
+          critical = [r for r in alerts if float(r["inactive_days"]) > 30]
+          high     = [r for r in alerts if 14 < float(r["inactive_days"]) <= 30]
+          watch    = [r for r in alerts if 5  < float(r["inactive_days"]) <= 14]
+
+          # ── Build per-org widgets ──
+          widgets = []
+          for row in alerts:
+              days = float(row.get("inactive_days", 0))
+              org  = row.get("Organization Name", "Unknown")
+              last = row.get("last_activity_date", "Never")
+
+              if days > 30:
+                  emoji, label = "🔴", "Critical"
+              elif days > 14:
+                  emoji, label = "🟠", "High"
+              else:
+                  emoji, label = "🟡", "Watch"
+
+              widgets.append({
+                  "decoratedText": {
+                      "topLabel": f"{emoji} {label}  ·  {org}",
+                      "text": f"<b>{days:.0f} days</b> inactive",
+                      "bottomLabel": f"Last activity: {last}"
+                  }
+              })
+
+          # ── Summary columns widget ──
+          summary_widget = {
+              "columns": {
+                  "columnItems": [
+                      {"widgets": [{"decoratedText": {"topLabel": "🔴 Critical (>30d)",  "text": f"<b>{len(critical)}</b> orgs"}}]},
+                      {"widgets": [{"decoratedText": {"topLabel": "🟠 High (>14d)",       "text": f"<b>{len(high)}</b> orgs"}}]},
+                      {"widgets": [{"decoratedText": {"topLabel": "🟡 Watch (>5d)",       "text": f"<b>{len(watch)}</b> orgs"}}]}
+                  ]
+              }
+          }
+
+          # ── Full Card payload ──
+          payload = {
+              "cardsV2": [{
+                  "card": {
+                      "header": {
+                          "title": "📋 digiQC — Daily Inactivity Report",
+                          "subtitle": f"{date.today().strftime('%d %b %Y')}  ·  {len(alerts)} org(s) inactive > 5 days",
+                          "imageType": "CIRCLE"
+                      },
+                      "sections": [
+                          {
+                              "header": f"⚠️ Inactive Organizations ({len(alerts)})",
+                              "collapsible": True,
+                              "uncollapsibleWidgetsCount": 5,
+                              "widgets": widgets
+                          },
+                          {
+                              "header": "Summary",
+                              "widgets": [summary_widget]
+                          },
+                          {
+                              "widgets": [{
+                                  "buttonList": {
+                                      "buttons": [{
+                                          "text": "📊 Open in Metabase",
+                                          "onClick": {
+                                              "openLink": {
+                                                  "url": "http://metabase-v2.digiqc.com/public/question/e9331eaf-825d-46f8-a865-64f6727b3801"
+                                              }
+                                          }
+                                      }]
+                                  }
+                              }]
+                          }
+                      ]
+                  }
+              }]
+          }
+
+          webhook = os.environ["GOOGLE_CHAT_WEBHOOK"]
+          data = json.dumps(payload).encode()
+          req = urllib.request.Request(
+              webhook, data=data,
+              headers={"Content-Type": "application/json"}
+          )
+          urllib.request.urlopen(req)
+          print(f"🔔 Alert sent! {len(alerts)} org(s) flagged.")
+          EOF
+        env:
+          GOOGLE_CHAT_WEBHOOK: ${{ secrets.GOOGLE_CHAT_WEBHOOK }}
