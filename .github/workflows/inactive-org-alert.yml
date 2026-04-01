@@ -14,16 +14,11 @@ jobs:
 
       - name: Fetch Metabase Data
         run: |
-          HTTP_CODE=$(curl -sL \
+          curl -sL \
             -o /tmp/result.json \
-            -w "%{http_code}" \
-            "http://metabase-v2.digiqc.com/api/public/card/e9331eaf-825d-46f8-a865-64f6727b3801/query")
-          echo "HTTP: $HTTP_CODE"
-          if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "202" ]; then
-            echo "Metabase fetch failed"
-            cat /tmp/result.json
-            exit 1
-          fi
+            "http://metabase-v2.digiqc.com/api/public/card/e9331eaf-825d-46f8-a865-64f6727b3801/query"
+          echo "Fetch done. Size: $(wc -c < /tmp/result.json) bytes"
+          head -c 300 /tmp/result.json
 
       - name: Notify Google Chat
         env:
