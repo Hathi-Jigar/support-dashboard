@@ -263,18 +263,6 @@
       "created": "2026-03-31",
       "updated": "2026-03-31",
       "overdue": false
-    },
-    {
-      "id": 24,
-      "task": "",
-      "assignees": [],
-      "status": "Open",
-      "priority": "Medium",
-      "deadline": "",
-      "remark": "",
-      "created": "2026-03-31",
-      "updated": "2026-03-31",
-      "overdue": false
     }
   ]
 }
