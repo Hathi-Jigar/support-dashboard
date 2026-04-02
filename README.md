@@ -254,7 +254,12 @@ support-dashboard/
 ├── index.html             ← Dashboard application (single-file)
 ├── config.json            ← Organisation dropdown list
 ├── onboarding.json        ← Onboarding tracker data
-└── tasks.json             ← Task tracker data
+├── tasks.json             ← Task tracker data
+├── health/
+│   └── index.html         ← Client Health Dashboard (client-facing, Metabase-powered)
+└── .github/
+    └── workflows/
+        └── weekly-health-alert.yml  ← Weekly WhatsApp alerts via MSG91
 ```
 
 ---

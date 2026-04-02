@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Health Dashboard — digiQC</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --brand:#E8450A;--brand-light:#FFF4F0;--bg:#F8F9FB;--white:#FFF;
+  --text:#1A1D23;--sub:#6B7280;--muted:#9CA3AF;--border:#E5E7EB;
+  --green:#16A34A;--green-bg:#DCFCE7;--red:#DC2626;--red-bg:#FEF2F2;
+  --orange:#D97706;--orange-bg:#FEF3C7;--blue:#2563EB;--blue-bg:#EFF6FF;
+  --radius:12px;--shadow:0 2px 8px rgba(0,0,0,0.06);
+}
+body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* Header */
+.header{background:var(--white);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.header-left{display:flex;align-items:center;gap:12px}
+.logo{font-size:16px;font-weight:800;color:var(--brand)}
+.header-sep{color:var(--border)}
+.header-title{font-size:15px;font-weight:600}
+.header-right{font-size:12px;color:var(--sub)}
+
+/* Loading */
+.loading{text-align:center;padding:80px 20px;color:var(--sub);font-size:14px}
+.loading .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Error */
+.error-msg{text-align:center;padding:60px 20px;color:var(--red);font-size:14px}
+
+/* Client View */
+.client-header{padding:28px 28px 0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.client-name{font-size:24px;font-weight:800}
+.week-badge{background:var(--blue-bg);color:var(--blue);padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600}
+
+/* Module Cards */
+.cards{padding:20px 28px;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:24px;position:relative;overflow:hidden;transition:box-shadow .15s}
+.card:hover{box-shadow:var(--shadow)}
+.card-module{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:8px}
+.card-value{font-size:42px;font-weight:800;line-height:1.1}
+.card-trend{font-size:13px;font-weight:600;margin-top:8px}
+.card-bar{position:absolute;bottom:0;left:0;right:0;height:4px}
+.card.up .card-value{color:var(--green)}
+.card.up .card-trend{color:var(--green)}
+.card.up .card-bar{background:var(--green)}
+.card.down .card-value{color:var(--red)}
+.card.down .card-trend{color:var(--red)}
+.card.down .card-bar{background:var(--red)}
+.card.flat .card-value{color:var(--orange)}
+.card.flat .card-trend{color:var(--orange)}
+.card.flat .card-bar{background:var(--orange)}
+.card.zero .card-value{color:var(--muted)}
+.card.zero .card-trend{color:var(--red)}
+.card.zero .card-bar{background:var(--red)}
+
+/* Missing Out Section */
+.missing-section{padding:12px 28px 28px}
+.missing-title{font-size:16px;font-weight:700;margin-bottom:12px;color:var(--text)}
+.missing-card{background:var(--orange-bg);border:1px solid #FDE68A;border-radius:var(--radius);padding:20px;margin-bottom:12px}
+.missing-module{font-size:14px;font-weight:700;color:#92400E;margin-bottom:6px}
+.missing-desc{font-size:13px;color:#78350F;line-height:1.6}
+
+/* No Issues */
+.all-good{background:var(--green-bg);border:1px solid #BBF7D0;border-radius:var(--radius);padding:24px;margin:12px 28px 28px;text-align:center}
+.all-good-title{font-size:16px;font-weight:700;color:var(--green);margin-bottom:4px}
+.all-good-desc{font-size:13px;color:#166534}
+
+/* Management Contacts */
+.contacts-section{padding:0 28px 28px}
+.contacts-title{font-size:14px;font-weight:700;color:var(--sub);margin-bottom:10px}
+.contacts-list{display:flex;flex-wrap:wrap;gap:8px}
+.contact-chip{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:12px;color:var(--text);font-weight:500}
+
+/* All Clients View */
+.view-toggle{padding:16px 28px 0;display:flex;gap:8px}
+.toggle-btn{padding:8px 18px;border-radius:20px;border:1px solid var(--border);background:var(--white);font-size:12px;font-weight:600;cursor:pointer;color:var(--sub);font-family:inherit;transition:all .15s}
+.toggle-btn:hover{border-color:var(--sub)}
+.toggle-btn.active{background:var(--brand);color:var(--white);border-color:var(--brand)}
+
+.clients-grid{padding:20px 28px;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+.client-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:20px;cursor:pointer;transition:all .15s}
+.client-card:hover{box-shadow:var(--shadow);border-color:var(--brand)}
+.client-card-name{font-size:15px;font-weight:700;margin-bottom:12px}
+.client-card-modules{display:flex;gap:10px}
+.client-card-mod{flex:1;text-align:center;padding:8px;border-radius:8px;background:var(--bg)}
+.client-card-mod-name{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.client-card-mod-val{font-size:18px;font-weight:800;margin-top:2px}
+.client-card-mod.up .client-card-mod-val{color:var(--green)}
+.client-card-mod.down .client-card-mod-val{color:var(--red)}
+.client-card-mod.flat .client-card-mod-val{color:var(--orange)}
+.client-card-mod.zero .client-card-mod-val{color:var(--muted)}
+
+/* Search */
+.search-bar{padding:16px 28px 0}
+.search-input{width:100%;max-width:400px;padding:10px 16px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none}
+.search-input:focus{border-color:var(--brand)}
+
+/* Filter bar */
+.filter-bar{padding:12px 28px 0;display:flex;gap:8px;flex-wrap:wrap}
+.filter-chip{padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--white);font-size:12px;font-weight:600;cursor:pointer;color:var(--sub);font-family:inherit;transition:all .15s}
+.filter-chip:hover{border-color:var(--sub)}
+.filter-chip.active{background:var(--brand);color:var(--white);border-color:var(--brand)}
+
+/* Back link */
+.back-link{display:inline-flex;align-items:center;gap:6px;padding:16px 28px 0;font-size:13px;font-weight:600;color:var(--brand);text-decoration:none;cursor:pointer}
+.back-link:hover{text-decoration:underline}
+
+/* Contact list on cards */
+.contact-list-inline{margin-top:10px;border-top:1px solid var(--border);padding-top:8px}
+.contact-row{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12px;cursor:pointer;-webkit-user-select:none;user-select:none}
+.contact-row input[type="checkbox"]{width:16px !important;height:16px !important;min-width:16px !important;accent-color:var(--brand);cursor:pointer;flex-shrink:0;margin:0 !important;-webkit-appearance:checkbox !important;appearance:checkbox !important;opacity:1 !important;position:static !important;pointer-events:auto !important;display:inline-block !important}
+.contact-row-name{font-weight:600;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.contact-row-phone{color:var(--muted);font-size:11px;flex-shrink:0}
+
+/* Checkbox & Send bar */
+.action-bar{padding:12px 28px 0;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.select-all-wrap{display:flex;align-items:center;gap:8px}
+.select-all-wrap input[type="checkbox"]{width:18px;height:18px;accent-color:var(--brand);cursor:pointer}
+.select-all-wrap label{font-size:13px;font-weight:600;color:var(--sub);cursor:pointer}
+.selected-count{font-size:13px;font-weight:600;color:var(--text);margin-left:8px}
+.send-whatsapp-btn{margin-left:auto;background:#25D366;color:var(--white);border:none;padding:10px 22px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:8px;transition:background .15s}
+.send-whatsapp-btn:hover{background:#1DA851}
+.send-whatsapp-btn:disabled{background:var(--muted);cursor:not-allowed}
+.send-whatsapp-btn svg{width:18px;height:18px;fill:white}
+
+.client-card-check{position:relative}
+.client-card-check input[type="checkbox"]{position:absolute;top:12px;right:12px;width:18px;height:18px;accent-color:var(--brand);cursor:pointer;z-index:2}
+
+/* Send modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200;display:flex;align-items:center;justify-content:center}
+.modal{background:var(--white);border-radius:var(--radius);padding:28px;max-width:500px;width:90%;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.15)}
+.modal-title{font-size:18px;font-weight:700;margin-bottom:16px}
+.modal-list{max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;margin-bottom:16px}
+.modal-list-item{padding:10px 14px;border-bottom:1px solid var(--border);font-size:13px;display:flex;justify-content:space-between}
+.modal-list-item:last-child{border-bottom:none}
+.modal-list-item .name{font-weight:600}
+.modal-list-item .phones{color:var(--sub);font-size:12px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end}
+.modal-btn{padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;border:none}
+.modal-btn.cancel{background:var(--bg);color:var(--sub);border:1px solid var(--border)}
+.modal-btn.confirm{background:#25D366;color:white}
+.modal-btn.confirm:disabled{background:var(--muted);cursor:not-allowed}
+.modal-progress{margin-top:16px;font-size:13px;color:var(--sub)}
+.modal-progress .success{color:var(--green)}
+.modal-progress .fail{color:var(--red)}
+
+/* Stats summary for all clients view */
+.summary-bar{padding:16px 28px 0;display:flex;gap:16px;flex-wrap:wrap}
+.summary-stat{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px 22px;min-width:100px}
+.summary-stat-value{font-size:24px;font-weight:800}
+.summary-stat-label{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.summary-stat.healthy .summary-stat-value{color:var(--green)}
+.summary-stat.at-risk .summary-stat-value{color:var(--orange)}
+.summary-stat.critical .summary-stat-value{color:var(--red)}
+
+@media(max-width:600px){
+  .cards{grid-template-columns:1fr}
+  .client-card-modules{flex-direction:column}
+  .clients-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <span class="logo">digiQC</span>
+    <span class="header-sep">|</span>
+    <span class="header-title">Client Health Dashboard</span>
+  </div>
+  <div class="header-right" id="lastUpdated"></div>
+</div>
+
+<div id="app">
+  <div class="loading">
+    <div class="spinner"></div>
+    Loading health data from Metabase...
+  </div>
+</div>
+
+<script>
+// ─── CONFIG ───
+const METABASE_URL = 'https://metabase-v2.digiqc.com/api/public/card/bc60fa57-69fd-407f-9d77-1193c513a05f/query/json';
+const MODULES = ['Instruction', 'Inspection', 'Register'];
+
+const MODULE_BENEFITS = {
+  'Instruction': 'Teams using Instruction reduce rework by 40% and ensure every worker follows the correct method statement before starting work.',
+  'Inspection': 'Teams using Inspection complete quality checks 3x faster and catch defects before they become costly fixes.',
+  'Register': 'Teams using Register save 2 hours/week on document tracking and reduce audit preparation time by 60%.'
+};
+
+// ─── GITHUB CONFIG ───
+const GH_REPO = 'Hathi-Jigar/support-dashboard';
+const GH_WORKFLOW = 'send-whatsapp-manual.yml';
+let GH_TOKEN = localStorage.getItem('gh_token') || '';
+
+// ─── STATE ───
+let allData = {};
+let currentView = 'all'; // 'all' or 'client'
+let currentClient = null;
+let currentFilter = 'all'; // 'all', 'healthy', 'at-risk', 'critical'
+let selectedClients = new Set();
+let selectedContacts = {}; // { clientName: Set of phone numbers }
+
+// ─── INIT ───
+(async function init() {
+  const params = new URLSearchParams(window.location.search);
+  const clientParam = params.get('client');
+
+  try {
+    const resp = await fetch(METABASE_URL);
+    if (!resp.ok) throw new Error('Failed to fetch data');
+    const raw = await resp.json();
+    allData = parseMetabaseData(raw);
+
+    document.getElementById('lastUpdated').textContent = 'Updated: ' + new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+
+    // Select all contacts by default
+    Object.keys(allData).forEach(name => {
+      const phones = allData[name].phones ? allData[name].phones.split(',').map(p => p.trim()).filter(Boolean) : [];
+      selectedContacts[name] = new Set(phones);
+    });
+
+    if (clientParam && allData[clientParam]) {
+      showClientView(clientParam);
+    } else {
+      showAllClientsView();
+    }
+  } catch (err) {
+    document.getElementById('app').innerHTML = '<div class="error-msg">Failed to load health data. Please try again later.<br><br><small>' + err.message + '</small></div>';
+  }
+})();
+
+// ─── PARSE ───
+function parseMetabaseData(raw) {
+  const clients = {};
+  const keys = Object.keys(raw[0] || {}).filter(k => k !== 'Module');
+
+  keys.forEach(clientName => {
+    clients[clientName] = { modules: {}, names: '', phones: '' };
+  });
+
+  raw.forEach(row => {
+    const mod = row.Module;
+    keys.forEach(clientName => {
+      const val = row[clientName] || '';
+      if (mod === 'Name') {
+        clients[clientName].names = val;
+      } else if (mod === 'Phone') {
+        clients[clientName].phones = val;
+      } else if (MODULES.includes(mod)) {
+        clients[clientName].modules[mod] = parsePercentage(val);
+      }
+    });
+  });
+
+  return clients;
+}
+
+function parsePercentage(val) {
+  if (!val || val === '' || val === '0' || val === '0%') return { raw: val, value: 0, status: 'zero' };
+  const str = String(val);
+  const match = str.match(/(\d+)%/);
+  if (!match) return { raw: val, value: 0, status: 'zero' };
+  const num = parseInt(match[1]);
+  if (num === 0) return { raw: val, value: 0, status: 'zero' };
+  // Use the arrow to determine direction
+  const hasUp = str.includes('\u2B06') || str.includes('\u2B06\uFE0F') || str.includes('\u23EB') || str.includes('\u2191') || str.toLowerCase().includes('up');
+  const hasDown = str.includes('\u2B07') || str.includes('\u2B07\uFE0F') || str.includes('\u23EC') || str.includes('\u2193') || str.toLowerCase().includes('down');
+  let status;
+  if (hasDown) status = 'down';
+  else if (hasUp) status = 'up';
+  else status = 'flat';
+  return { raw: val, value: num, status };
+}
+
+function getClientHealth(client) {
+  const mods = client.modules;
+  const statuses = MODULES.map(m => mods[m] ? mods[m].status : 'zero');
+  const downCount = statuses.filter(s => s === 'down' || s === 'zero').length;
+  if (downCount >= 3) return 'critical';
+  if (downCount >= 1) return 'at-risk';
+  return 'healthy';
+}
+
+// ─── ALL CLIENTS VIEW ───
+function showAllClientsView() {
+  currentView = 'all';
+  currentClient = null;
+  window.history.replaceState({}, '', window.location.pathname);
+
+  const clientNames = Object.keys(allData).sort();
+  const healthCounts = { healthy: 0, 'at-risk': 0, critical: 0 };
+  clientNames.forEach(name => {
+    healthCounts[getClientHealth(allData[name])]++;
+  });
+
+  let html = '';
+
+  // Summary stats
+  html += '<div class="summary-bar">';
+  html += '<div class="summary-stat"><div class="summary-stat-value">' + clientNames.length + '</div><div class="summary-stat-label">Total Clients</div></div>';
+  html += '<div class="summary-stat healthy"><div class="summary-stat-value">' + healthCounts.healthy + '</div><div class="summary-stat-label">Healthy</div></div>';
+  html += '<div class="summary-stat at-risk"><div class="summary-stat-value">' + healthCounts['at-risk'] + '</div><div class="summary-stat-label">At Risk</div></div>';
+  html += '<div class="summary-stat critical"><div class="summary-stat-value">' + healthCounts.critical + '</div><div class="summary-stat-label">Critical</div></div>';
+  html += '</div>';
+
+  // Search
+  html += '<div class="search-bar"><input class="search-input" type="text" placeholder="Search clients..." id="clientSearch" oninput="filterClients()"></div>';
+
+  // Filter chips
+  html += '<div class="filter-bar">';
+  html += '<button class="filter-chip active" data-filter="all" onclick="setFilter(\'all\',this)">All (' + clientNames.length + ')</button>';
+  html += '<button class="filter-chip" data-filter="healthy" onclick="setFilter(\'healthy\',this)">Healthy (' + healthCounts.healthy + ')</button>';
+  html += '<button class="filter-chip" data-filter="at-risk" onclick="setFilter(\'at-risk\',this)">At Risk (' + healthCounts['at-risk'] + ')</button>';
+  html += '<button class="filter-chip" data-filter="critical" onclick="setFilter(\'critical\',this)">Critical (' + healthCounts.critical + ')</button>';
+  html += '</div>';
+
+  // Action bar — select all + send
+  html += '<div class="action-bar">';
+  html += '<div class="select-all-wrap"><input type="checkbox" id="selectAll" checked onchange="toggleSelectAll(this.checked)"><label for="selectAll">Select All</label></div>';
+  html += '<span class="selected-count" id="selectedCount">' + clientNames.length + ' selected</span>';
+  html += '<button class="send-whatsapp-btn" id="sendBtn" onclick="openSendModal()"><svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 00.612.638l4.7-1.354A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-2.239 0-4.308-.724-5.992-1.95l-.418-.305-2.79.803.87-2.674-.336-.434A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>Send WhatsApp Alerts</button>';
+  html += '</div>';
+
+  // Select all clients by default
+  selectedClients = new Set(clientNames);
+
+  // Client cards grid
+  html += '<div class="clients-grid" id="clientsGrid">';
+  clientNames.forEach(name => {
+    html += buildClientCard(name, allData[name]);
+  });
+  html += '</div>';
+
+  document.getElementById('app').innerHTML = html;
+}
+
+function buildClientCard(name, client) {
+  const health = getClientHealth(client);
+  const isSelected = selectedClients.has(name);
+  let html = '<div class="client-card client-card-check" data-client="' + escHtml(name) + '" data-health="' + health + '">';
+  html += '<input type="checkbox" ' + (isSelected ? 'checked' : '') + ' onclick="event.stopPropagation();toggleClient(\'' + escJs(name) + '\',this.checked)" title="Select for WhatsApp">';
+  html += '<div onclick="showClientView(\'' + escJs(name) + '\')" style="cursor:pointer">';
+  html += '<div class="client-card-name">' + escHtml(name) + '</div>';
+  html += '<div class="client-card-modules">';
+  MODULES.forEach(mod => {
+    const data = client.modules[mod] || { value: 0, status: 'zero' };
+    html += '<div class="client-card-mod ' + data.status + '">';
+    html += '<div class="client-card-mod-name">' + mod + '</div>';
+    let cardVal = 'N/A';
+    if (data.status === 'up') cardVal = '+' + data.value + '% \u2B06\uFE0F';
+    else if (data.status === 'down') cardVal = '-' + data.value + '% \u2B07\uFE0F';
+    else if (data.status === 'flat') cardVal = data.value + '% \u2796';
+    html += '<div class="client-card-mod-val">' + cardVal + '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  // Contacts with individual checkboxes
+  const names = client.names ? client.names.split(',').map(n => n.trim()).filter(Boolean) : [];
+  const phones = client.phones ? client.phones.split(',').map(p => p.trim()).filter(Boolean) : [];
+  if (phones.length > 0) {
+    html += '<div class="contact-list-inline">';
+    phones.forEach((phone, i) => {
+      const displayName = names[i] || 'Contact ' + (i + 1);
+      const isChecked = selectedContacts[name] && selectedContacts[name].has(phone);
+      const cleanPhone = phone.replace(/[^0-9]/g, '');
+      html += '<div class="contact-row" onclick="event.stopPropagation()">';
+      html += '<input type="checkbox" id="cb_' + cleanPhone + '" ' + (isChecked ? 'checked' : '') + ' onchange="toggleContact(\'' + escJs(name) + '\',\'' + escJs(phone) + '\',this.checked)">';
+      html += '<label for="cb_' + cleanPhone + '" class="contact-row-name">' + escHtml(displayName) + '</label>';
+      html += '<span class="contact-row-phone">' + escHtml(phone) + '</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
+  html += '</div></div>';
+  return html;
+}
+
+// ─── SELECTION ───
+function toggleContact(clientName, phone, checked) {
+  if (!selectedContacts[clientName]) selectedContacts[clientName] = new Set();
+  if (checked) selectedContacts[clientName].add(phone);
+  else selectedContacts[clientName].delete(phone);
+
+  // Auto-update client selection based on contacts
+  const hasAnyContact = selectedContacts[clientName].size > 0;
+  if (hasAnyContact) selectedClients.add(clientName);
+  else selectedClients.delete(clientName);
+
+  // Update client checkbox
+  const card = document.querySelector('.client-card[data-client="' + clientName + '"]');
+  if (card) {
+    const cb = card.querySelector(':scope > input[type="checkbox"]');
+    if (cb) cb.checked = hasAnyContact;
+  }
+  updateSelectedCount();
+}
+
+function toggleClient(name, checked) {
+  if (checked) {
+    selectedClients.add(name);
+    // Select all contacts for this client
+    const phones = allData[name].phones ? allData[name].phones.split(',').map(p => p.trim()).filter(Boolean) : [];
+    selectedContacts[name] = new Set(phones);
+  } else {
+    selectedClients.delete(name);
+    selectedContacts[name] = new Set();
+  }
+  // Update contact checkboxes in this card
+  const card = document.querySelector('.client-card[data-client="' + name + '"]');
+  if (card) {
+    card.querySelectorAll('.contact-row input[type="checkbox"]').forEach(cb => { cb.checked = checked; });
+  }
+  updateSelectedCount();
+  const allCheckbox = document.getElementById('selectAll');
+  if (allCheckbox) {
+    const visibleCards = getVisibleClientNames();
+    allCheckbox.checked = visibleCards.length > 0 && visibleCards.every(n => selectedClients.has(n));
+  }
+}
+
+function toggleSelectAll(checked) {
+  const visibleNames = getVisibleClientNames();
+  visibleNames.forEach(name => {
+    if (checked) {
+      selectedClients.add(name);
+      const phones = allData[name].phones ? allData[name].phones.split(',').map(p => p.trim()).filter(Boolean) : [];
+      selectedContacts[name] = new Set(phones);
+    } else {
+      selectedClients.delete(name);
+      selectedContacts[name] = new Set();
+    }
+  });
+  // Update all checkboxes in visible cards
+  document.querySelectorAll('.client-card').forEach(card => {
+    if (card.style.display !== 'none') {
+      card.querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.checked = checked; });
+    }
+  });
+  updateSelectedCount();
+}
+
+function getVisibleClientNames() {
+  const names = [];
+  document.querySelectorAll('.client-card').forEach(card => {
+    if (card.style.display !== 'none') names.push(card.dataset.client);
+  });
+  return names;
+}
+
+function updateSelectedCount() {
+  const totalContacts = Object.values(selectedContacts).reduce((sum, s) => sum + s.size, 0);
+  const el = document.getElementById('selectedCount');
+  if (el) el.textContent = selectedClients.size + ' clients, ' + totalContacts + ' contacts selected';
+  const btn = document.getElementById('sendBtn');
+  if (btn) btn.disabled = selectedClients.size === 0;
+}
+
+// ─── SEND WHATSAPP ───
+function openSendModal() {
+  if (selectedClients.size === 0) return;
+  const clients = Array.from(selectedClients).sort().map(name => {
+    const client = allData[name];
+    const contactPhones = selectedContacts[name] ? Array.from(selectedContacts[name]) : [];
+    const allNames = client.names ? client.names.split(',').map(n => n.trim()).filter(Boolean) : [];
+    const allPhones = client.phones ? client.phones.split(',').map(p => p.trim()).filter(Boolean) : [];
+    // Map selected phones to names
+    const contacts = contactPhones.map(phone => {
+      const idx = allPhones.indexOf(phone);
+      return { name: allNames[idx] || 'Contact', phone };
+    });
+    return { name, contacts };
+  });
+
+  const totalContacts = clients.reduce((sum, c) => sum + c.contacts.length, 0);
+
+  let html = '<div class="modal-overlay" id="sendModal" onclick="if(event.target===this)closeSendModal()">';
+  html += '<div class="modal">';
+  html += '<div class="modal-title">Send WhatsApp Alerts</div>';
+  html += '<div style="font-size:13px;color:var(--sub);margin-bottom:12px">Sending to <strong>' + totalContacts + ' contacts</strong> across <strong>' + clients.length + ' clients</strong></div>';
+
+  html += '<div class="modal-list">';
+  clients.forEach(c => {
+    html += '<div class="modal-list-item" style="flex-direction:column;gap:4px"><span class="name">' + escHtml(c.name) + '</span>';
+    c.contacts.forEach(contact => {
+      html += '<div style="font-size:12px;color:var(--sub);padding-left:8px">' + escHtml(contact.name) + ' — ' + escHtml(contact.phone) + '</div>';
+    });
+    html += '</div>';
+  });
+  html += '</div>';
+
+  html += '<div class="modal-actions">';
+  html += '<button class="modal-btn cancel" onclick="closeSendModal()">Cancel</button>';
+  html += '<button class="modal-btn confirm" id="confirmSendBtn" onclick="confirmSend()">Confirm & Send All</button>';
+  html += '</div>';
+
+  html += '<div class="modal-progress" id="sendProgress"></div>';
+  html += '</div></div>';
+
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function closeSendModal() {
+  const m = document.getElementById('sendModal');
+  if (m) m.remove();
+}
+
+async function confirmSend() {
+  // Check GitHub token
+  if (!GH_TOKEN) {
+    GH_TOKEN = prompt('Enter your GitHub Personal Access Token (needs repo + actions scope):');
+    if (!GH_TOKEN) return;
+    localStorage.setItem('gh_token', GH_TOKEN);
+  }
+
+  const btn = document.getElementById('confirmSendBtn');
+  btn.disabled = true;
+  btn.textContent = 'Triggering...';
+  const progress = document.getElementById('sendProgress');
+
+  // Build payload for GitHub Actions
+  const clientsPayload = [];
+  const clientsList = Array.from(selectedClients).sort();
+
+  for (const name of clientsList) {
+    const client = allData[name];
+    const phones = selectedContacts[name] ? Array.from(selectedContacts[name]) : [];
+    if (phones.length === 0) continue;
+
+    const modules = {};
+    MODULES.forEach(mod => {
+      const data = client.modules[mod] || { value: 0, status: 'zero' };
+      if (data.status === 'up') modules[mod] = '+' + data.value + '% (up)';
+      else if (data.status === 'down') modules[mod] = '-' + data.value + '% (dropped)';
+      else if (data.status === 'flat') modules[mod] = data.value + '% (same)';
+      else modules[mod] = 'No usage';
+    });
+
+    clientsPayload.push({ name, phones, modules });
+  }
+
+  if (clientsPayload.length === 0) {
+    progress.innerHTML = '<div class="fail">No clients with valid contacts selected.</div>';
+    btn.textContent = 'No contacts to send';
+    return;
+  }
+
+  // Trigger GitHub Actions workflow
+  try {
+    const resp = await fetch('https://api.github.com/repos/' + GH_REPO + '/actions/workflows/' + GH_WORKFLOW + '/dispatches', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/vnd.github.v3+json',
+        'Authorization': 'token ' + GH_TOKEN,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        ref: 'main',
+        inputs: {
+          clients_json: JSON.stringify(clientsPayload)
+        }
+      })
+    });
+
+    if (resp.status === 204) {
+      const totalContacts = clientsPayload.reduce((sum, c) => sum + c.phones.length, 0);
+      progress.innerHTML = '<div class="success">&#10003; Workflow triggered successfully!</div>';
+      progress.innerHTML += '<div style="margin-top:8px;font-size:13px">Sending to <strong>' + totalContacts + ' contacts</strong> across <strong>' + clientsPayload.length + ' clients</strong>.</div>';
+      progress.innerHTML += '<div style="margin-top:8px;font-size:12px;color:var(--sub)">Check progress: <a href="https://github.com/' + GH_REPO + '/actions" target="_blank" style="color:var(--brand)">GitHub Actions</a></div>';
+      btn.textContent = 'Triggered!';
+    } else if (resp.status === 401 || resp.status === 403) {
+      localStorage.removeItem('gh_token');
+      GH_TOKEN = '';
+      progress.innerHTML = '<div class="fail">&#10007; Invalid GitHub token. Click Confirm to re-enter.</div>';
+      btn.disabled = false;
+      btn.textContent = 'Confirm & Send All';
+    } else {
+      const err = await resp.json().catch(() => ({}));
+      progress.innerHTML = '<div class="fail">&#10007; GitHub API error: ' + (err.message || resp.status) + '</div>';
+      btn.textContent = 'Failed';
+    }
+  } catch (err) {
+    progress.innerHTML = '<div class="fail">&#10007; Network error: ' + err.message + '</div>';
+    btn.textContent = 'Failed';
+  }
+}
+
+function setFilter(filter, el) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  filterClients();
+}
+
+function filterClients() {
+  const search = (document.getElementById('clientSearch')?.value || '').toLowerCase();
+  document.querySelectorAll('.client-card').forEach(card => {
+    const name = card.dataset.client.toLowerCase();
+    const health = card.dataset.health;
+    const matchSearch = name.includes(search);
+    const matchFilter = currentFilter === 'all' || health === currentFilter;
+    card.style.display = (matchSearch && matchFilter) ? '' : 'none';
+  });
+}
+
+// ─── SINGLE CLIENT VIEW ───
+function showClientView(clientName) {
+  currentView = 'client';
+  currentClient = clientName;
+  window.history.replaceState({}, '', '?client=' + encodeURIComponent(clientName));
+
+  const client = allData[clientName];
+  if (!client) {
+    document.getElementById('app').innerHTML = '<div class="error-msg">Client not found: ' + escHtml(clientName) + '</div>';
+    return;
+  }
+
+  const health = getClientHealth(client);
+  let html = '';
+
+  // Back link
+  html += '<a class="back-link" onclick="showAllClientsView()">&#8592; All Clients</a>';
+
+  // Client header
+  html += '<div class="client-header">';
+  html += '<div class="client-name">' + escHtml(clientName) + '</div>';
+  html += '<div class="week-badge">Week of ' + getWeekRange() + '</div>';
+  html += '</div>';
+
+  // Module cards
+  html += '<div class="cards">';
+  MODULES.forEach(mod => {
+    const data = client.modules[mod] || { value: 0, status: 'zero', raw: '0%' };
+    const statusClass = data.status;
+    let trendText = '';
+    let displayValue = '';
+    if (data.status === 'up') { trendText = 'Up from last week'; displayValue = '+' + data.value + '% \u2B06\uFE0F'; }
+    else if (data.status === 'down') { trendText = 'Dropped from last week'; displayValue = '-' + data.value + '% \u2B07\uFE0F'; }
+    else if (data.status === 'flat') { trendText = 'Same as last week'; displayValue = data.value + '% \u2796'; }
+    else { trendText = 'No usage this week'; displayValue = 'N/A'; }
+
+    let icon = '';
+    if (data.status === 'up') icon = '&#9650; ';
+    else if (data.status === 'down') icon = '&#9660; ';
+    else if (data.status === 'flat') icon = '&#9644; ';
+    else icon = '&#9711; ';
+
+    html += '<div class="card ' + statusClass + '">';
+    html += '<div class="card-module">' + mod + '</div>';
+    html += '<div class="card-value">' + displayValue + '</div>';
+    html += '<div class="card-trend">' + icon + trendText + '</div>';
+    html += '<div class="card-bar"></div>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  // Missing out section
+  const missingModules = MODULES.filter(mod => {
+    const data = client.modules[mod];
+    return !data || data.value === 0;
+  });
+
+  const droppedModules = MODULES.filter(mod => {
+    const data = client.modules[mod];
+    return data && data.status === 'down';
+  });
+
+  if (missingModules.length > 0) {
+    html += '<div class="missing-section">';
+    html += '<div class="missing-title">You\'re not using these modules</div>';
+    missingModules.forEach(mod => {
+      html += '<div class="missing-card">';
+      html += '<div class="missing-module">' + mod + '</div>';
+      html += '<div class="missing-desc">' + MODULE_BENEFITS[mod] + '</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
+  if (droppedModules.length > 0) {
+    html += '<div class="missing-section">';
+    html += '<div class="missing-title">Modules needing attention</div>';
+    droppedModules.forEach(mod => {
+      const data = client.modules[mod];
+      html += '<div class="missing-card" style="background:#FEF2F2;border-color:#FECACA">';
+      html += '<div class="missing-module" style="color:#991B1B">' + mod + ' — dropped ' + data.value + '%</div>';
+      html += '<div class="missing-desc" style="color:#7F1D1D">Usage has dropped compared to last week. Please check with your team to ensure quality processes are being followed consistently.</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
+  if (missingModules.length === 0 && droppedModules.length === 0) {
+    html += '<div class="all-good">';
+    html += '<div class="all-good-title">All modules healthy</div>';
+    html += '<div class="all-good-desc">Great work! All modules show stable or growing usage compared to last week.</div>';
+    html += '</div>';
+  }
+
+  // Management contacts
+  if (client.names) {
+    const names = client.names.split(',').map(n => n.trim()).filter(Boolean);
+    html += '<div class="contacts-section">';
+    html += '<div class="contacts-title">Management Contacts</div>';
+    html += '<div class="contacts-list">';
+    names.forEach(name => {
+      html += '<div class="contact-chip">' + escHtml(name) + '</div>';
+    });
+    html += '</div></div>';
+  }
+
+  document.getElementById('app').innerHTML = html;
+}
+
+// ─── HELPERS ───
+function getWeekRange() {
+  const now = new Date();
+  const day = now.getDay();
+  const mon = new Date(now);
+  mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+  const sun = new Date(mon);
+  sun.setDate(mon.getDate() + 6);
+  return formatDate(mon) + ' - ' + formatDate(sun);
+}
+
+function formatDate(d) {
+  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function escJs(s) {
+  return s.replace(/'/g, "\\'").replace(/\\/g, '\\\\');
+}
+
+// Handle browser back/forward
+window.addEventListener('popstate', function() {
+  const params = new URLSearchParams(window.location.search);
+  const client = params.get('client');
+  if (client && allData[client]) showClientView(client);
+  else showAllClientsView();
+});
+</script>
+</body>
+</html>

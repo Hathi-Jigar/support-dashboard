@@ -1,0 +1,98 @@
+name: Send WhatsApp Health Alerts (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      clients_json:
+        description: 'JSON array of {name, phones, modules} to send alerts to'
+        required: true
+        type: string
+
+jobs:
+  send-alerts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send WhatsApp via MSG91
+        env:
+          MSG91_AUTHKEY: ${{ secrets.MSG91_AUTHKEY }}
+          MSG91_INTEGRATED_NUMBER: ${{ secrets.MSG91_INTEGRATED_NUMBER }}
+          MSG91_NAMESPACE: ${{ secrets.MSG91_NAMESPACE }}
+          TEMPLATE_NAME: client_health
+          CLIENTS_JSON: ${{ github.event.inputs.clients_json }}
+        run: |
+          cat << 'SCRIPT' > send.py
+          import json
+          import os
+          import re
+          import urllib.request
+
+          AUTHKEY = os.environ['MSG91_AUTHKEY']
+          INTEGRATED_NUMBER = os.environ['MSG91_INTEGRATED_NUMBER']
+          NAMESPACE = os.environ.get('MSG91_NAMESPACE', 'f4925634_5c8d_4e26_8b04_caa7318aa6e2')
+          TEMPLATE_NAME = os.environ['TEMPLATE_NAME']
+          API_URL = 'https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/bulk/'
+
+          clients = json.loads(os.environ['CLIENTS_JSON'])
+
+          sent = 0
+          failed = 0
+          skipped = 0
+
+          for client in clients:
+              name = client['name']
+              phones = client['phones']
+              modules = client['modules']  # {Inspection: "+151% (up)", Instruction: "+158% (up)", Register: "-100% (dropped)"}
+
+              clean_phones = [re.sub(r'[^0-9]', '', p) for p in phones]
+              clean_phones = [p for p in clean_phones if len(p) >= 10]
+
+              if not clean_phones:
+                  print(f"SKIP {name} — no valid phones")
+                  skipped += 1
+                  continue
+
+              payload = {
+                  "integrated_number": INTEGRATED_NUMBER,
+                  "content_type": "template",
+                  "payload": {
+                      "messaging_product": "whatsapp",
+                      "type": "template",
+                      "template": {
+                          "name": TEMPLATE_NAME,
+                          "language": {"code": "en", "policy": "deterministic"},
+                          "namespace": NAMESPACE,
+                          "to_and_components": [{
+                              "to": clean_phones,
+                              "components": {
+                                  "body_var_1": {"type": "text", "value": name, "parameter_name": "var_1"},
+                                  "body_var_2": {"type": "text", "value": modules.get('Inspection', 'N/A'), "parameter_name": "var_2"},
+                                  "body_var_3": {"type": "text", "value": modules.get('Instruction', 'N/A'), "parameter_name": "var_3"},
+                                  "body_var_4": {"type": "text", "value": modules.get('Register', 'N/A'), "parameter_name": "var_4"}
+                              }
+                          }]
+                      }
+                  }
+              }
+
+              req_data = json.dumps(payload).encode('utf-8')
+              req = urllib.request.Request(
+                  API_URL,
+                  data=req_data,
+                  headers={'Content-Type': 'application/json', 'authkey': AUTHKEY},
+                  method='POST'
+              )
+
+              try:
+                  with urllib.request.urlopen(req) as resp:
+                      result = resp.read().decode('utf-8')
+                      print(f"SENT {name} -> {clean_phones}: {result}")
+                      sent += 1
+              except Exception as e:
+                  print(f"FAILED {name}: {e}")
+                  failed += 1
+
+          print(f"\n--- Summary ---")
+          print(f"Sent: {sent}, Failed: {failed}, Skipped: {skipped}")
+          SCRIPT
+
+          python3 send.py

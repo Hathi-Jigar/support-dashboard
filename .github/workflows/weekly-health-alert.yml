@@ -1,0 +1,141 @@
+name: Weekly Client Health WhatsApp Alert
+
+# Runs every Monday at 9:00 AM IST (3:30 AM UTC)
+on:
+  schedule:
+    - cron: '30 3 * * 1'
+  workflow_dispatch: # Manual trigger for testing
+
+jobs:
+  send-health-alerts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch Metabase Health Data
+        run: |
+          curl -sL "http://metabase-v2.digiqc.com/api/public/card/bc60fa57-69fd-407f-9d77-1193c513a05f/query/json" -o health.json
+          echo "Data fetched:"
+          cat health.json | head -c 500
+
+      - name: Parse Data and Send WhatsApp Alerts
+        env:
+          MSG91_AUTHKEY: ${{ secrets.MSG91_AUTHKEY }}
+          MSG91_INTEGRATED_NUMBER: ${{ secrets.MSG91_INTEGRATED_NUMBER }}
+          MSG91_NAMESPACE: ${{ secrets.MSG91_NAMESPACE }}
+          TEMPLATE_NAME: client_health
+        run: |
+          cat << 'SCRIPT' > send_alerts.py
+          import json
+          import os
+          import re
+          import urllib.request
+
+          AUTHKEY = os.environ['MSG91_AUTHKEY']
+          INTEGRATED_NUMBER = os.environ['MSG91_INTEGRATED_NUMBER']
+          NAMESPACE = os.environ.get('MSG91_NAMESPACE', 'f4925634_5c8d_4e26_8b04_caa7318aa6e2')
+          TEMPLATE_NAME = os.environ['TEMPLATE_NAME']
+          MODULES = ['Instruction', 'Inspection', 'Register']
+          API_URL = 'https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/bulk/'
+
+          with open('health.json', 'r') as f:
+              raw = json.load(f)
+
+          # Parse clients from columns
+          clients = {}
+          all_keys = [k for k in raw[0].keys() if k != 'Module']
+          for key in all_keys:
+              clients[key] = {}
+          for row in raw:
+              mod = row['Module']
+              for key in all_keys:
+                  clients[key][mod] = row.get(key, '')
+
+          sent = 0
+          skipped = 0
+
+          for client_name, data in clients.items():
+              # Parse module values using arrow direction
+              needs_alert = False
+              mod_values = {}
+
+              for mod in MODULES:
+                  val = str(data.get(mod, ''))
+                  match = re.search(r'(\d+)%', val)
+                  if not match:
+                      mod_values[mod] = 'No data'
+                      needs_alert = True
+                      continue
+
+                  pct = int(match.group(1))
+                  has_down = '\u2b07' in val or '\u23ec' in val or '\u2193' in val
+                  has_up = '\u2b06' in val or '\u23eb' in val or '\u2191' in val
+
+                  if pct == 0:
+                      mod_values[mod] = 'No usage'
+                      needs_alert = True
+                  elif has_down:
+                      mod_values[mod] = f'-{pct}% (dropped)'
+                      needs_alert = True
+                  elif has_up:
+                      mod_values[mod] = f'+{pct}% (up)'
+                  else:
+                      mod_values[mod] = f'{pct}%'
+
+              if not needs_alert:
+                  skipped += 1
+                  print(f"SKIP {client_name} — all healthy")
+                  continue
+
+              # Get phone numbers
+              phones_raw = data.get('Phone', '')
+              phones = [re.sub(r'[^0-9]', '', p.strip()) for p in phones_raw.split(',') if p.strip()]
+              phones = [p for p in phones if len(p) >= 10]
+
+              if not phones:
+                  skipped += 1
+                  print(f"SKIP {client_name} — no valid phones")
+                  continue
+
+              payload = {
+                  "integrated_number": INTEGRATED_NUMBER,
+                  "content_type": "template",
+                  "payload": {
+                      "messaging_product": "whatsapp",
+                      "type": "template",
+                      "template": {
+                          "name": TEMPLATE_NAME,
+                          "language": {"code": "en", "policy": "deterministic"},
+                          "namespace": NAMESPACE,
+                          "to_and_components": [{
+                              "to": phones,
+                              "components": {
+                                  "body_var_1": {"type": "text", "value": client_name, "parameter_name": "var_1"},
+                                  "body_var_2": {"type": "text", "value": mod_values.get('Inspection', 'N/A'), "parameter_name": "var_2"},
+                                  "body_var_3": {"type": "text", "value": mod_values.get('Instruction', 'N/A'), "parameter_name": "var_3"},
+                                  "body_var_4": {"type": "text", "value": mod_values.get('Register', 'N/A'), "parameter_name": "var_4"}
+                              }
+                          }]
+                      }
+                  }
+              }
+
+              req_data = json.dumps(payload).encode('utf-8')
+              req = urllib.request.Request(
+                  API_URL,
+                  data=req_data,
+                  headers={'Content-Type': 'application/json', 'authkey': AUTHKEY},
+                  method='POST'
+              )
+
+              try:
+                  with urllib.request.urlopen(req) as resp:
+                      result = resp.read().decode('utf-8')
+                      print(f"SENT {client_name} -> {phones}: {result}")
+                      sent += 1
+              except Exception as e:
+                  print(f"FAILED {client_name}: {e}")
+
+          print(f"\n--- Summary ---")
+          print(f"Sent: {sent}, Skipped: {skipped}")
+          SCRIPT
+
+          python3 send_alerts.py
