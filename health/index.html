@@ -185,6 +185,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 
 <script>
 // ─── CONFIG ───
+const DATA_JSON_URL = 'data.json';  // Local file updated by GitHub Actions
 const METABASE_URL = 'https://metabase-v2.digiqc.com/api/public/card/bc60fa57-69fd-407f-9d77-1193c513a05f/query/json';
 const MODULES = ['Instruction', 'Inspection', 'Register'];
 
@@ -213,9 +214,16 @@ let selectedContacts = {}; // { clientName: Set of phone numbers }
   const clientParam = params.get('client');
 
   try {
-    const resp = await fetch(METABASE_URL);
-    if (!resp.ok) throw new Error('Failed to fetch data');
-    const raw = await resp.json();
+    let raw;
+    try {
+      const resp = await fetch(DATA_JSON_URL);
+      if (resp.ok) raw = await resp.json();
+      else throw new Error('data.json not found');
+    } catch {
+      const resp = await fetch(METABASE_URL);
+      if (!resp.ok) throw new Error('Failed to fetch from both data.json and Metabase');
+      raw = await resp.json();
+    }
     allData = parseMetabaseData(raw);
 
     document.getElementById('lastUpdated').textContent = 'Updated: ' + new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });

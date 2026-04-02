@@ -1,0 +1,30 @@
+name: Fetch Health Data from Metabase
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'  # Every Monday 8:30 AM IST (3:00 AM UTC)
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  fetch-data:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch Metabase data
+        run: |
+          curl -sL "http://metabase-v2.digiqc.com/api/public/card/bc60fa57-69fd-407f-9d77-1193c513a05f/query/json" -o health/data.json
+          echo "Fetched:"
+          cat health/data.json | head -c 500
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add health/data.json
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update health data from Metabase"
+            git push
+          fi
