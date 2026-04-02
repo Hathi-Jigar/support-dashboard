@@ -206,7 +206,7 @@
           "addedBy": "Hardik"
         }
       ],
-      "notes": "Need to send the dashboard email",
+      "notes": "Dashboard email sent",
       "usage": {
         "inspection": false,
         "instruction": false,
@@ -233,7 +233,7 @@
       "dashboardSetup": "",
       "payment": "Full payment received",
       "actionItems": [],
-      "notes": "",
+      "notes": "Dashboard email sent",
       "usage": {
         "inspection": false,
         "instruction": false,
