@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>digiQC — Voice Support Widget Prototype</title>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --brand:#FC5027;
+  --brand-light:#FFF1EE;
+  --brand-dark:#D93D15;
+  --bg:#F4F5F7;
+  --white:#FFFFFF;
+  --text:#1C1F26;
+  --sub:#6B7280;
+  --muted:#9CA3AF;
+  --border:#E5E7EB;
+  --success:#16A34A;
+  --success-bg:#DCFCE7;
+  --warn:#D97706;
+  --warn-bg:#FEF3C7;
+  --error:#DC2626;
+  --error-bg:#FEE2E2;
+  --radius:16px;
+  --radius-sm:10px;
+  --shadow:0 8px 32px rgba(0,0,0,0.12);
+  --shadow-sm:0 2px 8px rgba(0,0,0,0.06);
+}
+
+body{
+  font-family:'Rubik',sans-serif;
+  background:var(--bg);
+  min-height:100vh;
+  color:var(--text);
+}
+
+/* —— DEMO SHELL ——————————————————————————————————————————— */
+.demo-shell{
+  min-height:100vh;
+  background:linear-gradient(135deg,#1C1F26 0%,#2D3142 50%,#1C1F26 100%);
+  display:flex;
+  flex-direction:column;
+}
+
+.demo-header{
+  padding:20px 28px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  border-bottom:1px solid rgba(255,255,255,0.08);
+}
+.demo-logo{
+  font-size:20px;
+  font-weight:700;
+  color:var(--brand);
+  letter-spacing:-0.5px;
+}
+.demo-sep{color:rgba(255,255,255,0.2);font-size:18px}
+.demo-title{color:rgba(255,255,255,0.7);font-size:14px;font-weight:500}
+.demo-badge{
+  margin-left:auto;
+  background:rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.12);
+  color:rgba(255,255,255,0.5);
+  font-size:11px;
+  font-weight:600;
+  padding:4px 12px;
+  border-radius:20px;
+  letter-spacing:0.5px;
+  text-transform:uppercase;
+}
+
+.demo-body{
+  flex:1;
+  display:flex;
+  align-items:stretch;
+  gap:0;
+}
+
+/* Left — fake app */
+.fake-app{
+  flex:1;
+  padding:28px;
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  position:relative;
+  overflow:hidden;
+}
+.fake-app-header{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:14px 20px;
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:var(--radius-sm);
+}
+.fake-app-logo{font-size:15px;font-weight:700;color:var(--brand)}
+.fake-app-nav{display:flex;gap:6px;margin-left:auto}
+.fake-nav-item{
+  padding:6px 14px;
+  border-radius:6px;
+  font-size:12px;
+  font-weight:500;
+  color:rgba(255,255,255,0.4);
+  cursor:pointer;
+  transition:all .15s;
+}
+.fake-nav-item:hover{color:rgba(255,255,255,0.7);background:rgba(255,255,255,0.05)}
+.fake-nav-item.active{color:var(--white);background:rgba(252,80,39,0.2);color:var(--brand)}
+
+.fake-content{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  flex:1;
+}
+.fake-card{
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.07);
+  border-radius:var(--radius-sm);
+  padding:18px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.fake-card-label{font-size:10px;font-weight:600;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.8px}
+.fake-card-value{font-size:28px;font-weight:700;color:rgba(255,255,255,0.8)}
+.fake-card-sub{font-size:12px;color:rgba(255,255,255,0.3)}
+.fake-bars{display:flex;align-items:flex-end;gap:5px;height:50px;margin-top:8px}
+.fake-bar{
+  flex:1;
+  border-radius:3px 3px 0 0;
+  background:rgba(252,80,39,0.25);
+  transition:height .3s;
+}
+.fake-bar:nth-child(5){background:rgba(252,80,39,0.6)}
+.fake-bar:nth-child(7){background:rgba(252,80,39,0.5)}
+
+/* Floating voice button */
+.floating-btn{
+  position:absolute;
+  bottom:28px;
+  right:28px;
+  width:56px;
+  height:56px;
+  border-radius:50%;
+  background:var(--brand);
+  border:none;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow:0 4px 20px rgba(252,80,39,0.5);
+  transition:transform .2s, box-shadow .2s;
+  z-index:10;
+  animation:float 3s ease-in-out infinite;
+}
+.floating-btn:hover{
+  transform:scale(1.08);
+  box-shadow:0 6px 28px rgba(252,80,39,0.6);
+}
+.floating-btn svg{width:24px;height:24px;fill:white}
+@keyframes float{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-4px)}
+}
+.floating-btn:hover{animation:none;transform:scale(1.08)}
+
+/* Tooltip on floating btn */
+.floating-tooltip{
+  position:absolute;
+  bottom:68px;
+  right:0;
+  background:rgba(28,31,38,0.95);
+  color:white;
+  font-size:11px;
+  font-weight:500;
+  padding:6px 12px;
+  border-radius:6px;
+  white-space:nowrap;
+  border:1px solid rgba(255,255,255,0.1);
+  pointer-events:none;
+}
+
+/* Right — widget panel */
+.widget-panel{
+  width:420px;
+  background:rgba(255,255,255,0.03);
+  border-left:1px solid rgba(255,255,255,0.07);
+  padding:24px;
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
+.widget-panel-label{
+  font-size:11px;
+  font-weight:600;
+  color:rgba(255,255,255,0.3);
+  text-transform:uppercase;
+  letter-spacing:0.8px;
+}
+.screen-tabs{
+  display:flex;
+  gap:6px;
+}
+.screen-tab{
+  flex:1;
+  padding:8px 10px;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,0.1);
+  background:transparent;
+  color:rgba(255,255,255,0.4);
+  font-size:11px;
+  font-weight:600;
+  cursor:pointer;
+  font-family:'Rubik',sans-serif;
+  transition:all .15s;
+  text-align:center;
+}
+.screen-tab:hover{border-color:rgba(255,255,255,0.2);color:rgba(255,255,255,0.7)}
+.screen-tab.active{background:var(--brand);border-color:var(--brand);color:white}
+
+/* —— THE WIDGET ——————————————————————————————————————————— */
+.widget{
+  background:var(--white);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  overflow:hidden;
+  flex:1;
+  display:flex;
+  flex-direction:column;
+}
+
+.widget-header{
+  padding:16px 20px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  border-bottom:1px solid var(--border);
+  background:var(--white);
+}
+.widget-header-icon{
+  width:36px;
+  height:36px;
+  border-radius:10px;
+  background:var(--brand-light);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+}
+.widget-header-icon svg{width:18px;height:18px;fill:var(--brand)}
+.widget-header-text{flex:1}
+.widget-header-title{font-size:14px;font-weight:700;color:var(--text)}
+.widget-header-sub{font-size:11px;color:var(--muted)}
+.widget-close{
+  width:30px;height:30px;
+  border-radius:8px;
+  background:var(--bg);
+  border:none;cursor:pointer;
+  color:var(--muted);
+  font-size:16px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+  transition:background .15s;
+}
+.widget-close:hover{background:var(--border);color:var(--text)}
+
+/* User info strip */
+.user-strip{
+  padding:10px 20px;
+  background:#F9FAFB;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  gap:16px;
+  flex-wrap:wrap;
+}
+.user-strip-item{
+  display:flex;
+  flex-direction:column;
+  gap:1px;
+}
+.user-strip-label{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px}
+.user-strip-value{font-size:12px;font-weight:600;color:var(--text)}
+
+/* Widget body */
+.widget-body{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:28px 24px;
+  gap:20px;
+}
+
+/* —— SCREEN 1 — READY ————————————————————————————————————— */
+.screen{display:none;width:100%}
+.screen.active{display:flex;flex-direction:column;align-items:center;gap:20px;width:100%}
+
+.mic-wrap{
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.mic-ring-outer{
+  position:absolute;
+  width:130px;height:130px;
+  border-radius:50%;
+  border:2px dashed rgba(252,80,39,0.2);
+}
+.mic-ring-inner{
+  position:absolute;
+  width:104px;height:104px;
+  border-radius:50%;
+  border:2px solid rgba(252,80,39,0.1);
+}
+.mic-btn{
+  width:80px;height:80px;
+  border-radius:50%;
+  background:var(--brand);
+  border:none;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 24px rgba(252,80,39,0.4);
+  transition:transform .2s, box-shadow .2s;
+  position:relative;
+  z-index:1;
+}
+.mic-btn:hover{
+  transform:scale(1.06);
+  box-shadow:0 8px 32px rgba(252,80,39,0.5);
+}
+.mic-btn svg{width:30px;height:30px;fill:white}
+.mic-btn.recording{
+  background:var(--error);
+  box-shadow:0 6px 24px rgba(220,38,38,0.4);
+  animation:pulse-btn 1.2s ease-in-out infinite;
+}
+@keyframes pulse-btn{
+  0%,100%{box-shadow:0 6px 24px rgba(220,38,38,0.4)}
+  50%{box-shadow:0 6px 36px rgba(220,38,38,0.7),0 0 0 10px rgba(220,38,38,0.1)}
+}
+.mic-btn.recording .mic-ring-outer{
+  border-color:rgba(220,38,38,0.3);
+  animation:ring-pulse 1.5s ease-in-out infinite;
+}
+@keyframes ring-pulse{
+  0%,100%{transform:scale(1);opacity:1}
+  50%{transform:scale(1.1);opacity:0.5}
+}
+
+.mic-label{font-size:14px;font-weight:600;color:var(--text);text-align:center}
+.mic-sub{font-size:12px;color:var(--muted);text-align:center}
+.lang-pills{display:flex;gap:6px;justify-content:center}
+.lang-pill{
+  font-size:11px;font-weight:600;
+  padding:4px 10px;
+  border-radius:20px;
+  background:var(--brand-light);
+  color:var(--brand);
+  border:1px solid rgba(252,80,39,0.2);
+}
+
+/* Recording timer */
+.rec-timer{
+  font-size:28px;font-weight:700;
+  color:var(--error);
+  font-variant-numeric:tabular-nums;
+  display:none;
+}
+
+/* —— SCREEN 2 — PROCESSING ———————————————————————————————— */
+.transcription-box{
+  width:100%;
+  background:#F9FAFB;
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:14px 16px;
+}
+.transcription-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px}
+.transcription-text{font-size:13px;color:var(--text);line-height:1.5}
+.rerecord-btn{
+  background:none;border:1px solid var(--border);
+  padding:6px 14px;border-radius:6px;
+  font-size:12px;font-weight:600;color:var(--sub);
+  cursor:pointer;font-family:'Rubik',sans-serif;
+  transition:all .15s;margin-top:8px;width:100%;
+}
+.rerecord-btn:hover{border-color:var(--brand);color:var(--brand)}
+
+.processing-wrap{
+  display:flex;flex-direction:column;align-items:center;gap:12px;
+  padding:16px 0;
+}
+.spinner{
+  width:36px;height:36px;
+  border:3px solid var(--brand-light);
+  border-top-color:var(--brand);
+  border-radius:50%;
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.processing-label{font-size:13px;font-weight:600;color:var(--sub)}
+
+/* —— SCREEN 3 — ANSWER ———————————————————————————————————— */
+.answer-question{
+  width:100%;
+  background:#F9FAFB;
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:12px 16px;
+}
+.answer-q-label{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:4px}
+.answer-q-text{font-size:12px;color:var(--sub);line-height:1.4;font-style:italic}
+
+.answer-card{
+  width:100%;
+  background:var(--white);
+  border:1.5px solid var(--brand-light);
+  border-radius:var(--radius-sm);
+  padding:16px;
+  box-shadow:0 2px 8px rgba(252,80,39,0.06);
+}
+.answer-a-label{font-size:9px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;display:flex;align-items:center;gap:5px}
+.answer-a-label::before{content:'✦';font-size:8px}
+.answer-a-text{font-size:13px;color:var(--text);line-height:1.6}
+.answer-no-result{
+  font-size:13px;color:var(--warn);line-height:1.5;font-weight:500;
+}
+
+/* TTS controls */
+.tts-controls{
+  display:flex;gap:8px;width:100%;
+}
+.tts-btn{
+  flex:1;
+  padding:10px;
+  border-radius:8px;
+  font-size:12px;font-weight:600;
+  cursor:pointer;font-family:'Rubik',sans-serif;
+  border:1.5px solid var(--border);
+  background:var(--white);
+  color:var(--sub);
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  transition:all .15s;
+}
+.tts-btn:hover{border-color:var(--brand);color:var(--brand)}
+.tts-btn.playing{background:var(--brand-light);border-color:var(--brand);color:var(--brand)}
+
+/* Action buttons */
+.action-row{
+  display:flex;gap:8px;width:100%;
+  margin-top:4px;
+}
+.btn-primary{
+  flex:1;
+  padding:12px;
+  border-radius:10px;
+  background:var(--brand);
+  color:white;
+  border:none;
+  font-size:13px;font-weight:600;
+  cursor:pointer;font-family:'Rubik',sans-serif;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  transition:all .15s;
+}
+.btn-primary:hover{background:var(--brand-dark)}
+.btn-secondary{
+  flex:1;
+  padding:12px;
+  border-radius:10px;
+  background:var(--white);
+  color:var(--sub);
+  border:1.5px solid var(--border);
+  font-size:13px;font-weight:600;
+  cursor:pointer;font-family:'Rubik',sans-serif;
+  transition:all .15s;
+}
+.btn-secondary:hover{border-color:var(--sub);color:var(--text)}
+
+/* Error state */
+.error-banner{
+  width:100%;
+  background:var(--error-bg);
+  border:1px solid rgba(220,38,38,0.2);
+  border-radius:var(--radius-sm);
+  padding:12px 14px;
+  display:flex;align-items:flex-start;gap:8px;
+}
+.error-banner-icon{color:var(--error);font-size:14px;flex-shrink:0;margin-top:1px}
+.error-banner-text{font-size:12px;color:var(--error);line-height:1.4;font-weight:500}
+.error-banner .retry-link{
+  display:block;margin-top:6px;
+  font-size:11px;font-weight:700;color:var(--error);
+  cursor:pointer;text-decoration:underline;
+}
+
+/* Ticket logged badge */
+.ticket-badge{
+  display:flex;align-items:center;gap:6px;
+  background:var(--success-bg);
+  border:1px solid rgba(22,163,74,0.2);
+  border-radius:6px;
+  padding:6px 12px;
+  font-size:11px;font-weight:600;color:var(--success);
+  width:100%;
+  justify-content:center;
+}
+
+/* Bottom info note */
+.widget-footer{
+  padding:10px 20px;
+  border-top:1px solid var(--border);
+  display:flex;align-items:center;gap:6px;
+}
+.widget-footer-text{font-size:10px;color:var(--muted)}
+.widget-footer-dot{width:6px;height:6px;border-radius:50%;background:var(--success);flex-shrink:0}
+
+/* —— STATE NOTES ——————————————————————————————————————————— */
+.state-note{
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:8px;
+  padding:12px 16px;
+}
+.state-note-title{font-size:11px;font-weight:700;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px}
+.state-note-list{list-style:none;display:flex;flex-direction:column;gap:5px}
+.state-note-list li{font-size:11px;color:rgba(255,255,255,0.4);padding-left:12px;position:relative;line-height:1.4}
+.state-note-list li::before{content:'·';position:absolute;left:0;color:var(--brand)}
+
+/* —— ERROR VARIANT TOGGLE —————————————————————————————————— */
+.variant-row{display:flex;gap:6px;flex-wrap:wrap}
+.variant-btn{
+  padding:5px 12px;
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,0.12);
+  background:transparent;
+  color:rgba(255,255,255,0.4);
+  font-size:11px;font-weight:600;
+  cursor:pointer;font-family:'Rubik',sans-serif;
+  transition:all .15s;
+}
+.variant-btn:hover{border-color:rgba(255,255,255,0.3);color:rgba(255,255,255,0.7)}
+.variant-btn.active{background:rgba(252,80,39,0.2);border-color:var(--brand);color:var(--brand)}
+
+@media(max-width:900px){
+  .demo-body{flex-direction:column}
+  .widget-panel{width:100%;border-left:none;border-top:1px solid rgba(255,255,255,0.07)}
+  .fake-content{grid-template-columns:1fr;height:auto}
+}
+</style>
+</head>
+<body>
+
+<div class="demo-shell">
+  <div class="demo-header">
+    <span class="demo-logo">digiQC</span>
+    <span class="demo-sep">|</span>
+    <span class="demo-title">Voice Support Widget</span>
+    <span class="demo-badge">Prototype</span>
+  </div>
+
+  <div class="demo-body">
+
+    <!-- Left: fake digiQC app with floating button -->
+    <div class="fake-app">
+      <div class="fake-app-header">
+        <span class="fake-app-logo">digiQC</span>
+        <div class="fake-app-nav">
+          <div class="fake-nav-item">EQC</div>
+          <div class="fake-nav-item active">Dashboard</div>
+          <div class="fake-nav-item">RFI</div>
+          <div class="fake-nav-item">Instructions</div>
+        </div>
+      </div>
+      <div class="fake-content">
+        <div class="fake-card">
+          <div class="fake-card-label">Total Inspections</div>
+          <div class="fake-card-value">248</div>
+          <div class="fake-card-sub">↑ 12 this week</div>
+          <div class="fake-bars">
+            <div class="fake-bar" style="height:30%"></div>
+            <div class="fake-bar" style="height:50%"></div>
+            <div class="fake-bar" style="height:40%"></div>
+            <div class="fake-bar" style="height:70%"></div>
+            <div class="fake-bar" style="height:90%"></div>
+            <div class="fake-bar" style="height:60%"></div>
+            <div class="fake-bar" style="height:85%"></div>
+          </div>
+        </div>
+        <div class="fake-card">
+          <div class="fake-card-label">Open NCRs</div>
+          <div class="fake-card-value" style="color:rgba(252,80,39,0.9)">14</div>
+          <div class="fake-card-sub">3 overdue</div>
+        </div>
+        <div class="fake-card">
+          <div class="fake-card-label">RFI Pending</div>
+          <div class="fake-card-value">7</div>
+          <div class="fake-card-sub">Avg. TAT: 2.4 days</div>
+        </div>
+        <div class="fake-card">
+          <div class="fake-card-label">Instructions</div>
+          <div class="fake-card-value">32</div>
+          <div class="fake-card-sub">5 unresolved</div>
+        </div>
+      </div>
+
+      <!-- Floating mic button -->
+      <button class="floating-btn" onclick="showWidget()" title="Voice Support">
+        <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+      </button>
+    </div>
+
+    <!-- Right: widget states panel -->
+    <div class="widget-panel">
+      <div class="widget-panel-label">Widget States — Click to Preview</div>
+
+      <div class="screen-tabs">
+        <button class="screen-tab active" onclick="setScreen('ready',this)">1. Ready</button>
+        <button class="screen-tab" onclick="setScreen('recording',this)">2. Recording</button>
+        <button class="screen-tab" onclick="setScreen('processing',this)">3. Processing</button>
+        <button class="screen-tab" onclick="setScreen('answer',this)">4. Answer</button>
+      </div>
+
+      <!-- Variant row (only for certain states) -->
+      <div class="variant-row" id="variantRow" style="display:none">
+        <button class="variant-btn active" onclick="setVariant('normal',this)">Normal</button>
+        <button class="variant-btn" onclick="setVariant('error-mic',this)">Mic Denied</button>
+        <button class="variant-btn" onclick="setVariant('error-net',this)">No Internet</button>
+      </div>
+      <div class="variant-row" id="answerVariantRow" style="display:none">
+        <button class="variant-btn active" onclick="setAnswerVariant('success',this)">Answer Found</button>
+        <button class="variant-btn" onclick="setAnswerVariant('noresult',this)">No Answer</button>
+      </div>
+
+      <!-- THE WIDGET -->
+      <div class="widget" id="mainWidget">
+
+        <!-- Header -->
+        <div class="widget-header">
+          <div class="widget-header-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+          </div>
+          <div class="widget-header-text">
+            <div class="widget-header-title">Voice Support</div>
+            <div class="widget-header-sub">Ask in Hindi or English</div>
+          </div>
+          <button class="widget-close" onclick="hideWidget()">✕</button>
+        </div>
+
+        <!-- User info strip — always visible -->
+        <div class="user-strip">
+          <div class="user-strip-item">
+            <div class="user-strip-label">Name</div>
+            <div class="user-strip-value">Ramesh Patel</div>
+          </div>
+          <div class="user-strip-item">
+            <div class="user-strip-label">Organisation</div>
+            <div class="user-strip-value">GR Infraprojects</div>
+          </div>
+          <div class="user-strip-item">
+            <div class="user-strip-label">Phone</div>
+            <div class="user-strip-value">+91 98765 43210</div>
+          </div>
+          <div class="user-strip-item">
+            <div class="user-strip-label">Platform</div>
+            <div class="user-strip-value">Web</div>
+          </div>
+        </div>
+
+        <!-- Widget body -->
+        <div class="widget-body">
+
+          <!-- SCREEN 1: READY -->
+          <div class="screen active" id="screenReady">
+
+            <div class="mic-wrap" id="micWrap">
+              <div class="mic-ring-outer"></div>
+              <div class="mic-ring-inner"></div>
+              <button class="mic-btn" id="micBtn" onclick="startRecording()">
+                <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+              </button>
+            </div>
+
+            <div class="rec-timer" id="recTimer">0:00</div>
+
+            <div id="micLabelBlock">
+              <div class="mic-label" id="micLabel">Tap to speak your question</div>
+              <div class="mic-sub" style="margin-top:4px;margin-bottom:8px">Speak clearly after tapping the mic</div>
+              <div class="lang-pills">
+                <span class="lang-pill">🇮🇳 Hindi</span>
+                <span class="lang-pill">🇬🇧 English</span>
+                <span class="lang-pill">Hinglish</span>
+              </div>
+            </div>
+
+            <!-- Error states (hidden by default) -->
+            <div class="error-banner" id="errorMic" style="display:none">
+              <div class="error-banner-icon">🎙️</div>
+              <div class="error-banner-text">
+                Microphone access is needed. Please allow mic permission and try again.
+                <span class="retry-link" onclick="retryMic()">Allow & Retry →</span>
+              </div>
+            </div>
+            <div class="error-banner" id="errorNet" style="display:none">
+              <div class="error-banner-icon">🔡</div>
+              <div class="error-banner-text">
+                No internet connection. Please check your connection and try again.
+                <span class="retry-link" onclick="retryNet()">Retry →</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- SCREEN 2: RECORDING / PROCESSING -->
+          <div class="screen" id="screenProcessing">
+
+            <div class="transcription-box">
+              <div class="transcription-label">Your Question (Transcribed)</div>
+              <div class="transcription-text" id="transcriptionText">RFI kaise raise karein? Mujhe nahi pata portal mein kahan se start karein...</div>
+              <button class="rerecord-btn" onclick="setScreen('ready', document.querySelector('.screen-tab'))">🎤 Re-record Question</button>
+            </div>
+
+            <div class="processing-wrap">
+              <div class="spinner"></div>
+              <div class="processing-label">Finding your answer…</div>
+            </div>
+
+          </div>
+
+          <!-- SCREEN 3: ANSWER -->
+          <div class="screen" id="screenAnswer">
+
+            <div class="answer-question">
+              <div class="answer-q-label">Your Question</div>
+              <div class="answer-q-text">"RFI kaise raise karein? Mujhe nahi pata portal mein kahan se start karein..."</div>
+            </div>
+
+            <!-- Normal answer -->
+            <div class="answer-card" id="answerCardSuccess">
+              <div class="answer-a-label">Answer</div>
+              <div class="answer-a-text" id="answerText">RFI raise karne ke liye, left menu mein <strong>RFI</strong> section mein jaayen. Uske baad <strong>+ Raise RFI</strong> button click karein. Project select karein, location bharein, aur inspection type chunein. Submit karne se pehle required fields check kar lein. Agar aapko further help chahiye toh CS team se contact karein.</div>
+            </div>
+
+            <!-- No result answer -->
+            <div class="answer-card" id="answerCardNoResult" style="display:none">
+              <div class="answer-a-label" style="color:var(--warn)">⚠ Answer Not Found</div>
+              <div class="answer-no-result">Is sawaal ka jawab abhi available nahi hai. Hamari support team aapke ticket ko review karke follow up karegi.</div>
+            </div>
+
+            <div class="tts-controls">
+              <button class="tts-btn" id="playBtn" onclick="togglePlay()">
+                <span>▶</span> Play Answer
+              </button>
+            </div>
+
+            <div class="ticket-badge">
+              <div class="widget-footer-dot"></div>
+              Ticket auto-logged · Tag: Voice Support
+            </div>
+
+            <div class="action-row">
+              <button class="btn-primary" onclick="askAnother()">🎤 Ask Another</button>
+              <button class="btn-secondary" onclick="hideWidget()">✕ Close</button>
+            </div>
+
+          </div>
+
+        </div><!-- /widget-body -->
+
+        <div class="widget-footer">
+          <div class="widget-footer-dot"></div>
+          <div class="widget-footer-text">Powered by digiQC AI · Every session is auto-logged for CS review</div>
+        </div>
+
+      </div><!-- /widget -->
+
+      <!-- State notes -->
+      <div class="state-note">
+        <div class="state-note-title" id="stateNoteTitle">Screen 1 — Ready State</div>
+        <ul class="state-note-list" id="stateNoteList">
+          <li>User details auto-filled from login — no form to fill</li>
+          <li>Mic button is the only action — large, clear, tap-friendly</li>
+          <li>All 3 languages shown as pills: Hindi, English, Hinglish</li>
+          <li>Use "Mic Denied" / "No Internet" variants to see error states</li>
+        </ul>
+      </div>
+
+    </div><!-- /widget-panel -->
+  </div>
+</div>
+
+<script>
+// —— STATE MANAGEMENT ———————————————————————————————————
+let currentScreen = 'ready';
+let currentVariant = 'normal';
+let currentAnswerVariant = 'success';
+let isPlaying = false;
+let recInterval = null;
+let recSeconds = 0;
+
+const stateNotes = {
+  ready: {
+    title: 'Screen 1 — Ready State',
+    notes: [
+      'User details auto-filled from login — no form to fill',
+      'Mic button is the only action — large, clear, tap-friendly',
+      'All 3 languages shown as pills: Hindi, English, Hinglish',
+      'Use "Mic Denied" / "No Internet" variants to see error states',
+    ]
+  },
+  recording: {
+    title: 'Screen 2 — Recording State',
+    notes: [
+      'Mic button turns red with pulse animation while recording',
+      'Live timer shows recording duration (max 60 seconds)',
+      'Tap mic again to stop — transitions to Processing',
+      'Closing the widget mid-recording cancels without creating a ticket',
+    ]
+  },
+  processing: {
+    title: 'Screen 3 — Processing / Transcription State',
+    notes: [
+      'Transcribed question shown — user can verify or re-record',
+      'Spinner + label shown while Claude fetches the answer',
+      'Re-record button available without losing context',
+      'No ticket created yet at this stage',
+    ]
+  },
+  answer: {
+    title: 'Screen 4 — Answer State',
+    notes: [
+      'Answer always shown as text — readable without audio',
+      'Play button uses Browser TTS (free, no cost)',
+      'Ticket auto-logged silently — user sees confirmation badge',
+      'Use "No Answer" variant to see fallback state',
+    ]
+  }
+};
+
+function setScreen(name, el) {
+  currentScreen = name;
+
+  // Update tabs
+  document.querySelectorAll('.screen-tab').forEach(t => t.classList.remove('active'));
+  if (el && el.classList) el.classList.add('active');
+
+  // Hide all screens
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+
+  // Show variants
+  document.getElementById('variantRow').style.display = (name === 'ready') ? 'flex' : 'none';
+  document.getElementById('answerVariantRow').style.display = (name === 'answer') ? 'flex' : 'none';
+
+  // Show/hide specific screen content
+  if (name === 'ready') {
+    document.getElementById('screenReady').classList.add('active');
+    resetReadyState();
+    applyVariant(currentVariant);
+  } else if (name === 'recording') {
+    document.getElementById('screenReady').classList.add('active');
+    showRecordingState();
+  } else if (name === 'processing') {
+    document.getElementById('screenProcessing').classList.add('active');
+  } else if (name === 'answer') {
+    document.getElementById('screenAnswer').classList.add('active');
+    applyAnswerVariant(currentAnswerVariant);
+  }
+
+  // Update notes
+  const note = stateNotes[name] || stateNotes['ready'];
+  document.getElementById('stateNoteTitle').textContent = note.title;
+  document.getElementById('stateNoteList').innerHTML = note.notes.map(n => `<li>${n}</li>`).join('');
+
+  stopTTS();
+}
+
+function setVariant(name, el) {
+  currentVariant = name;
+  document.querySelectorAll('#variantRow .variant-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  resetReadyState();
+  applyVariant(name);
+}
+
+function setAnswerVariant(name, el) {
+  currentAnswerVariant = name;
+  document.querySelectorAll('#answerVariantRow .variant-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  applyAnswerVariant(name);
+}
+
+function applyVariant(name) {
+  document.getElementById('errorMic').style.display = 'none';
+  document.getElementById('errorNet').style.display = 'none';
+  document.getElementById('micBtn').style.display = 'flex';
+  document.getElementById('micLabelBlock').style.display = 'block';
+
+  if (name === 'error-mic') {
+    document.getElementById('errorMic').style.display = 'flex';
+    document.getElementById('micBtn').style.display = 'none';
+    document.getElementById('micLabelBlock').style.display = 'none';
+  } else if (name === 'error-net') {
+    document.getElementById('errorNet').style.display = 'flex';
+    document.getElementById('micBtn').style.display = 'none';
+    document.getElementById('micLabelBlock').style.display = 'none';
+  }
+}
+
+function applyAnswerVariant(name) {
+  if (name === 'success') {
+    document.getElementById('answerCardSuccess').style.display = 'block';
+    document.getElementById('answerCardNoResult').style.display = 'none';
+    document.getElementById('playBtn').style.display = 'flex';
+  } else {
+    document.getElementById('answerCardSuccess').style.display = 'none';
+    document.getElementById('answerCardNoResult').style.display = 'block';
+    document.getElementById('playBtn').style.display = 'none';
+  }
+}
+
+function resetReadyState() {
+  const micBtn = document.getElementById('micBtn');
+  micBtn.classList.remove('recording');
+  document.getElementById('micLabel').textContent = 'Tap to speak your question';
+  document.getElementById('recTimer').style.display = 'none';
+  document.getElementById('micLabelBlock').style.display = 'block';
+  stopTimer();
+}
+
+function showRecordingState() {
+  const micBtn = document.getElementById('micBtn');
+  micBtn.classList.add('recording');
+  document.getElementById('errorMic').style.display = 'none';
+  document.getElementById('errorNet').style.display = 'none';
+  document.getElementById('micLabel').textContent = 'Listening… tap to stop';
+  document.getElementById('recTimer').style.display = 'block';
+  document.getElementById('micBtn').style.display = 'flex';
+  document.getElementById('micLabelBlock').style.display = 'block';
+  startTimer();
+}
+
+// —— RECORDING SIM ——————————————————————————————————————
+let recording = false;
+
+function startRecording() {
+  if (recording) {
+    // Stop recording — show processing
+    recording = false;
+    stopTimer();
+    // Move to processing screen
+    const tabs = document.querySelectorAll('.screen-tab');
+    setScreen('processing', tabs[2]);
+    tabs.forEach(t => t.classList.remove('active'));
+    tabs[2].classList.add('active');
+    // Simulate processing delay — show answer
+    setTimeout(() => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tabs[3].classList.add('active');
+      setScreen('answer', tabs[3]);
+    }, 2200);
+    return;
+  }
+  recording = true;
+  showRecordingState();
+}
+
+function startTimer() {
+  recSeconds = 0;
+  stopTimer();
+  recInterval = setInterval(() => {
+    recSeconds++;
+    const m = Math.floor(recSeconds / 60);
+    const s = recSeconds % 60;
+    document.getElementById('recTimer').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    if (recSeconds >= 60) {
+      // Auto stop at 60s
+      startRecording();
+    }
+  }, 1000);
+}
+
+function stopTimer() {
+  if (recInterval) { clearInterval(recInterval); recInterval = null; }
+  recSeconds = 0;
+  document.getElementById('recTimer').textContent = '0:00';
+}
+
+function askAnother() {
+  recording = false;
+  stopTimer();
+  const tabs = document.querySelectorAll('.screen-tab');
+  tabs.forEach(t => t.classList.remove('active'));
+  tabs[0].classList.add('active');
+  setScreen('ready', tabs[0]);
+}
+
+// —— TTS ————————————————————————————————————————————————
+function togglePlay() {
+  if (isPlaying) {
+    stopTTS();
+  } else {
+    startTTS();
+  }
+}
+
+function startTTS() {
+  const text = document.getElementById('answerText').textContent;
+  if ('speechSynthesis' in window) {
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = 'hi-IN';
+    utter.rate = 0.9;
+    utter.onend = () => stopTTS();
+    window.speechSynthesis.speak(utter);
+  }
+  isPlaying = true;
+  const btn = document.getElementById('playBtn');
+  btn.innerHTML = '<span>⏸</span> Stop';
+  btn.classList.add('playing');
+}
+
+function stopTTS() {
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  isPlaying = false;
+  const btn = document.getElementById('playBtn');
+  if (btn) {
+    btn.innerHTML = '<span>▶</span> Play Answer';
+    btn.classList.remove('playing');
+  }
+}
+
+// —— WIDGET SHOW/HIDE ———————————————————————————————————
+function showWidget() {
+  // Already visible in panel — just scroll to it on mobile
+  document.querySelector('.widget-panel').scrollIntoView({ behavior: 'smooth' });
+}
+
+function hideWidget() {
+  stopTTS();
+  // In prototype: just reset to screen 1
+  askAnother();
+}
+
+// —— ERROR RETRY ————————————————————————————————————————
+function retryMic() {
+  setVariant('normal', document.querySelector('#variantRow .variant-btn'));
+}
+function retryNet() {
+  setVariant('normal', document.querySelector('#variantRow .variant-btn'));
+}
+
+// —— INIT ———————————————————————————————————————————————
+setScreen('ready', document.querySelector('.screen-tab'));
+</script>
+</body>
+</html>
