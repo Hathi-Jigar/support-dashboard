@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Layer Chart — Ch 064+000 to 065+000 — RHS</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: Arial, sans-serif;
+  background: #e8e8e8;
+  padding: 10px;
+  font-size: 10px;
+}
+
+.page {
+  background: #fff;
+  margin: 0 auto;
+  border: 2px solid #333;
+  width: max-content;
+  min-width: 100%;
+}
+
+/* —— TITLE —— */
+.title-bar {
+  text-align: center;
+  font-size: 13px;
+  font-weight: bold;
+  padding: 5px 8px;
+  border-bottom: 2px solid #333;
+  letter-spacing: 0.3px;
+}
+
+/* —— DIRECTION —— */
+.dir-bar {
+  display: grid;
+  grid-template-columns: 100px 1fr 100px;
+  border-bottom: 1px solid #333;
+  font-size: 10px;
+}
+.dir-bar > div { padding: 2px 6px; }
+.dir-l { border-right: 1px solid #333; }
+.dir-m { text-align: center; font-weight: bold; font-size: 11px; font-style: italic; letter-spacing: 2px; }
+.dir-r { border-left: 1px solid #333; text-align: right; }
+
+/* —— TABLE —— */
+.chart-scroll { overflow-x: auto; }
+
+table {
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+table td, table th {
+  border: 1px solid #999;
+  text-align: center;
+  vertical-align: middle;
+  padding: 0;
+  overflow: hidden;
+  line-height: 1.1;
+}
+
+/* Column widths */
+.cl  { width: 108px; min-width: 108px; } /* row label */
+.csub { width: 22px; min-width: 22px; }  /* each 10m sub-col */
+
+/* —— HEADER ROW 1: chainage blocks —— */
+.ch-block {
+  background: #BDD7EE;
+  font-weight: bold;
+  font-size: 10px;
+  height: 38px;
+  writing-mode: vertical-lr;
+  transform: rotate(180deg);
+  padding: 2px 0;
+  border: 1px solid #555;
+}
+
+/* —— HEADER ROW 2: sub-divisions —— */
+.ch-sub {
+  background: #DAEEF3;
+  font-size: 7.5px;
+  color: #222;
+  height: 14px;
+  padding: 1px 0;
+  border: 1px solid #aaa;
+}
+
+/* —— ROW LABEL HEADER —— */
+.ch-label-hd {
+  background: #BDD7EE;
+  font-weight: bold;
+  font-size: 10px;
+  text-align: center;
+  vertical-align: middle;
+  border: 1px solid #555;
+}
+
+/* —— ROW LABELS —— */
+.rl {
+  text-align: left;
+  padding: 1px 3px;
+  font-size: 9px;
+  white-space: normal;
+  word-break: break-word;
+  vertical-align: middle;
+  border: 1px solid #999;
+}
+.rl-emb {
+  text-align: center;
+  font-size: 8.5px;
+  white-space: normal;
+  word-break: break-word;
+  vertical-align: middle;
+  padding: 2px 3px;
+  line-height: 1.3;
+}
+
+/* —— LAYER COLOURS — exact match to PDF —— */
+/* BC = magenta-pink */
+.bc    { background: #FF99CC; }
+/* DBM = cyan */
+.dbm   { background: #00B0F0; }
+/* WMM = orange */
+.wmm   { background: #FF6600; color: #fff; }
+/* GSB/CTSB = yellow-olive */
+.gsb   { background: #FFFF00; }
+/* SG = bright green */
+.sg    { background: #00B050; color: #fff; }
+/* Embank Top = lime yellow-green */
+.etop  { background: #92D050; }
+/* EMB intermediate = medium blue */
+.emb   { background: #4472C4; color: #fff; }
+/* SVUP = grey */
+.svup  { background: #C0C0C0; }
+/* empty / no work */
+.emp   { background: #fff; }
+
+/* —— DATA TEXT —— */
+.d {
+  font-size: 7px;
+  padding: 1px;
+  white-space: normal;
+  word-break: break-all;
+  vertical-align: middle;
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* SVUP vertical */
+.svup-v {
+  background: #C0C0C0;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 8px;
+  font-weight: bold;
+  text-align: center;
+  vertical-align: middle;
+  padding: 3px 1px;
+}
+
+/* —— LEGEND —— */
+.legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 5px 8px;
+  border-top: 2px solid #333;
+  border-bottom: 1px solid #999;
+  font-size: 9.5px;
+  background: #fff;
+}
+.lg-lbl { font-weight: bold; }
+.lg-item { display: flex; align-items: center; gap: 3px; }
+.lg-sw { width: 28px; height: 13px; border: 1px solid #666; display: inline-block; }
+
+/* —— FOOTER —— */
+.footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  border-top: 1px solid #999;
+  font-size: 9.5px;
+  font-weight: bold;
+  text-align: center;
+}
+.footer div { padding: 4px; border-right: 1px solid #999; }
+.footer div:last-child { border-right: none; }
+
+@media print {
+  body { padding:0; background:#fff; }
+  .page { border: 1px solid #333; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- TITLE -->
+<div class="title-bar">
+  { LAYER CHART &nbsp;&nbsp; Ch :- &nbsp; 064 + 000 &nbsp; To &nbsp; 065 + 000 &nbsp;&nbsp;&nbsp; SIDE :- &nbsp; RHS }
+</div>
+
+<!-- DIRECTION -->
+<div class="dir-bar">
+  <div class="dir-l">Meerut &nbsp;→</div>
+  <div class="dir-m">← &nbsp;&nbsp;&nbsp; MAIN CARRIAGE WAY &nbsp;&nbsp;&nbsp; →</div>
+  <div class="dir-r">← &nbsp;Prayagraj</div>
+</div>
+
+<!-- CHART TABLE -->
+<div class="chart-scroll">
+<table>
+<colgroup>
+  <col class="cl">
+  <!-- 10 blocks × 10 sub-cols = 100 data cols -->
+  <!-- Block 0.100 --><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub">
+  <!-- Block 0.200 --><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub">
+  <!-- Block 0.300 --><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub">
+  <!-- Block 0.400 --><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub">
+  <!-- Block 0.500 --><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub">
+  <!-- Block 0.600 --><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub">
+  <!-- Block 0.700 --><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub">
+  <!-- Block 0.800 --><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub">
+  <!-- Block 0.900 --><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub">
+  <!-- Block 1.000 --><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub"><col class="csub">
+</colgroup>
+
+<thead>
+  <!-- ROW 1: chainage block headers — each spans 10 sub-cols -->
+  <tr>
+    <th class="ch-label-hd" rowspan="2">CHAINAGE</th>
+    <th class="ch-block" colspan="10">0.100</th>
+    <th class="ch-block" colspan="10">0.200</th>
+    <th class="ch-block" colspan="10">0.300</th>
+    <th class="ch-block" colspan="10">0.400</th>
+    <th class="ch-block" colspan="10">0.500</th>
+    <th class="ch-block" colspan="10">0.600</th>
+    <th class="ch-block" colspan="10">0.700</th>
+    <th class="ch-block" colspan="10">0.800</th>
+    <th class="ch-block" colspan="10">0.900</th>
+    <th class="ch-block" colspan="10">1.000</th>
+  </tr>
+  <!-- ROW 2: 10m sub-division labels, repeat for each block -->
+  <tr>
+    <td class="ch-sub">10</td><td class="ch-sub">20</td><td class="ch-sub">30</td><td class="ch-sub">40</td><td class="ch-sub">50</td><td class="ch-sub">60</td><td class="ch-sub">70</td><td class="ch-sub">80</td><td class="ch-sub">90</td><td class="ch-sub">100</td>
+    <td class="ch-sub">10</td><td class="ch-sub">20</td><td class="ch-sub">30</td><td class="ch-sub">40</td><td class="ch-sub">50</td><td class="ch-sub">60</td><td class="ch-sub">70</td><td class="ch-sub">80</td><td class="ch-sub">90</td><td class="ch-sub">100</td>
+    <td class="ch-sub">10</td><td class="ch-sub">20</td><td class="ch-sub">30</td><td class="ch-sub">40</td><td class="ch-sub">50</td><td class="ch-sub">60</td><td class="ch-sub">70</td><td class="ch-sub">80</td><td class="ch-sub">90</td><td class="ch-sub">100</td>
+    <td class="ch-sub">10</td><td class="ch-sub">20</td><td class="ch-sub">30</td><td class="ch-sub">40</td><td class="ch-sub">50</td><td class="ch-sub">60</td><td class="ch-sub">70</td><td class="ch-sub">80</td><td class="ch-sub">90</td><td class="ch-sub">100</td>
+    <td class="ch-sub">10</td><td class="ch-sub">20</td><td class="ch-sub">30</td><td class="ch-sub">40</td><td class="ch-sub">50</td><td class="ch-sub">60</td><td class="ch-sub">70</td><td class="ch-sub">80</td><td class="ch-sub">90</td><td class="ch-sub">100</td>
+    <td class="ch-sub">10</td><td class="ch-sub">20</td><td class="ch-sub">30</td><td class="ch-sub">40</td><td class="ch-sub">50</td><td class="ch-sub">60</td><td class="ch-sub">70</td><td class="ch-sub">80</td><td class="ch-sub">90</td><td class="ch-sub">100</td>
+    <td class="ch-sub">10</td><td class="ch-sub">20</td><td class="ch-sub">30</td><td class="ch-sub">40</td><td class="ch-sub">50</td><td class="ch-sub">60</td><td class="ch-sub">70</td><td class="ch-sub">80</td><td class="ch-sub">90</td><td class="ch-sub">100</td>
+    <td class="ch-sub">10</td><td class="ch-sub">20</td><td class="ch-sub">30</td><td class="ch-sub">40</td><td class="ch-sub">50</td><td class="ch-sub">60</td><td class="ch-sub">70</td><td class="ch-sub">80</td><td class="ch-sub">90</td><td class="ch-sub">100</td>
+    <td class="ch-sub">10</td><td class="ch-sub">20</td><td class="ch-sub">30</td><td class="ch-sub">40</td><td class="ch-sub">50</td><td class="ch-sub">60</td><td class="ch-sub">70</td><td class="ch-sub">80</td><td class="ch-sub">90</td><td class="ch-sub">100</td>
+    <td class="ch-sub">10</td><td class="ch-sub">20</td><td class="ch-sub">30</td><td class="ch-sub">40</td><td class="ch-sub">50</td><td class="ch-sub">60</td><td class="ch-sub">70</td><td class="ch-sub">80</td><td class="ch-sub">90</td><td class="ch-sub">100</td>
+  </tr>
+</thead>
+
+<tbody>
+
+<!-- ════════ BC TOP LEVEL ════════ -->
+<tr>
+  <td class="rl bc">BC Top Level</td>
+  <td class="bc emp" colspan="10"></td>
+  <td class="bc emp" colspan="10"></td>
+  <td class="bc d" colspan="10">✓</td>
+  <td class="bc emp" colspan="10"></td>
+  <td class="bc emp" colspan="10"></td>
+  <td class="bc emp" colspan="10"></td>
+  <td class="bc emp" colspan="10"></td>
+  <td class="bc d" colspan="10">✓</td>
+  <td class="bc emp" colspan="10"></td>
+  <td class="bc emp" colspan="10"></td>
+</tr>
+
+<!-- ════════ BC TOP ════════ -->
+<tr>
+  <td class="rl bc">BC Top</td>
+  <td class="bc emp" colspan="10"></td>
+  <td class="bc emp" colspan="10"></td>
+  <td class="bc d" colspan="10">✓</td>
+  <td class="bc emp" colspan="10"></td>
+  <td class="bc emp" colspan="10"></td>
+  <td class="bc emp" colspan="10"></td>
+  <td class="bc emp" colspan="10"></td>
+  <td class="bc d" colspan="10">✓</td>
+  <td class="bc emp" colspan="10"></td>
+  <td class="bc emp" colspan="10"></td>
+</tr>
+
+<!-- ════════ TACK COAT (BC) ════════ -->
+<tr>
+  <td class="rl bc">Tack Coat</td>
+  <td class="bc emp" colspan="10"></td>
+  <td class="bc emp" colspan="10"></td>
+  <td class="bc d" colspan="10">✓</td>
+  <td class="bc emp" colspan="10"></td>
+  <td class="bc emp" colspan="10"></td>
+  <td class="bc emp" colspan="10"></td>
+  <td class="bc emp" colspan="10"></td>
+  <td class="bc d" colspan="10">✓</td>
+  <td class="bc emp" colspan="10"></td>
+  <td class="bc emp" colspan="10"></td>
+</tr>
+
+<!-- ════════ DBM LEVEL ════════ -->
+<tr>
+  <td class="rl dbm">DBM Level</td>
+  <td class="dbm d" colspan="10">✓</td>
+  <td class="dbm d" colspan="10">✓</td>
+  <td class="dbm emp" colspan="10"></td>
+  <td class="dbm emp" colspan="10"></td>
+  <td class="dbm d" colspan="10">✓</td>
+  <td class="dbm emp" colspan="10"></td>
+  <td class="dbm emp" colspan="10"></td>
+  <td class="dbm emp" colspan="10"></td>
+  <td class="dbm d" colspan="10">✓</td>
+  <td class="dbm d" colspan="10">✓</td>
+</tr>
+
+<!-- ════════ DBM TOP ════════ -->
+<tr>
+  <td class="rl dbm">DBM Top</td>
+  <td class="dbm d" colspan="10">✓</td>
+  <td class="dbm d" colspan="10">✓</td>
+  <td class="dbm d" colspan="10">✓</td>
+  <td class="dbm emp" colspan="10"></td>
+  <td class="dbm d" colspan="10">✓</td>
+  <td class="dbm emp" colspan="10"></td>
+  <td class="dbm emp" colspan="10"></td>
+  <td class="dbm emp" colspan="10"></td>
+  <td class="dbm d" colspan="10">✓</td>
+  <td class="dbm d" colspan="10">✓</td>
+</tr>
+
+<!-- ════════ TACK COAT (DBM) ════════ -->
+<tr>
+  <td class="rl dbm">Tack Coat</td>
+  <td class="dbm d" colspan="10">✓</td>
+  <td class="dbm d" colspan="10">✓</td>
+  <td class="dbm d" colspan="10">✓</td>
+  <td class="dbm emp" colspan="10"></td>
+  <td class="dbm d" colspan="10">✓</td>
+  <td class="dbm emp" colspan="10"></td>
+  <td class="dbm emp" colspan="10"></td>
+  <td class="dbm emp" colspan="10"></td>
+  <td class="dbm d" colspan="10">✓</td>
+  <td class="dbm d" colspan="10">✓</td>
+</tr>
+
+<!-- ════════ PRIME COAT ════════ -->
+<tr>
+  <td class="rl dbm">Prime Coat</td>
+  <td class="dbm d" colspan="10">✓</td>
+  <td class="dbm d" colspan="10">✓</td>
+  <td class="dbm d" colspan="10">✓</td>
+  <td class="dbm emp" colspan="10"></td>
+  <td class="dbm d" colspan="10">✓</td>
+  <td class="dbm d" colspan="10">✓</td>
+  <td class="dbm emp" colspan="10"></td>
+  <td class="dbm emp" colspan="10"></td>
+  <td class="dbm emp" colspan="10"></td>
+  <td class="dbm d" colspan="10">✓</td>
+</tr>
+
+<!-- ════════ WMM TOP LEVEL ════════ -->
+<tr>
+  <td class="rl wmm">WMM Top Level</td>
+  <td class="wmm d" colspan="10">✓</td>
+  <td class="wmm d" colspan="10">✓</td>
+  <td class="wmm d" colspan="10">✓</td>
+  <td class="wmm emp" colspan="10"></td>
+  <td class="wmm d" colspan="10">✓</td>
+  <td class="wmm d" colspan="10">✓</td>
+  <td class="wmm emp" colspan="10"></td>
+  <td class="wmm d" colspan="10">✓</td>
+  <td class="wmm emp" colspan="10"></td>
+  <td class="wmm d" colspan="10">✓</td>
+</tr>
+
+<!-- ════════ WMM TOP ════════ -->
+<tr>
+  <td class="rl wmm">WMM Top</td>
+  <td class="wmm d" colspan="10">✓</td>
+  <td class="wmm d" colspan="10">✓</td>
+  <td class="wmm d" colspan="10">✓</td>
+  <td class="wmm emp" colspan="10"></td>
+  <td class="wmm d" colspan="10">✓</td>
+  <td class="wmm d" colspan="10">✓</td>
+  <td class="wmm emp" colspan="10"></td>
+  <td class="wmm d" colspan="10">✓</td>
+  <td class="wmm emp" colspan="10"></td>
+  <td class="wmm d" colspan="10">✓</td>
+</tr>
+
+<!-- ════════ CTSB TOP LEVEL ════════ -->
+<tr>
+  <td class="rl gsb">CTSB Top Level</td>
+  <td class="gsb d" colspan="10">✓</td>
+  <td class="gsb d" colspan="10">✓</td>
+  <td class="gsb d" colspan="10">✓</td>
+  <td class="gsb emp" colspan="10"></td>
+  <td class="gsb d" colspan="10">✓</td>
+  <td class="gsb d" colspan="10">✓</td>
+  <td class="gsb emp" colspan="10"></td>
+  <td class="gsb d" colspan="10">✓</td>
+  <td class="gsb emp" colspan="10"></td>
+  <td class="gsb d" colspan="10">✓</td>
+</tr>
+
+<!-- ════════ CTSB TOP ════════ -->
+<tr>
+  <td class="rl gsb">CTSB Top</td>
+  <td class="gsb d" colspan="10">✓</td>
+  <td class="gsb d" colspan="10">✓</td>
+  <td class="gsb d" colspan="10">✓</td>
+  <td class="gsb emp" colspan="10"></td>
+  <td class="gsb d" colspan="10">✓</td>
+  <td class="gsb d" colspan="10">✓</td>
+  <td class="gsb emp" colspan="10"></td>
+  <td class="gsb d" colspan="10">✓</td>
+  <td class="gsb emp" colspan="10"></td>
+  <td class="gsb d" colspan="10">✓</td>
+</tr>
+
+<!-- ════════ SG TOP LEVEL ════════ -->
+<tr>
+  <td class="rl sg">SG Top Level</td>
+  <td class="sg d" colspan="10">✓</td>
+  <td class="sg d" colspan="10">✓</td>
+  <td class="sg d" colspan="10">✓</td>
+  <td class="sg emp" colspan="10"></td>
+  <td class="sg d" colspan="10">✓</td>
+  <td class="sg d" colspan="10">✓</td>
+  <td class="sg d" colspan="10">✓</td>
+  <td class="sg d" colspan="10">✓</td>
+  <td class="sg d" colspan="10">✓</td>
+  <td class="sg emp" colspan="10"></td>
+</tr>
+
+<!-- ════════ SG TOP ════════ -->
+<tr>
+  <td class="rl sg">SG Top</td>
+  <td class="sg d" colspan="10">✓</td>
+  <td class="sg d" colspan="10">✓</td>
+  <td class="sg d" colspan="10">✓</td>
+  <td class="sg emp" colspan="10"></td>
+  <td class="sg d" colspan="10">✓</td>
+  <td class="sg d" colspan="10">✓</td>
+  <td class="sg d" colspan="10">✓</td>
+  <td class="sg d" colspan="10">✓</td>
+  <td class="sg d" colspan="10">✓</td>
+  <td class="sg emp" colspan="10"></td>
+</tr>
+
+<!-- ════════ SG II ND ════════ -->
+<tr>
+  <td class="rl sg">SG II nd</td>
+  <td class="sg d" colspan="10">✓</td>
+  <td class="sg d" colspan="10">✓</td>
+  <td class="sg d" colspan="10">✓</td>
+  <td class="sg emp" colspan="10"></td>
+  <td class="sg d" colspan="10">✓</td>
+  <td class="sg d" colspan="10">✓</td>
+  <td class="sg emp" colspan="10"></td>
+  <td class="sg d" colspan="10">✓</td>
+  <td class="sg d" colspan="10">✓</td>
+  <td class="sg d" colspan="10">✓</td>
+</tr>
+
+<!-- ════════ SG I ST ════════ -->
+<tr>
+  <td class="rl sg">SG I st</td>
+  <td class="sg d" colspan="10">✓</td>
+  <td class="sg d" colspan="10">✓</td>
+  <td class="sg d" colspan="10">✓</td>
+  <td class="sg emp" colspan="10"></td>
+  <td class="sg d" colspan="10">✓</td>
+  <td class="sg d" colspan="10">✓</td>
+  <td class="sg emp" colspan="10"></td>
+  <td class="sg d" colspan="10">✓</td>
+  <td class="sg d" colspan="10">✓</td>
+  <td class="sg d" colspan="10">✓</td>
+</tr>
+
+<!-- ════════ EMBANK TOP LEVEL ════════ -->
+<tr>
+  <td class="rl etop" style="font-weight:bold;color:#8B0000;">Embank Top Level</td>
+  <td class="etop d" colspan="10">✓</td>
+  <td class="etop d" colspan="10">✓</td>
+  <td class="etop d" colspan="10">✓</td>
+  <td class="etop emp" colspan="10"></td>
+  <td class="etop d" colspan="10">✓</td>
+  <td class="etop d" colspan="10">✓</td>
+  <td class="etop d" colspan="10">✓</td>
+  <td class="etop d" colspan="10">✓</td>
+  <td class="etop d" colspan="10">✓</td>
+  <td class="etop emp" colspan="10"></td>
+</tr>
+
+<!-- ════════ EMBANK TOP ════════ -->
+<tr>
+  <td class="rl etop" style="font-weight:bold;color:#8B0000;">Embank Top</td>
+  <td class="etop d" colspan="10">✓</td>
+  <td class="etop d" colspan="10">✓</td>
+  <td class="etop d" colspan="10">✓</td>
+  <td class="etop emp" colspan="10"></td>
+  <td class="etop d" colspan="10">✓</td>
+  <td class="etop d" colspan="10">✓</td>
+  <td class="etop d" colspan="10">✓</td>
+  <td class="etop d" colspan="10">✓</td>
+  <td class="etop d" colspan="10">✓</td>
+  <td class="etop emp" colspan="10"></td>
+</tr>
+
+<!-- ════════ EMBANKMENT INTERMEDIATE LAYERS ════════ -->
+<!-- Layer 1 -->
+<tr>
+  <td class="rl-emb emp" rowspan="23" style="background:#fff;border:1px solid #999;">
+    Intermidate<br>layer of<br>Embankment<br>with OGL &amp; C&amp;G
+  </td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="6">✓</td>
+  <td class="svup-v" rowspan="23" colspan="2">Ch.64+165 SVUP</td>
+  <td class="emb d" colspan="2">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+</tr>
+<!-- Layer 2 -->
+<tr>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="6">✓</td>
+  <td class="emb d" colspan="2">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+</tr>
+<!-- Layer 3 -->
+<tr>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="6">✓</td>
+  <td class="emb d" colspan="2">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+</tr>
+<!-- Layer 4 -->
+<tr>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="6">✓</td>
+  <td class="emb d" colspan="2">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+</tr>
+<!-- Layer 5 -->
+<tr>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="6">✓</td>
+  <td class="emb d" colspan="2">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+</tr>
+<!-- Layer 6 -->
+<tr>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="6">✓</td>
+  <td class="emb d" colspan="2">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+</tr>
+<!-- Layer 7 -->
+<tr>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="6">✓</td>
+  <td class="emb d" colspan="2">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+</tr>
+<!-- Layer 8 -->
+<tr>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="6">✓</td>
+  <td class="emb d" colspan="2">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+</tr>
+<!-- Layer 9 -->
+<tr>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="6">✓</td>
+  <td class="emb d" colspan="2">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+</tr>
+<!-- Layer 10 -->
+<tr>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="6">✓</td>
+  <td class="emb d" colspan="2">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+</tr>
+<!-- Layer 11 -->
+<tr>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="6">✓</td>
+  <td class="emb d" colspan="2">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+</tr>
+<!-- Layer 12 -->
+<tr>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="6">✓</td>
+  <td class="emb d" colspan="2">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+</tr>
+<!-- Layer 13 -->
+<tr>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="6">✓</td>
+  <td class="emb d" colspan="2">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+</tr>
+<!-- Layer 14 -->
+<tr>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="6">✓</td>
+  <td class="emb d" colspan="2">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+</tr>
+<!-- Layer 15 -->
+<tr>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="6">✓</td>
+  <td class="emb d" colspan="2">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+</tr>
+<!-- Layer 16 -->
+<tr>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="6">✓</td>
+  <td class="emb d" colspan="2">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+</tr>
+<!-- Layer 17 -->
+<tr>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="6">✓</td>
+  <td class="emb d" colspan="2">✓</td>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+</tr>
+<!-- Layer 18 -->
+<tr>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="6">✓</td>
+  <td class="emb d" colspan="2">✓</td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+</tr>
+<!-- Layer 19 -->
+<tr>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="6">✓</td>
+  <td class="emb d" colspan="2">✓</td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+</tr>
+<!-- Layer 20 -->
+<tr>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb d" colspan="6">✓</td>
+  <td class="emb emp" colspan="2"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+</tr>
+<!-- Layer 21 -->
+<tr>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb emp" colspan="6"></td>
+  <td class="emb emp" colspan="2"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+</tr>
+<!-- Layer 22 -->
+<tr>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb emp" colspan="6"></td>
+  <td class="emb emp" colspan="2"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+</tr>
+<!-- Layer 23 -->
+<tr>
+  <td class="emb d" colspan="10">✓</td>
+  <td class="emb emp" colspan="6"></td>
+  <td class="emb emp" colspan="2"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+  <td class="emb emp" colspan="10"></td>
+</tr>
+
+</tbody>
+</table>
+</div>
+
+<!-- LEGEND -->
+<div class="legend">
+  <span class="lg-lbl">Colour Code →</span>
+  <span class="lg-item"><span class="lg-sw" style="background:#E8E8E8;"></span> C&amp;G &amp; OGL</span>
+  <span class="lg-item"><span class="lg-sw" style="background:#C0C0C0;"></span> Excavation</span>
+  <span class="lg-item"><span class="lg-sw" style="background:#4472C4;"></span> EMB Layer</span>
+  <span class="lg-item"><span class="lg-sw" style="background:#92D050;"></span> EMB Top</span>
+  <span class="lg-item"><span class="lg-sw" style="background:#00B050;"></span> SG Layer</span>
+  <span class="lg-item"><span class="lg-sw" style="background:#FFFF00;border:1px solid #aaa;"></span> GSB</span>
+  <span class="lg-item"><span class="lg-sw" style="background:#FF6600;"></span> WMM</span>
+  <span class="lg-item"><span class="lg-sw" style="background:#00B0F0;"></span> DBM</span>
+  <span class="lg-item"><span class="lg-sw" style="background:#FF99CC;"></span> BC</span>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div>For Contractor</div>
+  <div>For Concessionaire</div>
+  <div>For Client / Consultant</div>
+</div>
+
+</div>
+</body>
+</html>
