@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DigiQC Dashboard</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: Arial, sans-serif; background: #f0f2f5; }
+
+.section {
+  width: 100%;
+  border-bottom: 2px solid #ddd;
+}
+
+.section-title {
+  padding: 12px 20px;
+  font-size: 16px;
+  font-weight: bold;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  color: #333;
+}
+
+iframe {
+  width: 100%;
+  border: none;
+  display: block;
+}
+
+.metabase-frame {
+  height: 85vh;
+}
+
+.layer-chart-frame {
+  height: 90vh;
+}
+</style>
+</head>
+<body>
+
+<!-- Metabase Dashboard -->
+<div class="section">
+  <div class="section-title">Metabase Dashboard</div>
+  <iframe class="metabase-frame"
+    src="http://metabase-v2.digiqc.com/public/dashboard/7116f041-143f-4dd0-b185-e58fe50bbe2c"
+    allowfullscreen>
+  </iframe>
+</div>
+
+<!-- Layer Chart -->
+<div class="section">
+  <div class="section-title">Layer Chart — Ch 064+000 to 065+000 — RHS</div>
+  <iframe class="layer-chart-frame"
+    src="https://hathi-jigar.github.io/support-dashboard/layer_chart_v2.html"
+    allowfullscreen>
+  </iframe>
+</div>
+
+</body>
+</html>
