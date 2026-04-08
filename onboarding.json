@@ -361,7 +361,13 @@
       "liveSetup": "",
       "dashboardSetup": "",
       "payment": "Full payment received",
-      "actionItems": [],
+      "actionItems": [
+        {
+          "week": "06 Apr 2026",
+          "items": "guidence need to take from Sachinee wag",
+          "addedBy": "Hardik Goyal"
+        }
+      ],
       "notes": "User are doing the mobile app and project admin course follow is going on with Harshal sir",
       "usage": {
         "inspection": false,
