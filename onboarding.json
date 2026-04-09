@@ -98,33 +98,6 @@
       }
     },
     {
-      "id": 4,
-      "org": "Urbanac Projects",
-      "planType": "User Based",
-      "purchased": 70,
-      "spocName": "Jeyakumar / Vasanth",
-      "spocPhone": "9900073434",
-      "spocCountry": "IN",
-      "systemAdmin": "Jeyakumar / Vasanth",
-      "introMeet": "2025-10-14",
-      "trainingSetup": "2025-10-29",
-      "liveSetup": "",
-      "dashboardSetup": "",
-      "payment": "Pending",
-      "actionItems": [],
-      "notes": "",
-      "usage": {
-        "inspection": false,
-        "instruction": false,
-        "register": false
-      },
-      "expansion": {
-        "possible": "",
-        "details": "",
-        "remark": ""
-      }
-    },
-    {
       "id": 5,
       "org": "Ashish Interbuild",
       "planType": "User Based",
