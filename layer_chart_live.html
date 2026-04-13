@@ -103,18 +103,17 @@ function fmtCh(m) {
   return String(Math.floor(m / 1000)).padStart(3, '0') + '+' + String(m % 1000).padStart(3, '0');
 }
 
-// Format date: "13 Apr, 2026, 4:03 PM" → "13.04.26"
-// Robust regex handles any spacing/comma variation
+// Format: "13 Apr, 2026, 4:03 PM" → "13-04-26"
 function fmtDate(s) {
   if (!s) return '';
   const mo = {Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',
                Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
   const m = s.match(/(\d{1,2})\s+([A-Za-z]{3})[,\s]+(2\d{3})/);
-  if (m) return m[1].padStart(2,'0') + '.' + (mo[m[2]] || '??') + '.' + m[3].slice(2);
+  if (m) return m[1].padStart(2,'0') + '-' + (mo[m[2]] || '??') + '-' + m[3].slice(2);
   return s;
 }
 
-// Cell label: "DD.MM.YY / RFI#" — both on one line
+// Cell label: "DD-MM-YY / RFI#"
 function cellLabel(rfi) {
   if (!rfi) return '';
   return rfi.rfiDate + ' / ' + rfi.rfiNum;
@@ -157,7 +156,6 @@ async function main() {
     );
     statusEl.textContent = 'Building chart...';
 
-    // ── JSON2: nomenclature ─────────────────────────────────
     const level2ByParent = {};
     for (const r of j2.filter(r => r['Level'] === '2' && r['Is Active'] === 'true')) {
       const pid = r['Parent Level ID'];
@@ -190,7 +188,6 @@ async function main() {
       return (level2ByParent[parent['ID']] || []).map(r => extractRange(r['Name'])).filter(Boolean);
     }
 
-    // ── JSON4: RFI map ──────────────────────────────────────
     const K_EQC   = 'Eqc ' + ARR + ' Eqc Name';
     const K_STAGE = 'Eqc Stage ' + ARR + ' Name';
     const rfiMap  = {};
@@ -209,7 +206,6 @@ async function main() {
       rfiMap[key][layerNum] = { rfiDate, rfiNum };
     }
 
-    // ── JSON1: checklists ───────────────────────────────────
     const K_STG = 'Project Eqc Type Stage ' + ARR + ' Name';
     const ckById = {};
     for (const r of j1) {
@@ -232,7 +228,6 @@ async function main() {
 
     const usedClasses = new Set();
 
-    // ── Build colgroup + header ─────────────────────────────
     const cg = document.getElementById('colgroup');
     for (let i = 0; i < TOTAL; i++) {
       const c = document.createElement('col'); c.className = 'csub'; cg.appendChild(c);
@@ -277,7 +272,6 @@ async function main() {
     if (embLayerCks.length > 0) {
       usedClasses.add('emb');
       const maxLayers = Math.max(...embLayerCks.map(ck => ck.stages.length));
-
       for (let row = 0; row < maxLayers; row++) {
         const colRanges = [];
         for (const ck of embLayerCks) {
@@ -302,7 +296,6 @@ async function main() {
 
     document.getElementById('chart-body').innerHTML = body;
 
-    // ── Dynamic legend ──────────────────────────────────────
     const legendEl = document.getElementById('legend');
     for (const col of ALL_COLOURS) {
       if (usedClasses.has(col.key)) {
