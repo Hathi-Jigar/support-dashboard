@@ -78,7 +78,6 @@ table td, table th { border:1px solid #999; text-align:center; vertical-align:mi
   </div>
 </div>
 <script>
-// Fixed base path for GitHub Pages repo
 const REPO_BASE = 'https://hathi-jigar.github.io/support-dashboard';
 const URLS = {
   j1: REPO_BASE + '/data/j1.json',
@@ -86,6 +85,9 @@ const URLS = {
   j3: REPO_BASE + '/data/j3.json',
   j4: REPO_BASE + '/data/j4.json',
 };
+
+// Arrow character used in Metabase field names
+const ARR = '\u2192';
 
 function parseCh(s) {
   if (!s) return null;
@@ -149,19 +151,14 @@ async function main() {
 
   try {
     statusEl.textContent = 'Fetching data...';
-
     const [j1,j2,j3,j4] = await Promise.all(
       Object.values(URLS).map(u =>
-        fetch(u).then(r => {
-          if (!r.ok) throw new Error('HTTP ' + r.status + ' — ' + u);
-          return r.json();
-        })
+        fetch(u).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status + ' ' + u); return r.json(); })
       )
     );
-
     statusEl.textContent = 'Building chart...';
 
-    // JSON2: nomenclature tree
+    // ── JSON2: nomenclature tree ──────────────────────────
     const level1 = j2
       .filter(r => r['Level']==='1' && r['Is Active']==='true')
       .sort((a,b) => parseInt(a['Order']) - parseInt(b['Order']));
@@ -175,46 +172,40 @@ async function main() {
     for (const pid in level2ByParent)
       level2ByParent[pid].sort((a,b) => parseInt(a['Order']) - parseInt(b['Order']));
 
-    // Chart extents from all Level-2 ranges
+    // Chart extents from Level-2 ranges
     let chartFrom = Infinity, chartTo = -Infinity;
     for (const r of j2.filter(r => r['Level']==='2')) {
       const rng = extractRange(r['Name']);
-      if (rng) { chartFrom = Math.min(chartFrom, rng.from); chartTo = Math.max(chartTo, rng.to); }
+      if (rng) { chartFrom = Math.min(chartFrom,rng.from); chartTo = Math.max(chartTo,rng.to); }
     }
-    if (!isFinite(chartFrom)) { chartFrom = 64000; chartTo = 65000; }
+    if (!isFinite(chartFrom)) { chartFrom=64000; chartTo=65000; }
 
     const CHART_LEN = chartTo - chartFrom;
-    const BLOCK = 100, SUB = 10;
-    const NUM_BLOCKS = CHART_LEN / BLOCK, SUBS = BLOCK / SUB, TOTAL = NUM_BLOCKS * SUBS;
+    const BLOCK=100, SUB=10;
+    const NUM_BLOCKS = CHART_LEN/BLOCK, SUBS=BLOCK/SUB, TOTAL=NUM_BLOCKS*SUBS;
 
-    function rangeToSpan(from, to) {
-      const f = Math.max(from, chartFrom), t = Math.min(to, chartTo);
-      if (f >= t) return null;
-      const s = Math.round((f - chartFrom) / SUB);
-      const e = Math.round((t - chartFrom) / SUB);
-      return e > s ? {startCol:s, span:e-s} : null;
+    function rangeToSpan(from,to) {
+      const f=Math.max(from,chartFrom), t=Math.min(to,chartTo);
+      if (f>=t) return null;
+      const s=Math.round((f-chartFrom)/SUB), e=Math.round((t-chartFrom)/SUB);
+      return e>s ? {startCol:s, span:e-s} : null;
     }
 
-    // Title + direction
+    // Title
     document.getElementById('title-bar').textContent =
       '{ LAYER CHART   Ch :-   ' + fmtCh(chartFrom) + '   To   ' + fmtCh(chartTo) + '   SIDE :-   RHS }';
     document.getElementById('dir-left').textContent  = 'Meerut ->';
     document.getElementById('dir-right').textContent = '<- Prayagraj';
 
-    // JSON3: eqcId -> range
-    const eqcRangeMap = {};
-    for (const r of j3) {
-      if (String(r['Level']) === '2') {
-        const rng = extractRange(r['Level Name']);
-        if (rng) eqcRangeMap[String(r['Eqc ID'])] = rng;
-      }
-    }
+    // ── JSON4: RFI map ────────────────────────────────────
+    // Field names use actual → character
+    const K_EQC_NAME  = 'Eqc ' + ARR + ' Eqc Name';
+    const K_STAGE     = 'Eqc Stage ' + ARR + ' Name';
 
-    // JSON4: rfiMap[from_to][layerNum]
-    const rfiMap = {};
+    const rfiMap = {}; // key: "from_to" -> { layerNum: {rfiDate, rfiNum} }
     for (const r of j4) {
-      const path     = r['Eqc \u2192 Eqc Name'] || '';
-      const stageStr = r['Eqc Stage \u2192 Name'] || '';
+      const path     = r[K_EQC_NAME] || '';
+      const stageStr = r[K_STAGE]    || '';
       const rfiNum   = String(r['Qc Option'] || r['ID']);
       const rfiDate  = fmtDate(r['Created At']);
       const lm = stageStr.match(/layer\s*(\d+)/i);
@@ -227,85 +218,166 @@ async function main() {
       rfiMap[key][layerNum] = {rfiDate, rfiNum};
     }
 
-    // JSON1: checklists
+    // ── JSON1: checklists ─────────────────────────────────
+    const K_STAGE_NAME = 'Project Eqc Type Stage ' + ARR + ' Name';
     const ckById = {};
     for (const r of j1) {
       const id  = String(r['ID']);
       const nm  = r['Name'];
-      const stg = r['Project Eqc Type Stage \u2192 Name'];
+      const stg = r[K_STAGE_NAME];
       if (!ckById[id]) ckById[id] = {name:nm, stages:[]};
       if (stg && !ckById[id].stages.includes(stg)) ckById[id].stages.push(stg);
     }
+    // Sort stages ascending (Layer 1, 2, 3...)
     for (const id in ckById)
       ckById[id].stages.sort((a,b) =>
         parseInt(a.match(/\d+/)?.[0]||0) - parseInt(b.match(/\d+/)?.[0]||0));
 
-    // Build colgroup + headers
+    // ── Build colgroup + headers ──────────────────────────
     const cg = document.getElementById('colgroup');
-    for (let i = 0; i < TOTAL; i++) {
-      const c = document.createElement('col');
-      c.className = 'csub';
-      cg.appendChild(c);
-    }
+    for (let i=0; i<TOTAL; i++) { const c=document.createElement('col'); c.className='csub'; cg.appendChild(c); }
     let h1 = '<tr><th class="ch-label-hd" rowspan="2">CHAINAGE</th>';
-    for (let b = 1; b <= NUM_BLOCKS; b++)
-      h1 += '<th class="ch-block" colspan="' + SUBS + '">' + ((chartFrom + b*BLOCK)/1000).toFixed(3) + '</th>';
+    for (let b=1; b<=NUM_BLOCKS; b++)
+      h1 += '<th class="ch-block" colspan="' + SUBS + '">' + ((chartFrom+b*BLOCK)/1000).toFixed(3) + '</th>';
     h1 += '</tr>';
     let h2 = '<tr>';
-    for (let b = 0; b < NUM_BLOCKS; b++)
-      for (let s = 1; s <= SUBS; s++)
-        h2 += '<td class="ch-sub">' + (s*SUB) + '</td>';
+    for (let b=0; b<NUM_BLOCKS; b++) for (let s=1; s<=SUBS; s++) h2 += '<td class="ch-sub">' + (s*SUB) + '</td>';
     h2 += '</tr>';
     document.getElementById('chart-head').innerHTML = h1 + h2;
 
-    // Build body
-    let body = '';
-    for (const wt of level1) {
-      const wtId   = wt['ID'];
-      const wtName = wt['Name'];
-      const cls    = colourClass(wtName);
-      const chainageNodes = level2ByParent[wtId] || [];
+    // ── Classify checklists ───────────────────────────────
+    const embLevelGroups = []; // Embank Top Level
+    const embTopGroups   = []; // Embank Top
+    const embLayerGroups = []; // Embankment layers
 
-      const matched = Object.values(ckById).filter(ck => {
-        const cl = ck.name.toLowerCase(), wl = wtName.toLowerCase();
-        return cl.includes(wl) || wl.includes(cl.split('(')[0].trim());
-      }).sort((a,b) => (extractRange(a.name)?.from||0) - (extractRange(b.name)?.from||0));
+    for (const ck of Object.values(ckById)) {
+      const nl = ck.name.toLowerCase();
+      if (nl.includes('embank top level'))  embLevelGroups.push(ck);
+      else if (nl.includes('embank top'))   embTopGroups.push(ck);
+      else                                   embLayerGroups.push(ck);
+    }
 
-      if (matched.length === 0) {
-        const cells = new Array(TOTAL).fill(null);
-        for (const cn of chainageNodes) {
-          const rng = extractRange(cn['Name']);
-          if (rng) { const sp = rangeToSpan(rng.from, rng.to); if (sp) place(cells, sp.startCol, sp.span, '', cls); }
-        }
-        body += '<tr><td class="rl ' + cls + '">' + wtName + '</td>' + renderCells(cells, cls) + '</tr>';
-        continue;
-      }
+    // Sort emb layer groups by chainage from ascending
+    embLayerGroups.sort((a,b) => (extractRange(a.name)?.from||0) - (extractRange(b.name)?.from||0));
 
-      const totalRows = matched.reduce((s,ck) => s + ck.stages.length, 0);
+    // ── Helper: render a single checklist group ───────────
+    // reversed=true means Layer 1 goes at bottom (last row rendered first in array = displayed last)
+    function renderGroup(ck, cls, totalRowspan, isFirstOfSection, reversed) {
+      const ckRange = extractRange(ck.name);
+      const stages  = reversed ? [...ck.stages].reverse() : ck.stages;
+      let rows = '';
       let firstRow = true;
 
-      for (const ck of matched) {
-        const ckRange = extractRange(ck.name);
-        for (let si = 0; si < ck.stages.length; si++) {
-          const stageName = ck.stages[si];
-          const layerNum  = parseInt(stageName.match(/\d+/)?.[0] || 1);
-          const cells     = new Array(TOTAL).fill(null);
-          const ranges    = ckRange ? [ckRange] : chainageNodes.map(cn => extractRange(cn['Name'])).filter(Boolean);
+      for (let si=0; si<stages.length; si++) {
+        const stageName = stages[si];
+        const layerNum  = parseInt(stageName.match(/\d+/)?.[0]||1);
+        const cells     = new Array(TOTAL).fill(null);
 
-          for (const rng of ranges) {
-            const sp = rangeToSpan(rng.from, rng.to);
-            if (!sp) continue;
-            const key = rng.from + '_' + rng.to;
+        if (ckRange) {
+          const sp = rangeToSpan(ckRange.from, ckRange.to);
+          if (sp) {
+            const key = ckRange.from + '_' + ckRange.to;
             const rfi = rfiMap[key]?.[layerNum];
-            place(cells, sp.startCol, sp.span, rfi ? rfi.rfiDate + '<br>/' + rfi.rfiNum : '', cls);
+            place(cells, sp.startCol, sp.span, rfi ? rfi.rfiDate+'<br>/'+rfi.rfiNum : '', cls);
           }
-
-          let row = '<tr>';
-          if (firstRow) row += '<td class="rl-group ' + cls + '" rowspan="' + totalRows + '">' + wtName + '</td>';
-          row += renderCells(cells, cls) + '</tr>';
-          body += row;
-          firstRow = false;
         }
+
+        let row = '<tr>';
+        // Section label spans all rows of all groups in section — only on very first row
+        if (firstRow && isFirstOfSection && totalRowspan > 1) {
+          row += '<td class="rl-group ' + cls + '" rowspan="' + totalRowspan + '">' + ck.name + '</td>';
+        } else if (firstRow && totalRowspan <= 1) {
+          // single-row group — just put the label
+          row += '<td class="rl ' + cls + '">' + ck.name + '</td>';
+        }
+        row += renderCells(cells, cls) + '</tr>';
+        rows += row;
+        firstRow = false;
+      }
+      return rows;
+    }
+
+    // ── Build body: top-to-bottom order ──────────────────
+    // Order: Embank Top Level → Embank Top → Embankment layers (bottom = last row)
+    let body = '';
+
+    // 1. Embank Top Level (top of chart)
+    for (const ck of embLevelGroups) {
+      const cls = 'elvl';
+      const ckRange = extractRange(ck.name);
+      for (let si=0; si<ck.stages.length; si++) {
+        const stageName = ck.stages[si];
+        const layerNum  = parseInt(stageName.match(/\d+/)?.[0]||1);
+        const cells     = new Array(TOTAL).fill(null);
+        if (ckRange) {
+          const sp = rangeToSpan(ckRange.from, ckRange.to);
+          if (sp) {
+            const key = ckRange.from + '_' + ckRange.to;
+            const rfi = rfiMap[key]?.[layerNum];
+            place(cells, sp.startCol, sp.span, rfi ? rfi.rfiDate+'<br>/'+rfi.rfiNum : '', cls);
+          }
+        }
+        const rs = ck.stages.length>1 && si===0 ? ' rowspan="'+ck.stages.length+'"' : '';
+        body += '<tr>' + (si===0 ? '<td class="rl '+cls+'"'+rs+'>'+ck.name+'</td>' : '') + renderCells(cells,cls) + '</tr>';
+      }
+    }
+
+    // 2. Embank Top
+    for (const ck of embTopGroups) {
+      const cls = 'etop';
+      const ckRange = extractRange(ck.name);
+      for (let si=0; si<ck.stages.length; si++) {
+        const stageName = ck.stages[si];
+        const layerNum  = parseInt(stageName.match(/\d+/)?.[0]||1);
+        const cells     = new Array(TOTAL).fill(null);
+        if (ckRange) {
+          const sp = rangeToSpan(ckRange.from, ckRange.to);
+          if (sp) {
+            const key = ckRange.from + '_' + ckRange.to;
+            const rfi = rfiMap[key]?.[layerNum];
+            place(cells, sp.startCol, sp.span, rfi ? rfi.rfiDate+'<br>/'+rfi.rfiNum : '', cls);
+          }
+        }
+        const rs = ck.stages.length>1 && si===0 ? ' rowspan="'+ck.stages.length+'"' : '';
+        body += '<tr>' + (si===0 ? '<td class="rl '+cls+'"'+rs+'>'+ck.name+'</td>' : '') + renderCells(cells,cls) + '</tr>';
+      }
+    }
+
+    // 3. Embankment intermediate layers
+    // Total rows across all emb layer groups
+    const totalEmbRows = embLayerGroups.reduce((s,ck) => s+ck.stages.length, 0);
+
+    // Build all emb rows — highest layer first (top of section), Layer 1 last (bottom)
+    // For each group: stages reversed so highest layer renders first
+    let isFirstEmbRow = true;
+    for (const ck of embLayerGroups) {
+      const cls     = 'emb';
+      const ckRange = extractRange(ck.name);
+      const stages  = [...ck.stages].reverse(); // Layer 4,3,2,1 top to bottom
+
+      for (let si=0; si<stages.length; si++) {
+        const stageName = stages[si];
+        const layerNum  = parseInt(stageName.match(/\d+/)?.[0]||1);
+        const cells     = new Array(TOTAL).fill(null);
+
+        if (ckRange) {
+          const sp = rangeToSpan(ckRange.from, ckRange.to);
+          if (sp) {
+            const key = ckRange.from + '_' + ckRange.to;
+            const rfi = rfiMap[key]?.[layerNum];
+            place(cells, sp.startCol, sp.span, rfi ? rfi.rfiDate+'<br>/'+rfi.rfiNum : '', cls);
+          }
+        }
+
+        let row = '<tr>';
+        if (isFirstEmbRow) {
+          // Section label spans all embankment rows
+          row += '<td class="rl-group ' + cls + '" rowspan="' + totalEmbRows + '">' +
+                 'Intermediate layer of<br>Embankment<br>with OGL &amp; C&amp;G</td>';
+        }
+        row += renderCells(cells, cls) + '</tr>';
+        body += row;
+        isFirstEmbRow = false;
       }
     }
 
@@ -324,7 +396,7 @@ async function main() {
 }
 
 main();
-setInterval(main, 5 * 60 * 1000);
+setInterval(main, 5*60*1000);
 </script>
 </body>
 </html>
