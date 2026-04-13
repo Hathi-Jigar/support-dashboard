@@ -227,21 +227,21 @@ async function main(){
     document.getElementById('title-bar').textContent=excelTitle;
     document.getElementById('dir-left').textContent='Meerut \u2192';
     document.getElementById('dir-right').textContent='\u2190 Prayagraj';
-    function nomRangesByName(exactName){
-      const parent=j2.find(r=>r['Level']==='1'&&r['Name'].trim().toLowerCase()===exactName.trim().toLowerCase());
-      if(!parent)return[];
-      return(level2ByParent[parent['ID']]||[]).map(r=>extractRange(r['Name'])).filter(Boolean);
-    }
+
+    // Build RFI map from j4 — keyed by "typeName_from_to" to avoid cross-type collision
+    // (e.g. Embank Top and SG 1st share the same chainage ranges)
     const K_EQC='Eqc '+ARR+' Eqc Name',K_STAGE='Eqc Stage '+ARR+' Name',rfiMap={};
     for(const r of j4){
       const path=r[K_EQC]||'',stgStr=r[K_STAGE]||'';
+      const pathType=(path.split('/')[1]||'').trim().toLowerCase();
       const rfiNum=String(r['Qc Option']||r['ID']),rfiDate=fmtDate(r['Created At']);
       const lm=stgStr.match(/layer\s*(\d+)/i);if(!lm)continue;
       const layerNum=parseInt(lm[1]),rng=extractRange(path);if(!rng)continue;
-      const key=rng.from+'_'+rng.to;
+      const key=pathType+'_'+rng.from+'_'+rng.to;
       if(!rfiMap[key])rfiMap[key]={};
       rfiMap[key][layerNum]={rfiDate,rfiNum};
     }
+    function rfiKey(typeName,from,to){ return typeName.trim().toLowerCase()+'_'+from+'_'+to; }
     const K_STG='Project Eqc Type Stage '+ARR+' Name',ckById={};
     for(const r of j1){
       const id=String(r['ID']),nm=r['Name'],stg=r[K_STG];
@@ -266,14 +266,14 @@ async function main(){
     const level1s=j2.filter(r=>r['Level']==='1'&&r['Is Active']==='true')
       .sort((a,b)=>parseInt(b['Order'])-parseInt(a['Order']));
 
-    function renderSimpleRows(cks,cls,nomRanges){
+    function renderSimpleRows(cks,cls,nomRanges,typeName){
       let html='';
       for(const ck of cks){
         const ranges=nomRanges.length>0?nomRanges:(extractRange(ck.name)?[extractRange(ck.name)]:[]);
         const stages=[...ck.stages];
         for(let si=0;si<stages.length;si++){
           const layerNum=parseInt(stages[si].match(/\d+/)?.[0]||1);
-          const colRanges=ranges.map(nr=>{const key=nr.from+'_'+nr.to,rfi=rfiMap[key]?.[layerNum];return{from:nr.from,to:nr.to,cls,content:cellLabel(rfi)};});
+          const colRanges=ranges.map(nr=>{const k=rfiKey(typeName,nr.from,nr.to),rfi=rfiMap[k]?.[layerNum];return{from:nr.from,to:nr.to,cls,content:cellLabel(rfi)};});
           const rs=stages.length>1&&si===0?' rowspan="'+stages.length+'"':'';
           html+='<tr>'+(si===0?'<td class="rl '+cls+'"'+rs+'>'+ck.name+'</td>':'')+buildRowCells(colRanges,TOTAL,chartFrom,SUB)+'</tr>';
           excelData.push({rowLabel:si===0?ck.name:'',cls,cells:buildCellArray(colRanges,TOTAL,chartFrom,SUB)});
@@ -286,6 +286,7 @@ async function main(){
     for(const l1 of level1s){
       const style=getTypeStyle(l1['Name']);
       const cls=style.cls;
+      const typeName=l1['Name'];
       const nomRanges=(level2ByParent[l1['ID']]||[]).map(r=>extractRange(r['Name'])).filter(Boolean);
 
       if(style.grouped){
@@ -304,22 +305,22 @@ async function main(){
             for(const ck of cks){
               const ckRange=extractRange(ck.name);if(!ckRange)continue;
               const layerNum=ck.stages.length-row;if(layerNum<1)continue;
-              const key=ckRange.from+'_'+ckRange.to,rfi=rfiMap[key]?.[layerNum];
+              const k=rfiKey(typeName,ckRange.from,ckRange.to),rfi=rfiMap[k]?.[layerNum];
               colRanges.push({from:ckRange.from,to:ckRange.to,cls,content:cellLabel(rfi)});
             }
             let tr='<tr>';
-            if(row===0)tr+='<td class="rl-group '+cls+'" rowspan="'+maxLayers+'">'+l1['Name'].replace(/&/g,'&amp;')+'</td>';
+            if(row===0)tr+='<td class="rl-group '+cls+'" rowspan="'+maxLayers+'">'+typeName.replace(/&/g,'&amp;')+'</td>';
             tr+=buildRowCells(colRanges,TOTAL,chartFrom,SUB)+'</tr>';
             body+=tr;
-            excelData.push({rowLabel:row===0?l1['Name']:'',cls,cells:buildCellArray(colRanges,TOTAL,chartFrom,SUB)});
+            excelData.push({rowLabel:row===0?typeName:'',cls,cells:buildCellArray(colRanges,TOTAL,chartFrom,SUB)});
           }
         }
       } else {
         // Simple rendering — match j1 checkpoints by name to this Level 1
-        const cks=Object.values(ckById).filter(ck=>ck.name.trim().toLowerCase()===l1['Name'].trim().toLowerCase());
+        const cks=Object.values(ckById).filter(ck=>ck.name.trim().toLowerCase()===typeName.trim().toLowerCase());
         if(cks.length>0){
           usedStyles.push(style);
-          body+=renderSimpleRows(cks,cls,nomRanges);
+          body+=renderSimpleRows(cks,cls,nomRanges,typeName);
         }
       }
     }
