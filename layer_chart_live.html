@@ -40,6 +40,10 @@ table td, table th { border:1px solid #b0b8c1; text-align:center; vertical-align
 .etop { background:#70ad47; color:#fff; }
 .elvl { background:#92d050; color:#333; }
 .sg   { background:#00B050; color:#fff; }
+.gsb  { background:#FFFF00; color:#333; }
+.wmm  { background:#FF6600; color:#fff; }
+.dbm  { background:#00B0F0; color:#fff; }
+.bc   { background:#FF99CC; color:#333; }
 .emp  { background:#f5f7fa; }
 .d { font-size:8px; padding:3px 2px; white-space:normal; word-break:break-word; line-height:1.4; font-weight:bold; height:28px; vertical-align:middle; }
 .legend { display:flex; align-items:center; flex-wrap:wrap; gap:12px; padding:7px 12px; border-top:2px solid #2c3e50; font-size:10px; background:#f8f9fa; }
@@ -84,17 +88,22 @@ const REPO_BASE   = 'https://hathi-jigar.github.io/support-dashboard';
 const URLS        = { j1:REPO_BASE+'/data/j1.json', j2:REPO_BASE+'/data/j2.json', j3:REPO_BASE+'/data/j3.json', j4:REPO_BASE+'/data/j4.json' };
 const ARR         = '\u2192';
 
-const CLS_FILL    = { emb:'FF4472C4', etop:'FF70AD47', elvl:'FF92D050', sg:'FF00B050', emp:'FFF5F7FA' };
-const ALL_COLOURS = [
-  { key:'emb',  label:'EMB Layer',     hex:'#4472C4' },
-  { key:'etop', label:'EMB Top',       hex:'#70ad47' },
-  { key:'elvl', label:'EMB Top Level', hex:'#92d050' },
-  { key:'sg',   label:'SG Layer',      hex:'#00B050' },
-  { key:'gsb',  label:'GSB',           hex:'#FFFF00', border:'#aaa' },
-  { key:'wmm',  label:'WMM',           hex:'#FF6600' },
-  { key:'dbm',  label:'DBM',           hex:'#00B0F0' },
-  { key:'bc',   label:'BC',            hex:'#FF99CC' },
+const CLS_FILL    = { emb:'FF4472C4', etop:'FF70AD47', elvl:'FF92D050', sg:'FF00B050', gsb:'FFFFFF00', wmm:'FFFF6600', dbm:'FF00B0F0', bc:'FFFF99CC', emp:'FFF5F7FA' };
+
+// Style config — maps j2 Level 1 name patterns to CSS class, legend label, hex, and rendering mode.
+// "grouped:true" means multiple j1 checkpoints with chainage in their names (embankment layers).
+// Checked in order — first match wins.
+const TYPE_STYLES = [
+  { pattern:/embankment|og.*cg/i,  cls:'emb',  label:'EMB Layer',     hex:'#4472C4', grouped:true },
+  { pattern:/top\s*level/i,        cls:'elvl', label:'EMB Top Level', hex:'#92d050' },
+  { pattern:/top$/i,               cls:'etop', label:'EMB Top',       hex:'#70ad47' },
+  { pattern:/^sg/i,                cls:'sg',   label:'SG Layer',      hex:'#00B050' },
+  { pattern:/gsb|ctsb/i,           cls:'gsb',  label:'GSB',           hex:'#FFFF00', border:'#aaa' },
+  { pattern:/wmm/i,                cls:'wmm',  label:'WMM',           hex:'#FF6600' },
+  { pattern:/dbm/i,                cls:'dbm',  label:'DBM',           hex:'#00B0F0' },
+  { pattern:/^bc/i,                cls:'bc',   label:'BC',            hex:'#FF99CC' },
 ];
+function getTypeStyle(name){ for(const s of TYPE_STYLES) if(s.pattern.test(name)) return s; return { cls:'emp', label:name, hex:'#ccc' }; }
 
 let excelData=[], excelTitle='', excelChFrom=0, excelChTo=0, excelTOTAL=0, excelSUB=10;
 
@@ -240,17 +249,9 @@ async function main(){
       if(stg&&!ckById[id].stages.includes(stg))ckById[id].stages.push(stg);
     }
     for(const id in ckById)ckById[id].stages.sort((a,b)=>parseInt(a.match(/\d+/)?.[0]||0)-parseInt(b.match(/\d+/)?.[0]||0));
-    const embLevelCks=[],embTopCks=[],embLayerCks=[],sgCks=[];
-    for(const ck of Object.values(ckById)){
-      const nl=ck.name.trim().toLowerCase();
-      if(nl==='embank top level')embLevelCks.push(ck);
-      else if(nl==='embank top')embTopCks.push(ck);
-      else if(nl.startsWith('sg'))sgCks.push(ck);
-      else embLayerCks.push(ck);
-    }
-    sgCks.sort((a,b)=>{const o={st:1,nd:2,rd:3,th:4,top:90,'top level':99};function rank(n){const l=n.trim().toLowerCase();if(l.includes('top level'))return 99;if(l.includes('top'))return 90;const m=l.match(/(\d+)/);return m?parseInt(m[1]):50;}return rank(a.name)-rank(b.name);});
-    embLayerCks.sort((a,b)=>(extractRange(a.name)?.from||0)-(extractRange(b.name)?.from||0));
-    const usedClasses=new Set();
+
+    // ── Dynamic rendering driven by j2 Level 1 entries ──
+    const usedStyles=[];
     const cg=document.getElementById('colgroup');
     if(cg.children.length<=1){for(let i=0;i<TOTAL;i++){const c=document.createElement('col');c.className='csub';cg.appendChild(c);}}
     let h1='<tr><th class="ch-label-hd" rowspan="2">CHAINAGE</th>';
@@ -260,10 +261,14 @@ async function main(){
     for(let b=0;b<NUM_BLOCKS;b++)for(let s=1;s<=SUBS;s++)h2+='<td class="ch-sub">'+(s*SUB)+'</td>';
     h2+='</tr>';
     document.getElementById('chart-head').innerHTML=h1+h2;
+
+    // Get Level 1 entries in reverse Order (highest layer first in chart)
+    const level1s=j2.filter(r=>r['Level']==='1'&&r['Is Active']==='true')
+      .sort((a,b)=>parseInt(b['Order'])-parseInt(a['Order']));
+
     function renderSimpleRows(cks,cls,nomRanges){
       let html='';
       for(const ck of cks){
-        usedClasses.add(cls);
         const ranges=nomRanges.length>0?nomRanges:(extractRange(ck.name)?[extractRange(ck.name)]:[]);
         const stages=[...ck.stages];
         for(let si=0;si<stages.length;si++){
@@ -276,38 +281,60 @@ async function main(){
       }
       return html;
     }
+
     let body='';
-    for(const ck of sgCks){body+=renderSimpleRows([ck],'sg',nomRangesByName(ck.name));}
-    body+=renderSimpleRows(embLevelCks,'elvl',nomRangesByName('Embank Top Level'));
-    body+=renderSimpleRows(embTopCks,'etop',nomRangesByName('Embank Top'));
-    if(embLayerCks.length>0){
-      usedClasses.add('emb');
-      const maxLayers=Math.max(...embLayerCks.map(ck=>ck.stages.length));
-      for(let row=0;row<maxLayers;row++){
-        const colRanges=[];
-        for(const ck of embLayerCks){
-          const ckRange=extractRange(ck.name);if(!ckRange)continue;
-          const layerNum=ck.stages.length-row;if(layerNum<1)continue;
-          const key=ckRange.from+'_'+ckRange.to,rfi=rfiMap[key]?.[layerNum];
-          colRanges.push({from:ckRange.from,to:ckRange.to,cls:'emb',content:cellLabel(rfi)});
+    for(const l1 of level1s){
+      const style=getTypeStyle(l1['Name']);
+      const cls=style.cls;
+      const nomRanges=(level2ByParent[l1['ID']]||[]).map(r=>extractRange(r['Name'])).filter(Boolean);
+
+      if(style.grouped){
+        // Grouped rendering — multiple j1 checkpoints with chainage in name
+        const cks=Object.values(ckById).filter(ck=>{
+          const rng=extractRange(ck.name);
+          if(!rng)return false;
+          return nomRanges.some(nr=>rng.from>=nr.from&&rng.to<=nr.to);
+        });
+        cks.sort((a,b)=>(extractRange(a.name)?.from||0)-(extractRange(b.name)?.from||0));
+        if(cks.length>0){
+          usedStyles.push(style);
+          const maxLayers=Math.max(...cks.map(ck=>ck.stages.length));
+          for(let row=0;row<maxLayers;row++){
+            const colRanges=[];
+            for(const ck of cks){
+              const ckRange=extractRange(ck.name);if(!ckRange)continue;
+              const layerNum=ck.stages.length-row;if(layerNum<1)continue;
+              const key=ckRange.from+'_'+ckRange.to,rfi=rfiMap[key]?.[layerNum];
+              colRanges.push({from:ckRange.from,to:ckRange.to,cls,content:cellLabel(rfi)});
+            }
+            let tr='<tr>';
+            if(row===0)tr+='<td class="rl-group '+cls+'" rowspan="'+maxLayers+'">'+l1['Name'].replace(/&/g,'&amp;')+'</td>';
+            tr+=buildRowCells(colRanges,TOTAL,chartFrom,SUB)+'</tr>';
+            body+=tr;
+            excelData.push({rowLabel:row===0?l1['Name']:'',cls,cells:buildCellArray(colRanges,TOTAL,chartFrom,SUB)});
+          }
         }
-        let tr='<tr>';
-        if(row===0)tr+='<td class="rl-group emb" rowspan="'+maxLayers+'">Intermediate layer of<br>Embankment<br>with OGL &amp; C&amp;G</td>';
-        tr+=buildRowCells(colRanges,TOTAL,chartFrom,SUB)+'</tr>';
-        body+=tr;
-        excelData.push({rowLabel:row===0?'Intermediate layer of Embankment with OGL & C&G':'',cls:'emb',cells:buildCellArray(colRanges,TOTAL,chartFrom,SUB)});
+      } else {
+        // Simple rendering — match j1 checkpoints by name to this Level 1
+        const cks=Object.values(ckById).filter(ck=>ck.name.trim().toLowerCase()===l1['Name'].trim().toLowerCase());
+        if(cks.length>0){
+          usedStyles.push(style);
+          body+=renderSimpleRows(cks,cls,nomRanges);
+        }
       }
     }
+
     document.getElementById('chart-body').innerHTML=body;
     const legendEl=document.getElementById('legend');
     legendEl.innerHTML='<span class="lg-lbl">Colour Code &#8594;</span>';
-    for(const col of ALL_COLOURS){
-      if(usedClasses.has(col.key)){
-        const span=document.createElement('span');span.className='lg-item';
-        const border=col.border?';border-color:'+col.border:'';
-        span.innerHTML='<span class="lg-sw" style="background:'+col.hex+border+';"></span> '+col.label;
-        legendEl.appendChild(span);
-      }
+    const seenKeys=new Set();
+    for(const style of usedStyles){
+      if(seenKeys.has(style.cls))continue;
+      seenKeys.add(style.cls);
+      const span=document.createElement('span');span.className='lg-item';
+      const border=style.border?';border-color:'+style.border:'';
+      span.innerHTML='<span class="lg-sw" style="background:'+style.hex+border+';"></span> '+style.label;
+      legendEl.appendChild(span);
     }
     loadingEl.style.display='none';
     tableEl.style.display='';
