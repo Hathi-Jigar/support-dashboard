@@ -118,7 +118,7 @@ function getColor(name){
 }
 function hex6(h){ const x=h.replace('#',''); return x.length===3?x[0]+x[0]+x[1]+x[1]+x[2]+x[2]:x; }
 
-let excelData=[], excelMerges=[], excelTitle='', excelChFrom=0, excelChTo=0, excelTOTAL=0, excelSUB=10, excelSide='RHS';
+let excelData=[], excelMerges=[], excelTitle='', excelChFrom=0, excelChTo=0, excelTOTAL=0, excelSUB=10, excelBLOCK=100, excelSide='RHS';
 
 function parseCh(s){
   if(!s)return null;
@@ -178,47 +178,72 @@ function buildCellArray(colRanges,TOTAL,chartFrom,SUB){
 function exportExcel(){
   if(!excelData.length)return;
   const wb=XLSX.utils.book_new(),wsData=[];
-  wsData.push([excelTitle]);wsData.push([]);
-  const SUBS=10,hdr1=['CHAINAGE'];
-  for(let b=1;b<=(excelTOTAL/SUBS);b++){hdr1.push(((excelChFrom+b*100)/1000).toFixed(3));for(let s=1;s<SUBS;s++)hdr1.push('');}
+  const SUBS=excelBLOCK/excelSUB,NUM_BLOCKS=excelTOTAL/SUBS;
+  const totalCols=excelTOTAL+1;
+  const B={top:{style:'thin'},bottom:{style:'thin'},left:{style:'thin'},right:{style:'thin'}};
+
+  // Row 0: title
+  wsData.push([excelTitle]);
+  // Row 1: empty
+  wsData.push([]);
+  // Row 2: chainage block headers
+  const hdr1=['CHAINAGE'];
+  for(let b=1;b<=NUM_BLOCKS;b++){hdr1.push(((excelChFrom+b*excelBLOCK)/1000).toFixed(3));for(let s=1;s<SUBS;s++)hdr1.push('');}
   wsData.push(hdr1);
+  // Row 3: sub-division numbers
   const hdr2=[''];
-  for(let b=0;b<excelTOTAL/SUBS;b++)for(let s=1;s<=SUBS;s++)hdr2.push(s*excelSUB);
+  for(let b=0;b<NUM_BLOCKS;b++)for(let s=1;s<=SUBS;s++)hdr2.push(s*excelSUB);
   wsData.push(hdr2);
+  // Row 4+: data
   for(const row of excelData){const r=[row.rowLabel];for(const c of row.cells)r.push(c.content);wsData.push(r);}
+
   const ws=XLSX.utils.aoa_to_sheet(wsData);
   ws['!cols']=[{wch:28}];for(let i=0;i<excelTOTAL;i++)ws['!cols'].push({wch:10});
-  const totalCols=excelTOTAL+1;
 
-  // Merges: title row + chainage block headers + grouped row labels
+  // Merges
   const merges=[{s:{r:0,c:0},e:{r:0,c:totalCols-1}}];
-  let mc=1;for(let b=0;b<excelTOTAL/SUBS;b++){merges.push({s:{r:2,c:mc},e:{r:2,c:mc+SUBS-1}});mc+=SUBS;}
+  let mc=1;for(let b=0;b<NUM_BLOCKS;b++){merges.push({s:{r:2,c:mc},e:{r:2,c:mc+SUBS-1}});mc+=SUBS;}
   for(const m of excelMerges) merges.push(m);
   ws['!merges']=merges;
 
-  const B={top:{style:'thin'},bottom:{style:'thin'},left:{style:'thin'},right:{style:'thin'}};
   function addr(r,c){return XLSX.utils.encode_cell({r,c});}
+  // Ensure every cell in the sheet exists so merged cells get borders
+  const totalRows=4+excelData.length;
+  for(let r=0;r<totalRows;r++)for(let c=0;c<totalCols;c++){const a=addr(r,c);if(!ws[a])ws[a]={v:'',t:'s'};}
 
-  // Title row
-  if(ws[addr(0,0)])ws[addr(0,0)].s={fill:{patternType:'solid',fgColor:{rgb:'1E2D3D'}},font:{bold:true,color:{rgb:'FFFFFF'},sz:13},alignment:{horizontal:'center'},border:B};
-  // Header row 1 (chainage blocks)
-  for(let c=0;c<totalCols;c++){const cell=ws[addr(2,c)];if(cell)cell.s={fill:{patternType:'solid',fgColor:{rgb:'2C5F8A'}},font:{bold:true,color:{rgb:'FFFFFF'},sz:10},alignment:{horizontal:'center',vertical:'center'},border:B};}
-  // Header row 2 (sub-divisions)
-  for(let c=0;c<totalCols;c++){const cell=ws[addr(3,c)];if(cell)cell.s={fill:{patternType:'solid',fgColor:{rgb:'DAEEF3'}},font:{bold:true,sz:8},alignment:{horizontal:'center'},border:B};}
-  // Data rows
+  // Style: title row
+  ws[addr(0,0)].s={fill:{patternType:'solid',fgColor:{rgb:'1E2D3D'}},font:{bold:true,color:{rgb:'FFFFFF'},sz:13},alignment:{horizontal:'center',vertical:'center'},border:B};
+  // Style all title merge cells (so borders show)
+  for(let c=1;c<totalCols;c++)ws[addr(0,c)].s={fill:{patternType:'solid',fgColor:{rgb:'1E2D3D'}},border:B};
+
+  // Style: chainage block headers (row 2) — all cells get dark blue fill + border
+  const hdrStyle={fill:{patternType:'solid',fgColor:{rgb:'2C5F8A'}},font:{bold:true,color:{rgb:'FFFFFF'},sz:10},alignment:{horizontal:'center',vertical:'center'},border:B};
+  for(let c=0;c<totalCols;c++)ws[addr(2,c)].s={...hdrStyle};
+
+  // Style: sub-division headers (row 3)
+  const subStyle={fill:{patternType:'solid',fgColor:{rgb:'DAEEF3'}},font:{bold:true,sz:8},alignment:{horizontal:'center'},border:B};
+  for(let c=0;c<totalCols;c++)ws[addr(3,c)].s={...subStyle};
+
+  // Style: data rows
   for(let ri=0;ri<excelData.length;ri++){
     const row=excelData[ri],er=4+ri;
-    // Row label cell — use the row's own color
-    const lc=ws[addr(er,0)];
-    if(lc)lc.s={fill:{patternType:'solid',fgColor:{rgb:row.labelFill||'F0F4F8'}},font:{bold:true,sz:9,color:{rgb:hex6(row.labelFg||'#333333')}},alignment:{horizontal:'left',vertical:'center',wrapText:true},border:B};
+    // Row label cell
+    const labelStyle={fill:{patternType:'solid',fgColor:{rgb:row.labelFill||'F0F4F8'}},font:{bold:true,sz:9,color:{rgb:hex6(row.labelFg||'#333333')}},alignment:{horizontal:'left',vertical:'center',wrapText:true},border:B};
+    ws[addr(er,0)].s=labelStyle;
     // Data cells
     for(let ci=0;ci<row.cells.length;ci++){
-      const cell=ws[addr(er,ci+1)];if(!cell)continue;
       const c=row.cells[ci];
       const isEmpty=c.fill===EMP.fill;
-      cell.s={fill:{patternType:'solid',fgColor:{rgb:c.fill}},font:{bold:!!cell.v,sz:8,color:{rgb:isEmpty?'333333':hex6(c.fg)}},alignment:{horizontal:'center',vertical:'center',wrapText:true},border:B};
+      ws[addr(er,ci+1)].s={fill:{patternType:'solid',fgColor:{rgb:c.fill}},font:{bold:!isEmpty&&!!c.content,sz:8,color:{rgb:isEmpty?'333333':hex6(c.fg)}},alignment:{horizontal:'center',vertical:'center',wrapText:true},border:B};
     }
   }
+
+  // Ensure merged row-label cells all have the same style (for borders + fill to show)
+  for(const m of excelMerges){
+    const topStyle=ws[addr(m.s.r,m.s.c)].s;
+    for(let r=m.s.r+1;r<=m.e.r;r++)ws[addr(r,m.e.c)].s={...topStyle};
+  }
+
   XLSX.utils.book_append_sheet(wb,ws,'Layer Chart');
   XLSX.writeFile(wb,'LayerChart_'+fmtCh(excelChFrom)+'_'+fmtCh(excelChTo)+'_'+excelSide+'.xlsx');
 }
@@ -261,7 +286,7 @@ async function main(){
     const BLOCK=projectConfig.chainageBlockSize||100,SUB=projectConfig.subDivisionSize||10;
     if(BLOCK%SUB!==0) throw new Error('Block size '+BLOCK+' must be divisible by sub-division size '+SUB);
     const CHART_LEN=chartTo-chartFrom,NUM_BLOCKS=CHART_LEN/BLOCK,SUBS=BLOCK/SUB,TOTAL=NUM_BLOCKS*SUBS;
-    excelChFrom=chartFrom;excelChTo=chartTo;excelTOTAL=TOTAL;excelSUB=SUB;excelSide=projectConfig.side||'RHS';
+    excelChFrom=chartFrom;excelChTo=chartTo;excelTOTAL=TOTAL;excelSUB=SUB;excelBLOCK=BLOCK;excelSide=projectConfig.side||'RHS';
     excelTitle='{ LAYER CHART   Ch :-   '+fmtCh(chartFrom)+'   To   '+fmtCh(chartTo)+'   SIDE :-   '+excelSide+' }';
     excelData=[];excelMerges=[];
     document.getElementById('title-bar').textContent=excelTitle;
