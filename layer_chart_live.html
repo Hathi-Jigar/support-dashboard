@@ -6,74 +6,178 @@
 <title>Layer Chart</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
-body { font-family:Arial,sans-serif; background:#e8e8e8; padding:10px; font-size:10px; }
-.page { background:#fff; margin:0 auto; border:2px solid #333; width:max-content; min-width:100%; }
-#status-bar { text-align:right; font-size:9px; color:#888; font-style:italic; padding:2px 8px; border-bottom:1px solid #ddd; background:#fafafa; min-height:18px; }
+
+body {
+  font-family: Arial, sans-serif;
+  background: #d0d4d8;
+  padding: 16px;
+  font-size: 11px;
+}
+
+.page {
+  background: #fff;
+  margin: 0 auto;
+  border: 2px solid #2c3e50;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+  width: max-content;
+  min-width: 100%;
+}
+
+/* ── STATUS ── */
+#status-bar {
+  text-align: right;
+  font-size: 9px;
+  color: #888;
+  font-style: italic;
+  padding: 3px 10px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+  min-height: 18px;
+}
 #status-bar.err { color:#c00; font-weight:bold; font-style:normal; }
-#loading { padding:40px; text-align:center; font-size:13px; color:#555; }
-.title-bar { text-align:center; font-size:13px; font-weight:bold; padding:5px 8px; border-bottom:2px solid #333; letter-spacing:0.3px; }
-.dir-bar { display:grid; grid-template-columns:100px 1fr 100px; border-bottom:1px solid #333; font-size:10px; }
-.dir-bar > div { padding:2px 6px; }
-.dir-l { border-right:1px solid #333; }
-.dir-m { text-align:center; font-weight:bold; font-size:11px; font-style:italic; letter-spacing:2px; }
-.dir-r { border-left:1px solid #333; text-align:right; }
+
+/* ── LOADING ── */
+#loading { padding:60px; text-align:center; font-size:14px; color:#666; }
+
+/* ── TITLE ── */
+.title-bar {
+  text-align: center;
+  font-size: 14px;
+  font-weight: bold;
+  padding: 7px 12px;
+  border-bottom: 2px solid #2c3e50;
+  letter-spacing: 0.5px;
+  background: #fff;
+}
+
+/* ── DIRECTION ── */
+.dir-bar {
+  display: grid;
+  grid-template-columns: 160px 1fr 160px;
+  border-bottom: 2px solid #2c3e50;
+  font-size: 10px;
+  background: #f0f4f8;
+}
+.dir-bar > div { padding: 3px 8px; }
+.dir-l { border-right: 1px solid #aaa; font-weight:bold; }
+.dir-m { text-align:center; font-weight:bold; font-size:12px; font-style:italic; letter-spacing:3px; }
+.dir-r { border-left:1px solid #aaa; text-align:right; font-weight:bold; }
+
+/* ── TABLE ── */
 .chart-scroll { overflow-x:auto; }
-table { border-collapse:collapse; table-layout:fixed; }
 
-/* Only outer row borders — no internal sub-col borders on data cells */
+table {
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
 table td, table th {
-  border-left:1px solid #bbb;
-  border-right:1px solid #bbb;
-  border-top:1px solid #bbb;
-  border-bottom:1px solid #bbb;
-  text-align:center;
-  vertical-align:middle;
-  padding:0;
-  overflow:hidden;
-  line-height:1.15;
+  border: 1px solid #b0b8c1;
+  text-align: center;
+  vertical-align: middle;
+  padding: 0;
+  overflow: hidden;
+  line-height: 1.25;
 }
 
-/* Header cells keep full borders */
-.ch-block, .ch-sub, .ch-label-hd {
-  border:1px solid #888 !important;
+/* ── COLUMN WIDTHS ── wider for readability ── */
+.cl   { width: 160px; min-width: 160px; }
+.csub { width: 32px;  min-width: 32px; }   /* increased from 22px */
+
+/* ── CHAINAGE HEADERS ── */
+.ch-block {
+  background: linear-gradient(180deg, #2c5f8a 0%, #3a7cbf 100%);
+  font-weight: bold;
+  font-size: 11px;
+  color: #fff;
+  height: 48px;
+  writing-mode: vertical-lr;
+  transform: rotate(180deg);
+  padding: 3px 0;
+  border: 1px solid #1e4a73;
+  letter-spacing: 0.5px;
+}
+.ch-sub {
+  background: #daeef3;
+  font-size: 8px;
+  color: #444;
+  height: 16px;
+  padding: 1px 0;
+  border: 1px solid #9fbfcc;
+  font-weight: bold;
+}
+.ch-label-hd {
+  background: linear-gradient(180deg, #2c5f8a 0%, #3a7cbf 100%);
+  font-weight: bold;
+  font-size: 12px;
+  color: #fff;
+  text-align: center;
+  vertical-align: middle;
+  border: 1px solid #1e4a73;
+  letter-spacing: 0.5px;
 }
 
-/* Data cells: remove internal left/right borders — rely on colspan merge */
-td.data-cell {
-  border-left: none !important;
-  border-right: none !important;
+/* ── ROW LABELS ── */
+.rl {
+  text-align: left;
+  padding: 3px 6px;
+  font-size: 10px;
+  font-weight: bold;
+  white-space: normal;
+  word-break: break-word;
+  vertical-align: middle;
+  border: 1px solid #aab !important;
+  background: #f7f9fb;
 }
-/* First and last sub-col of a merged block get the outer border back */
-td.data-cell.block-start { border-left:1px solid #888 !important; }
-td.data-cell.block-end   { border-right:1px solid #888 !important; }
+.rl-group {
+  text-align: center;
+  font-size: 9.5px;
+  font-weight: bold;
+  white-space: normal;
+  word-break: break-word;
+  vertical-align: middle;
+  padding: 4px 6px;
+  line-height: 1.4;
+  border: 1px solid #aab !important;
+  background: #f0f4f8;
+}
 
-/* Empty sub-cols inside a coloured range: no border at all */
-td.fill { border:none !important; }
+/* ── LAYER COLOURS ── */
+.emb  { background: #4472C4; color: #fff; }
+.etop { background: #70ad47; color: #fff; }
+.elvl { background: #92d050; color: #333; }
+.emp  { background: #f5f7fa; }
 
-.cl { width:140px; min-width:140px; }
-.csub { width:22px; min-width:22px; }
-.ch-block { background:#BDD7EE; font-weight:bold; font-size:10px; height:40px; writing-mode:vertical-lr; transform:rotate(180deg); padding:2px 0; }
-.ch-sub { background:#DAEEF3; font-size:7.5px; color:#333; height:14px; padding:1px 0; }
-.ch-label-hd { background:#BDD7EE; font-weight:bold; font-size:10px; text-align:center; vertical-align:middle; }
-.rl { text-align:left; padding:2px 4px; font-size:9px; white-space:normal; word-break:break-word; vertical-align:middle; border:1px solid #888 !important; }
-.rl-group { text-align:center; font-size:8.5px; white-space:normal; word-break:break-word; vertical-align:middle; padding:3px; line-height:1.3; border:1px solid #888 !important; }
+/* ── DATA CELL TEXT ── */
+.d {
+  font-size: 8px;
+  padding: 2px 3px;
+  white-space: normal;
+  word-break: break-all;
+  line-height: 1.35;
+  font-weight: bold;
+}
 
-/* Colours */
-.emb  { background:#4472C4; color:#fff; }
-.etop { background:#92D050; }
-.elvl { background:#92D050; }
-.emp  { background:#fff; border:none !important; }
+/* ── LEGEND ── */
+.legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 7px 12px;
+  border-top: 2px solid #2c3e50;
+  font-size: 10px;
+  background: #f8f9fa;
+}
+.lg-lbl { font-weight: bold; color: #2c3e50; }
+.lg-item { display:flex; align-items:center; gap:5px; font-weight:500; }
+.lg-sw { width:32px; height:14px; border:1px solid #666; border-radius:2px; display:inline-block; }
 
-/* Data text inside coloured merged cell */
-.d { font-size:7.5px; padding:1px 2px; white-space:normal; word-break:break-all; line-height:1.3; }
-
-/* Legend */
-.legend { display:flex; align-items:center; flex-wrap:wrap; gap:8px; padding:5px 8px; border-top:2px solid #333; font-size:9.5px; background:#fff; }
-.lg-lbl { font-weight:bold; }
-.lg-item { display:flex; align-items:center; gap:3px; }
-.lg-sw { width:26px; height:13px; border:1px solid #666; display:inline-block; }
-
-@media print { body{padding:0;background:#fff;} .page{border:1px solid #333;} #status-bar,#loading{display:none!important;} }
+@media print {
+  body { padding:0; background:#fff; }
+  .page { border:1px solid #333; box-shadow:none; }
+  #status-bar, #loading { display:none !important; }
+}
 </style>
 </head>
 <body>
@@ -82,11 +186,11 @@ td.fill { border:none !important; }
   <div class="title-bar" id="title-bar">Loading...</div>
   <div class="dir-bar">
     <div class="dir-l" id="dir-left"></div>
-    <div class="dir-m">&#8592; &nbsp;&nbsp; MAIN CARRIAGE WAY &nbsp;&nbsp; &#8594;</div>
+    <div class="dir-m">&#8592; &nbsp; MAIN CARRIAGE WAY &nbsp; &#8594;</div>
     <div class="dir-r" id="dir-right"></div>
   </div>
   <div class="chart-scroll">
-    <div id="loading">Loading layer chart data...</div>
+    <div id="loading">&#9203; &nbsp; Loading layer chart data...</div>
     <table id="chart-table" style="display:none;">
       <colgroup id="colgroup"><col class="cl"></colgroup>
       <thead id="chart-head"></thead>
@@ -97,6 +201,7 @@ td.fill { border:none !important; }
     <span class="lg-lbl">Colour Code &#8594;</span>
   </div>
 </div>
+
 <script>
 const REPO_BASE = 'https://hathi-jigar.github.io/support-dashboard';
 const URLS = {
@@ -107,18 +212,15 @@ const URLS = {
 };
 const ARR = '\u2192';
 
-// All possible colour definitions for legend
 const ALL_COLOURS = [
   { key:'emb',  label:'EMB Layer',     hex:'#4472C4' },
-  { key:'etop', label:'EMB Top',       hex:'#92D050' },
-  { key:'elvl', label:'EMB Top Level', hex:'#92D050' },
+  { key:'etop', label:'EMB Top',       hex:'#70ad47' },
+  { key:'elvl', label:'EMB Top Level', hex:'#92d050' },
   { key:'sg',   label:'SG Layer',      hex:'#00B050' },
-  { key:'gsb',  label:'GSB',           hex:'#FFFF00' },
+  { key:'gsb',  label:'GSB',           hex:'#FFFF00', border:'#aaa' },
   { key:'wmm',  label:'WMM',           hex:'#FF6600' },
   { key:'dbm',  label:'DBM',           hex:'#00B0F0' },
   { key:'bc',   label:'BC',            hex:'#FF99CC' },
-  { key:'cog',  label:'C&amp;G &amp; OGL',  hex:'#E8E8E8' },
-  { key:'exc',  label:'Excavation',    hex:'#C0C0C0' },
 ];
 
 function parseCh(s) {
@@ -152,44 +254,35 @@ function colourClass(name) {
   return 'emb';
 }
 
-// Build a full row of TOTAL cells given a set of coloured ranges
-// ranges: [{from,to,content,cls}]
-// Returns HTML string of <td> elements
-function buildRowCells(ranges, TOTAL, chartFrom, SUB) {
-  // Build slot array: slot[col] = {cls, content, rangeStart, rangeEnd} or null
-  const slots = new Array(TOTAL).fill(null);
-
-  for (const rng of ranges) {
+// Build a row of TOTAL cells given coloured ranges [{from,to,cls,content}]
+// Each range renders as one merged td spanning its sub-columns
+function buildRowCells(colRanges, TOTAL, chartFrom, SUB) {
+  // Create a map: startCol -> {span, cls, content}
+  const blocks = [];
+  for (const rng of colRanges) {
     const f = Math.max(rng.from, chartFrom);
-    const t = Math.min(rng.to,   chartFrom + TOTAL*SUB);
+    const t = Math.min(rng.to, chartFrom + TOTAL*SUB);
     if (f>=t) continue;
     const s = Math.round((f-chartFrom)/SUB);
     const e = Math.round((t-chartFrom)/SUB);
-    for (let c=s; c<e; c++) {
-      slots[c] = { cls: rng.cls, content: rng.content, rangeS: s, rangeE: e-1 };
-    }
+    if (e>s) blocks.push({s, e, cls:rng.cls, content:rng.content||''});
   }
+  // Sort by start col
+  blocks.sort((a,b)=>a.s-b.s);
 
-  // Now emit tds — merge consecutive same-range cols into one td
   let html = '';
-  let i = 0;
-  while (i < TOTAL) {
-    const sl = slots[i];
-    if (!sl) {
-      // empty cell
-      html += '<td class="emp"></td>';
-      i++;
-    } else {
-      // find run end (same rangeS+rangeE)
-      let j = i+1;
-      while (j < TOTAL && slots[j] &&
-             slots[j].rangeS === sl.rangeS && slots[j].rangeE === sl.rangeE) j++;
-      const span = j - i;
-      const sp   = span > 1 ? ' colspan="'+span+'"' : '';
-      html += '<td class="'+sl.cls+' d"'+sp+'>'+( sl.content||'')+'</td>';
-      i = j;
-    }
+  let col  = 0;
+  for (const blk of blocks) {
+    // Fill gap with empty cells
+    while (col < blk.s) { html+='<td class="emp"></td>'; col++; }
+    // Coloured merged cell
+    const span = blk.e - blk.s;
+    const sp   = span>1 ? ' colspan="'+span+'"' : '';
+    html += '<td class="'+blk.cls+' d"'+sp+'>'+blk.content+'</td>';
+    col = blk.e;
   }
+  // Fill remaining
+  while (col < TOTAL) { html+='<td class="emp"></td>'; col++; }
   return html;
 }
 
@@ -197,12 +290,13 @@ async function main() {
   const statusEl  = document.getElementById('status-bar');
   const loadingEl = document.getElementById('loading');
   const tableEl   = document.getElementById('chart-table');
+
   try {
-    statusEl.textContent='Fetching data...';
+    statusEl.textContent = 'Fetching data...';
     const [j1,j2,j3,j4] = await Promise.all(
       Object.values(URLS).map(u=>fetch(u).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}))
     );
-    statusEl.textContent='Building chart...';
+    statusEl.textContent = 'Building chart...';
 
     // ── JSON2: nomenclature ───────────────────────────────
     const level1 = j2.filter(r=>r['Level']==='1'&&r['Is Active']==='true')
@@ -216,7 +310,7 @@ async function main() {
     for (const pid in level2ByParent)
       level2ByParent[pid].sort((a,b)=>parseInt(a['Order'])-parseInt(b['Order']));
 
-    // Chart extents
+    // Chart extents from all Level-2 ranges
     let chartFrom=Infinity, chartTo=-Infinity;
     for (const r of j2.filter(r=>r['Level']==='2')) {
       const rng=extractRange(r['Name']);
@@ -227,22 +321,22 @@ async function main() {
     const BLOCK=100, SUB=10;
     const NUM_BLOCKS=CHART_LEN/BLOCK, SUBS=BLOCK/SUB, TOTAL=NUM_BLOCKS*SUBS;
 
-    // Title
+    // Title + directions
     document.getElementById('title-bar').textContent=
       '{ LAYER CHART   Ch :-   '+fmtCh(chartFrom)+'   To   '+fmtCh(chartTo)+'   SIDE :-   RHS }';
-    document.getElementById('dir-left').textContent='Meerut ->';
-    document.getElementById('dir-right').textContent='<- Prayagraj';
+    document.getElementById('dir-left').textContent  = 'Meerut \u2192';
+    document.getElementById('dir-right').textContent = '\u2190 Prayagraj';
 
-    // ── JSON4: RFI map ────────────────────────────────────
-    const K_EQCNAME = 'Eqc '+ARR+' Eqc Name';
-    const K_STAGE   = 'Eqc Stage '+ARR+' Name';
-    const rfiMap={};
+    // ── JSON4: RFI map ─────────────────────────────────────
+    const K_EQC   = 'Eqc '+ARR+' Eqc Name';
+    const K_STAGE = 'Eqc Stage '+ARR+' Name';
+    const rfiMap  = {};
     for (const r of j4) {
-      const path    =r[K_EQCNAME]||'';
-      const stageStr=r[K_STAGE]||'';
+      const path    =r[K_EQC]  ||'';
+      const stgStr  =r[K_STAGE]||'';
       const rfiNum  =String(r['Qc Option']||r['ID']);
       const rfiDate =fmtDate(r['Created At']);
-      const lm=stageStr.match(/layer\s*(\d+)/i);
+      const lm=stgStr.match(/layer\s*(\d+)/i);
       if (!lm) continue;
       const layerNum=parseInt(lm[1]);
       const rng=extractRange(path);
@@ -252,18 +346,18 @@ async function main() {
       rfiMap[key][layerNum]={rfiDate,rfiNum};
     }
 
-    // ── JSON1: checklists ─────────────────────────────────
-    const K_STNAME='Project Eqc Type Stage '+ARR+' Name';
+    // ── JSON1: checklists ──────────────────────────────────
+    const K_STG='Project Eqc Type Stage '+ARR+' Name';
     const ckById={};
     for (const r of j1) {
-      const id=String(r['ID']),nm=r['Name'],stg=r[K_STNAME];
+      const id=String(r['ID']),nm=r['Name'],stg=r[K_STG];
       if (!ckById[id]) ckById[id]={name:nm,stages:[]};
       if (stg&&!ckById[id].stages.includes(stg)) ckById[id].stages.push(stg);
     }
     for (const id in ckById)
       ckById[id].stages.sort((a,b)=>parseInt(a.match(/\d+/)?.[0]||0)-parseInt(b.match(/\d+/)?.[0]||0));
 
-    // Classify
+    // Classify checklists
     const embLevelCks=[], embTopCks=[], embLayerCks=[];
     for (const ck of Object.values(ckById)) {
       const nl=ck.name.toLowerCase();
@@ -273,10 +367,9 @@ async function main() {
     }
     embLayerCks.sort((a,b)=>(extractRange(a.name)?.from||0)-(extractRange(b.name)?.from||0));
 
-    // Track which colour classes are actually used — for legend
-    const usedClasses = new Set();
+    const usedClasses=new Set();
 
-    // ── Build colgroup + headers ──────────────────────────
+    // ── Build colgroup + header ────────────────────────────
     const cg=document.getElementById('colgroup');
     for (let i=0;i<TOTAL;i++){const c=document.createElement('col');c.className='csub';cg.appendChild(c);}
     let h1='<tr><th class="ch-label-hd" rowspan="2">CHAINAGE</th>';
@@ -288,128 +381,125 @@ async function main() {
     h2+='</tr>';
     document.getElementById('chart-head').innerHTML=h1+h2;
 
-    // ── Helper: render rows for a checklist group ─────────
-    // stages: array of stage names (already in desired render order)
-    // nomenclatureRanges: [{from,to}] from JSON2 for this work type
-    // reversed layers: highest layer rendered first (top), layer 1 last (bottom)
-    function renderCkRows(ck, cls, nomenclatureRanges, stagesInOrder, totalRowspan, isFirstRow) {
+    // ── Helper: render simple single-checklist rows ────────
+    function renderSimpleRows(cks, cls, nomRangesFn) {
       let html='';
-      let first=isFirstRow;
-      for (let si=0;si<stagesInOrder.length;si++) {
-        const stageName=stagesInOrder[si];
-        const layerNum=parseInt(stageName.match(/\d+/)?.[0]||1);
-
-        // Build coloured ranges for this row from JSON2 nomenclature ranges
-        const colRanges=[];
-        for (const nr of nomenclatureRanges) {
-          const key=nr.from+'_'+nr.to;
-          const rfi=rfiMap[key]?.[layerNum];
-          colRanges.push({
-            from:nr.from, to:nr.to, cls,
-            content: rfi ? rfi.rfiDate+'<br>/'+rfi.rfiNum : ''
-          });
-        }
+      for (const ck of cks) {
         usedClasses.add(cls);
-
-        let row='<tr>';
-        if (first && totalRowspan>0) {
-          row+='<td class="rl-group '+cls+'" rowspan="'+totalRowspan+'">'+
-               (ck.name.replace(/\(chainage.*?\)/i,'').trim())+'</td>';
+        const nomRanges=nomRangesFn(ck);
+        const stages=[...ck.stages]; // usually 1
+        for (let si=0;si<stages.length;si++) {
+          const layerNum=parseInt(stages[si].match(/\d+/)?.[0]||1);
+          const colRanges=nomRanges.map(nr=>{
+            const key=nr.from+'_'+nr.to;
+            const rfi=rfiMap[key]?.[layerNum];
+            return {from:nr.from,to:nr.to,cls,content:rfi?rfi.rfiDate+'<br>/'+rfi.rfiNum:''};
+          });
+          const rs=stages.length>1&&si===0?' rowspan="'+stages.length+'"':'';
+          html+='<tr>'+(si===0?'<td class="rl '+cls+'"'+rs+'>'+ck.name+'</td>':'')+
+                buildRowCells(colRanges,TOTAL,chartFrom,SUB)+'</tr>';
         }
-        row+=buildRowCells(colRanges, TOTAL, chartFrom, SUB)+'</tr>';
-        html+=row;
-        first=false;
       }
       return html;
     }
 
+    // ── Embank Top Level nominclature ranges ───────────────
+    function nomRangesForCk(ck, targetNameContains) {
+      // Find the level-1 parent in JSON2 whose name matches
+      const parent=j2.find(r=>r['Level']==='1'&&r['Name'].toLowerCase().includes(targetNameContains));
+      if (parent && level2ByParent[parent['ID']])
+        return level2ByParent[parent['ID']].map(r=>extractRange(r['Name'])).filter(Boolean);
+      // Fallback: extract from checklist name
+      const rng=extractRange(ck.name);
+      return rng?[rng]:[];
+    }
+
     let body='';
 
-    // 1. Embank Top Level (top row)
-    for (const ck of embLevelCks) {
-      const cls='elvl';
-      const wtId = Object.keys(level2ByParent).find(pid => {
-        const parent=j2.find(r=>r['ID']===pid);
-        return parent && parent['Name'].toLowerCase().includes('embank top level');
-      });
-      const nomRanges = wtId
-        ? level2ByParent[wtId].map(r=>extractRange(r['Name'])).filter(Boolean)
-        : (extractRange(ck.name) ? [extractRange(ck.name)] : []);
-
-      const stages=[...ck.stages]; // Layer 1 only usually
-      const totalRowspan=stages.length;
-      body+=renderCkRows(ck,cls,nomRanges,stages,totalRowspan,true);
-    }
+    // 1. Embank Top Level
+    body+=renderSimpleRows(embLevelCks,'elvl',ck=>nomRangesForCk(ck,'embank top level'));
 
     // 2. Embank Top
-    for (const ck of embTopCks) {
-      const cls='etop';
-      const wtId = Object.keys(level2ByParent).find(pid => {
-        const parent=j2.find(r=>r['ID']===pid);
-        return parent && parent['Name'].toLowerCase().includes('embank top') &&
-               !parent['Name'].toLowerCase().includes('level');
-      });
-      const nomRanges = wtId
-        ? level2ByParent[wtId].map(r=>extractRange(r['Name'])).filter(Boolean)
-        : (extractRange(ck.name) ? [extractRange(ck.name)] : []);
+    body+=renderSimpleRows(embTopCks,'etop',ck=>nomRangesForCk(ck,'embank top'));
 
-      const stages=[...ck.stages];
-      body+=renderCkRows(ck,cls,nomRanges,stages,stages.length,true);
-    }
+    // 3. Embankment intermediate layers
+    // Key logic: each chainage group has its own number of layers.
+    // We need a global row grid where the BOTTOM row = Layer 1 for all groups,
+    // and each group only fills rows from the bottom up to its max layer count.
+    //
+    // maxLayers = max stages across all embLayerCks
+    // Row 0 (top)    = highest layer (maxLayers)
+    // Row maxLayers-1 (bottom) = Layer 1
+    //
+    // For a group with N stages:
+    //   it fills rows (maxLayers-N) .. (maxLayers-1) — i.e. bottom N rows
+    //   rows above are empty for that chainage group
 
-    // 3. Embankment intermediate layers (top = highest layer, bottom = layer 1)
-    const totalEmbRows=embLayerCks.reduce((s,ck)=>s+ck.stages.length,0);
-    let isFirstEmb=true;
+    if (embLayerCks.length > 0) {
+      usedClasses.add('emb');
+      const maxLayers = Math.max(...embLayerCks.map(ck=>ck.stages.length));
+      const totalEmbRows = maxLayers;
 
-    // Find parent ID for Embankment (OG & CG) work type
-    const embParent=j2.find(r=>r['Level']==='1'&&
-      r['Name'].toLowerCase().includes('embankment'));
-    const embParentId=embParent?.['ID'];
+      // Build a 2D grid: grid[row][ckIndex] = {colRanges} or null
+      // row 0 = topmost displayed row (highest layer number)
+      // row maxLayers-1 = bottom row (Layer 1)
+      const grid = [];
+      for (let row=0; row<totalEmbRows; row++) {
+        // For this global row, which layer number does it correspond to?
+        // Global row 0 = layer maxLayers, global row maxLayers-1 = layer 1
+        const globalLayerNum = maxLayers - row; // e.g. row0=layer4, row1=layer3, etc.
 
-    for (const ck of embLayerCks) {
-      const cls='emb';
-      // Get nomenclature range for this specific checklist from JSON2
-      // Match by chainage range embedded in checklist name
-      const ckRange=extractRange(ck.name);
-      const nomRanges=ckRange?[ckRange]:[];
-
-      // Render stages reversed: highest layer at top
-      const stages=[...ck.stages].reverse();
-
-      let first=isFirstEmb;
-      for (let si=0;si<stages.length;si++) {
-        const stageName=stages[si];
-        const layerNum=parseInt(stageName.match(/\d+/)?.[0]||1);
-        const colRanges=[];
-        for (const nr of nomRanges) {
-          const key=nr.from+'_'+nr.to;
-          const rfi=rfiMap[key]?.[layerNum];
-          colRanges.push({from:nr.from,to:nr.to,cls,content:rfi?rfi.rfiDate+'<br>/'+rfi.rfiNum:''});
+        const colRangesForRow = [];
+        for (const ck of embLayerCks) {
+          const ckRange = extractRange(ck.name);
+          if (!ckRange) continue;
+          const ckMaxLayer = ck.stages.length;
+          // This checklist starts from Layer 1 at the bottom.
+          // It has data for layers 1..ckMaxLayer.
+          // If globalLayerNum <= ckMaxLayer, this row has a cell for this ck.
+          if (globalLayerNum <= ckMaxLayer && globalLayerNum >= 1) {
+            const key=ckRange.from+'_'+ckRange.to;
+            const rfi=rfiMap[key]?.[globalLayerNum];
+            colRangesForRow.push({
+              from:ckRange.from, to:ckRange.to, cls:'emb',
+              content:rfi?rfi.rfiDate+'<br>/'+rfi.rfiNum:''
+            });
+          }
+          // else: this chainage group doesn't have this layer — gap (white)
         }
-        usedClasses.add(cls);
+        grid.push(colRangesForRow);
+      }
 
-        let row='<tr>';
-        if (first) {
-          row+='<td class="rl-group '+cls+'" rowspan="'+totalEmbRows+'">'+
-               'Intermediate layer of<br>Embankment<br>with OGL &amp; C&amp;G</td>';
+      // Render grid rows
+      for (let row=0; row<totalEmbRows; row++) {
+        let tr='<tr>';
+        if (row===0) {
+          tr+='<td class="rl-group emb" rowspan="'+totalEmbRows+'">' +
+              'Intermediate layer of<br>Embankment<br>with OGL &amp; C&amp;G</td>';
         }
-        row+=buildRowCells(colRanges,TOTAL,chartFrom,SUB)+'</tr>';
-        body+=row;
-        first=false;
-        isFirstEmb=false;
+
+        // Build cells for this row considering ALL columns
+        // For each chainage group (ck), we know its range → map to cols
+        // Gaps between groups and empty rows render as white
+        const colRanges=grid[row];
+
+        // Build full row using buildRowCells
+        tr+=buildRowCells(colRanges, TOTAL, chartFrom, SUB);
+        tr+='</tr>';
+        body+=tr;
       }
     }
 
     document.getElementById('chart-body').innerHTML=body;
 
-    // ── Legend — only used classes ────────────────────────
+    // ── Dynamic legend ─────────────────────────────────────
     const legendEl=document.getElementById('legend');
     for (const col of ALL_COLOURS) {
       if (usedClasses.has(col.key)) {
         const span=document.createElement('span');
         span.className='lg-item';
-        span.innerHTML='<span class="lg-sw" style="background:'+col.hex+
-          (col.hex==='#FFFF00'?';border-color:#aaa;':'')+';"></span> '+col.label;
+        const border=col.border?';border-color:'+col.border:'';
+        span.innerHTML='<span class="lg-sw" style="background:'+col.hex+border+';"></span> '+col.label;
         legendEl.appendChild(span);
       }
     }
@@ -417,18 +507,18 @@ async function main() {
     loadingEl.style.display='none';
     tableEl.style.display='';
     statusEl.className='';
-    statusEl.textContent='Live data — Last refreshed: '+new Date().toLocaleTimeString('en-IN');
+    statusEl.textContent='Live data \u2014 Last refreshed: '+new Date().toLocaleTimeString('en-IN');
 
   } catch(err) {
     console.error(err);
-    loadingEl.innerHTML='<span style="color:#c00;font-size:11px">Failed to load: '+err.message+'</span>';
+    loadingEl.innerHTML='<span style="color:#c00;font-size:12px">&#9888; Failed to load: '+err.message+'</span>';
     statusEl.className='err';
     statusEl.textContent='Data unavailable';
   }
 }
 
 main();
-setInterval(main,5*60*1000);
+setInterval(main, 5*60*1000);
 </script>
 </body>
 </html>
