@@ -4,12 +4,40 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Layer Chart</title>
+<!-- SheetJS for Excel export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family:Arial,sans-serif; background:#d0d4d8; padding:16px; font-size:11px; }
 .page { background:#fff; margin:0 auto; border:2px solid #2c3e50; box-shadow:0 2px 12px rgba(0,0,0,0.18); width:max-content; min-width:100%; }
-#status-bar { text-align:right; font-size:9px; color:#888; font-style:italic; padding:3px 10px; background:#f8f9fa; border-bottom:1px solid #e0e0e0; min-height:18px; }
+
+/* ── STATUS + EXPORT BAR ── */
+#top-bar {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:4px 10px;
+  background:#f8f9fa;
+  border-bottom:1px solid #e0e0e0;
+  min-height:28px;
+}
+#status-bar { font-size:9px; color:#888; font-style:italic; }
 #status-bar.err { color:#c00; font-weight:bold; font-style:normal; }
+#export-btn {
+  display:none;
+  align-items:center; gap:5px;
+  background:#1e6e42;
+  color:#fff;
+  border:none;
+  border-radius:4px;
+  padding:4px 12px;
+  font-size:10px;
+  font-weight:bold;
+  cursor:pointer;
+  letter-spacing:0.3px;
+  transition:background 0.2s;
+}
+#export-btn:hover { background:#155234; }
+#export-btn svg { width:13px; height:13px; fill:#fff; }
+
 #loading { padding:60px; text-align:center; font-size:14px; color:#666; }
 .title-bar { text-align:center; font-size:14px; font-weight:bold; padding:7px 12px; border-bottom:2px solid #2c3e50; letter-spacing:0.5px; background:#fff; }
 .dir-bar { display:grid; grid-template-columns:160px 1fr 160px; border-bottom:2px solid #2c3e50; font-size:10px; background:#f0f4f8; }
@@ -36,12 +64,23 @@ table td, table th { border:1px solid #b0b8c1; text-align:center; vertical-align
 .lg-lbl { font-weight:bold; color:#2c3e50; }
 .lg-item { display:flex; align-items:center; gap:5px; font-weight:500; }
 .lg-sw { width:32px; height:14px; border:1px solid #666; border-radius:2px; display:inline-block; }
-@media print { body{padding:0;background:#fff;} .page{border:1px solid #333;box-shadow:none;} #status-bar,#loading{display:none!important;} }
+@media print { body{padding:0;background:#fff;} .page{border:1px solid #333;box-shadow:none;} #top-bar,#loading{display:none!important;} }
 </style>
 </head>
 <body>
 <div class="page">
-  <div id="status-bar">Initialising...</div>
+
+  <!-- TOP BAR: status left, export button right -->
+  <div id="top-bar">
+    <span id="status-bar">Initialising...</span>
+    <button id="export-btn" onclick="exportExcel()">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zm-2 4h-2v2H8v-2H6v-1l3-3 3 3v1zm0 3H8v3h4v-3z"/>
+      </svg>
+      Export to Excel
+    </button>
+  </div>
+
   <div class="title-bar" id="title-bar">Loading...</div>
   <div class="dir-bar">
     <div class="dir-l" id="dir-left"></div>
@@ -71,6 +110,14 @@ const URLS = {
 };
 const ARR = '\u2192';
 
+// Colour map for Excel cell fills (ARGB format)
+const CLS_FILL = {
+  emb:  'FF4472C4',
+  etop: 'FF70AD47',
+  elvl: 'FF92D050',
+  emp:  'FFF5F7FA',
+};
+
 const ALL_COLOURS = [
   { key:'emb',  label:'EMB Layer',     hex:'#4472C4' },
   { key:'etop', label:'EMB Top',       hex:'#70ad47' },
@@ -82,6 +129,15 @@ const ALL_COLOURS = [
   { key:'bc',   label:'BC',            hex:'#FF99CC' },
 ];
 
+// Global store for Excel export data
+// excelData: array of { rowLabel, cls, cells: [{colIdx, content, cls}] }
+let excelData   = [];
+let excelTitle  = '';
+let excelChFrom = 0;
+let excelChTo   = 0;
+let excelTOTAL  = 0;
+let excelSUB    = 10;
+
 function parseCh(s) {
   if (!s) return null;
   const c = String(s).replace(/\s+/g, '');
@@ -89,31 +145,24 @@ function parseCh(s) {
   if (m) return parseInt(m[1]) * 1000 + parseInt(m[2]);
   return null;
 }
-
 function extractRange(s) {
   if (!s) return null;
   const m = s.match(/(\d[\d\s]*\+\s*[\d]+)\s+to\s+(\d[\d\s]*\+\s*[\d]+)/i);
   if (!m) return null;
-  const f = parseCh(m[1]);
-  const t = parseCh(m[2]);
+  const f = parseCh(m[1]), t = parseCh(m[2]);
   return (f !== null && t !== null) ? { from: f, to: t } : null;
 }
-
 function fmtCh(m) {
-  return String(Math.floor(m / 1000)).padStart(3, '0') + '+' + String(m % 1000).padStart(3, '0');
+  return String(Math.floor(m/1000)).padStart(3,'0') + '+' + String(m%1000).padStart(3,'0');
 }
-
-// Format: "13 Apr, 2026, 4:03 PM" → "13-04-26"
 function fmtDate(s) {
   if (!s) return '';
   const mo = {Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',
                Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
   const m = s.match(/(\d{1,2})\s+([A-Za-z]{3})[,\s]+(2\d{3})/);
-  if (m) return m[1].padStart(2,'0') + '-' + (mo[m[2]] || '??') + '-' + m[3].slice(2);
+  if (m) return m[1].padStart(2,'0') + '-' + (mo[m[2]]||'??') + '-' + m[3].slice(2);
   return s;
 }
-
-// Cell label: "DD-MM-YY / RFI#"
 function cellLabel(rfi) {
   if (!rfi) return '';
   return rfi.rfiDate + ' / ' + rfi.rfiNum;
@@ -123,7 +172,7 @@ function buildRowCells(colRanges, TOTAL, chartFrom, SUB) {
   const blocks = [];
   for (const rng of colRanges) {
     const f = Math.max(rng.from, chartFrom);
-    const t = Math.min(rng.to,   chartFrom + TOTAL * SUB);
+    const t = Math.min(rng.to, chartFrom + TOTAL * SUB);
     if (f >= t) continue;
     const s = Math.round((f - chartFrom) / SUB);
     const e = Math.round((t - chartFrom) / SUB);
@@ -142,10 +191,154 @@ function buildRowCells(colRanges, TOTAL, chartFrom, SUB) {
   return html;
 }
 
+// Build flat cell array for a row (for Excel export)
+// Returns array of length TOTAL: each entry {content, cls}
+function buildCellArray(colRanges, TOTAL, chartFrom, SUB) {
+  const arr = Array(TOTAL).fill(null).map(() => ({ content: '', cls: 'emp' }));
+  for (const rng of colRanges) {
+    const f = Math.max(rng.from, chartFrom);
+    const t = Math.min(rng.to, chartFrom + TOTAL * SUB);
+    if (f >= t) continue;
+    const s = Math.round((f - chartFrom) / SUB);
+    const e = Math.round((t - chartFrom) / SUB);
+    for (let i = s; i < e && i < TOTAL; i++) {
+      arr[i] = { content: rng.content || '', cls: rng.cls };
+    }
+  }
+  return arr;
+}
+
+// ── EXCEL EXPORT ──────────────────────────────────────────
+function exportExcel() {
+  if (!excelData.length) return;
+
+  const wb = XLSX.utils.book_new();
+  const wsData = [];
+
+  // Title row
+  wsData.push([excelTitle]);
+
+  // Blank row
+  wsData.push([]);
+
+  // Chainage header row 1 — block labels (every SUBS cols)
+  const SUBS = 10;
+  const hdr1 = ['CHAINAGE'];
+  for (let b = 1; b <= (excelTOTAL / SUBS); b++) {
+    hdr1.push(((excelChFrom + b * 100) / 1000).toFixed(3));
+    for (let s = 1; s < SUBS; s++) hdr1.push('');
+  }
+  wsData.push(hdr1);
+
+  // Chainage header row 2 — 10m sub labels
+  const hdr2 = [''];
+  for (let b = 0; b < excelTOTAL / SUBS; b++)
+    for (let s = 1; s <= SUBS; s++) hdr2.push(s * excelSUB);
+  wsData.push(hdr2);
+
+  // Data rows
+  for (const row of excelData) {
+    const exRow = [row.rowLabel];
+    for (const cell of row.cells) exRow.push(cell.content);
+    wsData.push(exRow);
+  }
+
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  // Column widths
+  ws['!cols'] = [{ wch: 28 }]; // row label col
+  for (let i = 0; i < excelTOTAL; i++) ws['!cols'].push({ wch: 10 });
+
+  // Merge title across all columns
+  const totalCols = excelTOTAL + 1;
+  ws['!merges'] = [
+    { s: { r:0, c:0 }, e: { r:0, c: totalCols - 1 } }, // title
+  ];
+
+  // Merge chainage block headers (span SUBS cols each)
+  let mergeCol = 1;
+  for (let b = 0; b < excelTOTAL / SUBS; b++) {
+    ws['!merges'].push({ s: { r:2, c: mergeCol }, e: { r:2, c: mergeCol + SUBS - 1 } });
+    mergeCol += SUBS;
+  }
+
+  // Apply cell colours and styles
+  const HEADER_FILL = { patternType:'solid', fgColor:{ rgb:'2C5F8A' } };
+  const TITLE_FILL  = { patternType:'solid', fgColor:{ rgb:'1E2D3D' } };
+  const TITLE_FONT  = { bold:true, color:{ rgb:'FFFFFF' }, sz:13 };
+  const HDR_FONT    = { bold:true, color:{ rgb:'FFFFFF' }, sz:10 };
+  const SUB_FILL    = { patternType:'solid', fgColor:{ rgb:'DAEEF3' } };
+  const SUB_FONT    = { bold:true, sz:8 };
+  const BORDER      = { top:{style:'thin'}, bottom:{style:'thin'}, left:{style:'thin'}, right:{style:'thin'} };
+
+  // Helper: get cell address
+  function addr(r, c) { return XLSX.utils.encode_cell({ r, c }); }
+
+  // Style title
+  if (ws[addr(0,0)]) {
+    ws[addr(0,0)].s = { fill: TITLE_FILL, font: TITLE_FONT, alignment:{ horizontal:'center', vertical:'center' }, border: BORDER };
+  }
+
+  // Style chainage block headers (row 2)
+  for (let c = 1; c < totalCols; c++) {
+    const cell = ws[addr(2, c)];
+    if (cell) cell.s = { fill: { patternType:'solid', fgColor:{ rgb:'2C5F8A' } }, font: HDR_FONT, alignment:{ horizontal:'center' }, border: BORDER };
+  }
+  // Row label header
+  if (ws[addr(2,0)]) ws[addr(2,0)].s = { fill: { patternType:'solid', fgColor:{ rgb:'2C5F8A' } }, font: HDR_FONT, alignment:{ horizontal:'center' }, border: BORDER };
+
+  // Style sub-label row (row 3)
+  for (let c = 0; c < totalCols; c++) {
+    const cell = ws[addr(3, c)];
+    if (cell) cell.s = { fill: SUB_FILL, font: SUB_FONT, alignment:{ horizontal:'center' }, border: BORDER };
+  }
+
+  // Style data rows
+  const dataRowStart = 4;
+  for (let ri = 0; ri < excelData.length; ri++) {
+    const row = excelData[ri];
+    const excelRow = dataRowStart + ri;
+
+    // Row label cell
+    const labelCell = ws[addr(excelRow, 0)];
+    if (labelCell) {
+      labelCell.s = {
+        fill: { patternType:'solid', fgColor:{ rgb:'F0F4F8' } },
+        font: { bold:true, sz:9 },
+        alignment: { horizontal:'left', vertical:'center', wrapText:true },
+        border: BORDER
+      };
+    }
+
+    // Data cells
+    for (let ci = 0; ci < row.cells.length; ci++) {
+      const cell = ws[addr(excelRow, ci + 1)];
+      if (!cell) continue;
+      const clsKey = row.cells[ci].cls;
+      const fgRgb  = (CLS_FILL[clsKey] || 'FFF5F7FA').replace(/^FF/,'');
+      const isColoured = clsKey !== 'emp';
+      cell.s = {
+        fill: { patternType:'solid', fgColor:{ rgb: fgRgb } },
+        font: { bold: !!cell.v, sz:8, color:{ rgb: isColoured ? 'FFFFFF' : '333333' } },
+        alignment: { horizontal:'center', vertical:'center', wrapText:true },
+        border: BORDER
+      };
+    }
+  }
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Layer Chart');
+
+  // Generate filename from title
+  const fname = 'LayerChart_' + fmtCh(excelChFrom) + '_' + fmtCh(excelChTo) + '_RHS.xlsx';
+  XLSX.writeFile(wb, fname);
+}
+
+// ── MAIN ─────────────────────────────────────────────────
 async function main() {
   const statusEl  = document.getElementById('status-bar');
   const loadingEl = document.getElementById('loading');
   const tableEl   = document.getElementById('chart-table');
+  const exportBtn = document.getElementById('export-btn');
 
   try {
     statusEl.textContent = 'Fetching data...';
@@ -175,8 +368,12 @@ async function main() {
     const BLOCK = 100, SUB = 10;
     const NUM_BLOCKS = CHART_LEN / BLOCK, SUBS = BLOCK / SUB, TOTAL = NUM_BLOCKS * SUBS;
 
-    document.getElementById('title-bar').textContent =
-      '{ LAYER CHART   Ch :-   ' + fmtCh(chartFrom) + '   To   ' + fmtCh(chartTo) + '   SIDE :-   RHS }';
+    // Store for export
+    excelChFrom = chartFrom; excelChTo = chartTo; excelTOTAL = TOTAL; excelSUB = SUB;
+    excelTitle  = '{ LAYER CHART   Ch :-   ' + fmtCh(chartFrom) + '   To   ' + fmtCh(chartTo) + '   SIDE :-   RHS }';
+    excelData   = [];
+
+    document.getElementById('title-bar').textContent = excelTitle;
     document.getElementById('dir-left').textContent  = 'Meerut \u2192';
     document.getElementById('dir-right').textContent = '\u2190 Prayagraj';
 
@@ -192,10 +389,10 @@ async function main() {
     const K_STAGE = 'Eqc Stage ' + ARR + ' Name';
     const rfiMap  = {};
     for (const r of j4) {
-      const path    = r[K_EQC]   || '';
-      const stgStr  = r[K_STAGE] || '';
-      const rfiNum  = String(r['Qc Option'] || r['ID']);
-      const rfiDate = fmtDate(r['Created At']);
+      const path   = r[K_EQC]   || '';
+      const stgStr = r[K_STAGE] || '';
+      const rfiNum = String(r['Qc Option'] || r['ID']);
+      const rfiDate= fmtDate(r['Created At']);
       const lm = stgStr.match(/layer\s*(\d+)/i);
       if (!lm) continue;
       const layerNum = parseInt(lm[1]);
@@ -215,31 +412,28 @@ async function main() {
     }
     for (const id in ckById)
       ckById[id].stages.sort((a, b) =>
-        parseInt(a.match(/\d+/)?.[0] || 0) - parseInt(b.match(/\d+/)?.[0] || 0));
+        parseInt(a.match(/\d+/)?.[0]||0) - parseInt(b.match(/\d+/)?.[0]||0));
 
-    const embLevelCks = [], embTopCks = [], embLayerCks = [];
+    const embLevelCks=[], embTopCks=[], embLayerCks=[];
     for (const ck of Object.values(ckById)) {
       const nl = ck.name.trim().toLowerCase();
-      if (nl === 'embank top level')   embLevelCks.push(ck);
-      else if (nl === 'embank top')    embTopCks.push(ck);
-      else                              embLayerCks.push(ck);
+      if (nl === 'embank top level')  embLevelCks.push(ck);
+      else if (nl === 'embank top')   embTopCks.push(ck);
+      else                             embLayerCks.push(ck);
     }
-    embLayerCks.sort((a, b) => (extractRange(a.name)?.from || 0) - (extractRange(b.name)?.from || 0));
+    embLayerCks.sort((a,b) => (extractRange(a.name)?.from||0) - (extractRange(b.name)?.from||0));
 
     const usedClasses = new Set();
 
     const cg = document.getElementById('colgroup');
-    for (let i = 0; i < TOTAL; i++) {
-      const c = document.createElement('col'); c.className = 'csub'; cg.appendChild(c);
-    }
-    let h1 = '<tr><th class="ch-label-hd" rowspan="2">CHAINAGE</th>';
-    for (let b = 1; b <= NUM_BLOCKS; b++)
-      h1 += '<th class="ch-block" colspan="' + SUBS + '">' + ((chartFrom + b * BLOCK) / 1000).toFixed(3) + '</th>';
-    h1 += '</tr>';
-    let h2 = '<tr>';
-    for (let b = 0; b < NUM_BLOCKS; b++)
-      for (let s = 1; s <= SUBS; s++) h2 += '<td class="ch-sub">' + (s * SUB) + '</td>';
-    h2 += '</tr>';
+    for (let i=0;i<TOTAL;i++){const c=document.createElement('col');c.className='csub';cg.appendChild(c);}
+    let h1='<tr><th class="ch-label-hd" rowspan="2">CHAINAGE</th>';
+    for (let b=1;b<=NUM_BLOCKS;b++)
+      h1+='<th class="ch-block" colspan="'+SUBS+'">'+ ((chartFrom+b*BLOCK)/1000).toFixed(3)+'</th>';
+    h1+='</tr>';
+    let h2='<tr>';
+    for (let b=0;b<NUM_BLOCKS;b++) for (let s=1;s<=SUBS;s++) h2+='<td class="ch-sub">'+(s*SUB)+'</td>';
+    h2+='</tr>';
     document.getElementById('chart-head').innerHTML = h1 + h2;
 
     function renderSimpleRows(cks, cls, nomRanges) {
@@ -250,16 +444,22 @@ async function main() {
           ? nomRanges
           : (extractRange(ck.name) ? [extractRange(ck.name)] : []);
         const stages = [...ck.stages];
-        for (let si = 0; si < stages.length; si++) {
-          const layerNum = parseInt(stages[si].match(/\d+/)?.[0] || 1);
+        for (let si=0; si<stages.length; si++) {
+          const layerNum = parseInt(stages[si].match(/\d+/)?.[0]||1);
           const colRanges = ranges.map(nr => {
-            const key = nr.from + '_' + nr.to;
+            const key = nr.from+'_'+nr.to;
             const rfi = rfiMap[key]?.[layerNum];
-            return { from: nr.from, to: nr.to, cls, content: cellLabel(rfi) };
+            return { from:nr.from, to:nr.to, cls, content:cellLabel(rfi) };
           });
-          const rs = stages.length > 1 && si === 0 ? ' rowspan="' + stages.length + '"' : '';
-          html += '<tr>' + (si === 0 ? '<td class="rl ' + cls + '"' + rs + '>' + ck.name + '</td>' : '') +
-                  buildRowCells(colRanges, TOTAL, chartFrom, SUB) + '</tr>';
+          const rs = stages.length>1&&si===0 ? ' rowspan="'+stages.length+'"' : '';
+          html += '<tr>'+(si===0?'<td class="rl '+cls+'"'+rs+'>'+ck.name+'</td>':'')+
+                  buildRowCells(colRanges,TOTAL,chartFrom,SUB)+'</tr>';
+          // Store for Excel
+          excelData.push({
+            rowLabel: si===0 ? ck.name : '',
+            cls,
+            cells: buildCellArray(colRanges, TOTAL, chartFrom, SUB)
+          });
         }
       }
       return html;
@@ -272,25 +472,29 @@ async function main() {
     if (embLayerCks.length > 0) {
       usedClasses.add('emb');
       const maxLayers = Math.max(...embLayerCks.map(ck => ck.stages.length));
-      for (let row = 0; row < maxLayers; row++) {
+      for (let row=0; row<maxLayers; row++) {
         const colRanges = [];
         for (const ck of embLayerCks) {
-          const ckRange  = extractRange(ck.name);
+          const ckRange = extractRange(ck.name);
           if (!ckRange) continue;
           const ckLayers = ck.stages.length;
           const layerNum = ckLayers - row;
           if (layerNum < 1) continue;
-          const key = ckRange.from + '_' + ckRange.to;
+          const key = ckRange.from+'_'+ckRange.to;
           const rfi = rfiMap[key]?.[layerNum];
-          colRanges.push({ from: ckRange.from, to: ckRange.to, cls: 'emb', content: cellLabel(rfi) });
+          colRanges.push({ from:ckRange.from, to:ckRange.to, cls:'emb', content:cellLabel(rfi) });
         }
         let tr = '<tr>';
-        if (row === 0) {
-          tr += '<td class="rl-group emb" rowspan="' + maxLayers + '">' +
-                'Intermediate layer of<br>Embankment<br>with OGL &amp; C&amp;G</td>';
+        if (row===0) {
+          tr += '<td class="rl-group emb" rowspan="'+maxLayers+'">Intermediate layer of<br>Embankment<br>with OGL &amp; C&amp;G</td>';
         }
-        tr += buildRowCells(colRanges, TOTAL, chartFrom, SUB) + '</tr>';
+        tr += buildRowCells(colRanges,TOTAL,chartFrom,SUB)+'</tr>';
         body += tr;
+        excelData.push({
+          rowLabel: row===0 ? 'Intermediate layer of Embankment with OGL & C&G' : '',
+          cls: 'emb',
+          cells: buildCellArray(colRanges, TOTAL, chartFrom, SUB)
+        });
       }
     }
 
@@ -301,27 +505,28 @@ async function main() {
       if (usedClasses.has(col.key)) {
         const span = document.createElement('span');
         span.className = 'lg-item';
-        const border = col.border ? ';border-color:' + col.border : '';
-        span.innerHTML = '<span class="lg-sw" style="background:' + col.hex + border + ';"></span> ' + col.label;
+        const border = col.border ? ';border-color:'+col.border : '';
+        span.innerHTML = '<span class="lg-sw" style="background:'+col.hex+border+';"></span> '+col.label;
         legendEl.appendChild(span);
       }
     }
 
     loadingEl.style.display = 'none';
     tableEl.style.display   = '';
+    exportBtn.style.display = 'flex';
     statusEl.className      = '';
-    statusEl.textContent    = 'Live data \u2014 Last refreshed: ' + new Date().toLocaleTimeString('en-IN');
+    statusEl.textContent    = 'Live data \u2014 Last refreshed: '+new Date().toLocaleTimeString('en-IN');
 
-  } catch (err) {
+  } catch(err) {
     console.error(err);
-    loadingEl.innerHTML = '<span style="color:#c00;font-size:12px">&#9888; Failed to load: ' + err.message + '</span>';
+    loadingEl.innerHTML = '<span style="color:#c00;font-size:12px">&#9888; Failed to load: '+err.message+'</span>';
     statusEl.className  = 'err';
     statusEl.textContent = 'Data unavailable';
   }
 }
 
 main();
-setInterval(main, 5 * 60 * 1000);
+setInterval(main, 5*60*1000);
 </script>
 </body>
 </html>
