@@ -264,8 +264,7 @@ async function main(){
       let html='';
       for(const ck of cks){
         usedClasses.add(cls);
-        let ranges=nomRanges.length>0?nomRanges:(extractRange(ck.name)?[extractRange(ck.name)]:[]);
-        if(ranges.length===0)ranges=[{from:chartFrom,to:chartTo}];
+        const ranges=nomRanges.length>0?nomRanges:(extractRange(ck.name)?[extractRange(ck.name)]:[]);
         const stages=[...ck.stages];
         for(let si=0;si<stages.length;si++){
           const layerNum=parseInt(stages[si].match(/\d+/)?.[0]||1);
@@ -278,7 +277,7 @@ async function main(){
       return html;
     }
     let body='';
-    body+=renderSimpleRows(sgCks,'sg',[]);
+    for(const ck of sgCks){body+=renderSimpleRows([ck],'sg',nomRangesByName(ck.name));}
     body+=renderSimpleRows(embLevelCks,'elvl',nomRangesByName('Embank Top Level'));
     body+=renderSimpleRows(embTopCks,'etop',nomRangesByName('Embank Top'));
     if(embLayerCks.length>0){
