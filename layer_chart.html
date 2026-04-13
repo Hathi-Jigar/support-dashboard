@@ -238,14 +238,28 @@ function exportExcel(){
     }
   }
 
-  // Ensure merged row-label cells all have the same style (for borders + fill to show)
+  // Ensure merged row-label cells all have the same style
   for(const m of excelMerges){
     const topStyle=ws[addr(m.s.r,m.s.c)].s;
-    for(let r=m.s.r+1;r<=m.e.r;r++)ws[addr(r,m.e.c)].s={...topStyle};
+    for(let r=m.s.r+1;r<=m.e.r;r++){ws[addr(r,0)].s={...topStyle};}
   }
 
+  // Clear values in hidden merge cells (Excel needs them empty for merge to render)
+  for(const m of ws['!merges']){
+    for(let r=m.s.r;r<=m.e.r;r++){
+      for(let c=m.s.c;c<=m.e.c;c++){
+        if(r===m.s.r&&c===m.s.c)continue;
+        const a=addr(r,c);
+        if(ws[a]){delete ws[a].v;ws[a].t='z';}
+      }
+    }
+  }
+
+  // Also merge CHAINAGE label across rows 2-3 (like HTML rowspan=2)
+  ws['!merges'].push({s:{r:2,c:0},e:{r:3,c:0}});
+
   XLSX.utils.book_append_sheet(wb,ws,'Layer Chart');
-  XLSX.writeFile(wb,'LayerChart_'+fmtCh(excelChFrom)+'_'+fmtCh(excelChTo)+'_'+excelSide+'.xlsx');
+  XLSX.writeFile(wb,'LayerChart_'+fmtCh(excelChFrom)+'_'+fmtCh(excelChTo)+'_'+excelSide+'.xlsx',{cellStyles:true});
 }
 
 // ── MAIN ─────────────────────────────────────────────────────
