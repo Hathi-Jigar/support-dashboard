@@ -23,7 +23,7 @@ jobs:
         run: |
           METABASE_BASE="https://metabase-v2.digiqc.com/api/public/card"
 
-          for row in $(jq -c '.projects[] | select(.active == true)' projects.json); do
+          jq -c '.projects[] | select(.active == true)' projects.json | while IFS= read -r row; do
             SLUG=$(echo "$row" | jq -r '.slug')
             J1=$(echo "$row" | jq -r '.metabase.j1')
             J2=$(echo "$row" | jq -r '.metabase.j2')
