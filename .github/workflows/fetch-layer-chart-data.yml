@@ -2,8 +2,8 @@ name: Fetch Layer Chart Data
 
 on:
   schedule:
-    - cron: '*/5 * * * *'   # every 5 minutes
-  workflow_dispatch:         # allow manual trigger
+    - cron: '0 * * * *'   # every 1 hour
+  workflow_dispatch:        # allow manual trigger (Fetch Now button + GitHub UI)
 
 jobs:
   fetch:
