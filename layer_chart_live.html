@@ -19,8 +19,6 @@ body { font-family:Arial,sans-serif; background:#d0d4d8; padding:16px; font-size
 .top-btn.green:hover { background:#155234; }
 .top-btn.blue  { background:#2c5f8a; }
 .top-btn.blue:hover  { background:#1e4a73; }
-.top-btn.spinning svg { animation:spin 1s linear infinite; }
-@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
 #loading { padding:60px; text-align:center; font-size:14px; color:#666; }
 .title-bar { text-align:center; font-size:14px; font-weight:bold; padding:7px 12px; border-bottom:2px solid #2c3e50; letter-spacing:0.5px; background:#fff; }
 .dir-bar { display:grid; grid-template-columns:160px 1fr 160px; border-bottom:2px solid #2c3e50; font-size:10px; background:#f0f4f8; }
@@ -41,6 +39,7 @@ table td, table th { border:1px solid #b0b8c1; text-align:center; vertical-align
 .emb  { background:#4472C4; color:#fff; }
 .etop { background:#70ad47; color:#fff; }
 .elvl { background:#92d050; color:#333; }
+.sg   { background:#00B050; color:#fff; }
 .emp  { background:#f5f7fa; }
 .d { font-size:8px; padding:3px 2px; white-space:normal; word-break:break-word; line-height:1.4; font-weight:bold; height:28px; vertical-align:middle; }
 .legend { display:flex; align-items:center; flex-wrap:wrap; gap:12px; padding:7px 12px; border-top:2px solid #2c3e50; font-size:10px; background:#f8f9fa; }
@@ -55,10 +54,6 @@ table td, table th { border:1px solid #b0b8c1; text-align:center; vertical-align
   <div id="top-bar">
     <span id="status-bar">Initialising...</span>
     <div class="btn-group">
-      <button id="fetch-btn" class="top-btn blue" onclick="fetchNow()">
-        <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
-        Fetch Now
-      </button>
       <button id="export-btn" class="top-btn green" onclick="exportExcel()">
         <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zm-2 4h-2v2H8v-2H6v-1l3-3 3 3v1zm0 3H8v3h4v-3z"/></svg>
         Export to Excel
@@ -88,12 +83,8 @@ table td, table th { border:1px solid #b0b8c1; text-align:center; vertical-align
 const REPO_BASE   = 'https://hathi-jigar.github.io/support-dashboard';
 const URLS        = { j1:REPO_BASE+'/data/j1.json', j2:REPO_BASE+'/data/j2.json', j3:REPO_BASE+'/data/j3.json', j4:REPO_BASE+'/data/j4.json' };
 const ARR         = '\u2192';
-const GH_OWNER    = 'Hathi-Jigar';
-const GH_REPO     = 'support-dashboard';
-const GH_WORKFLOW = 'fetch-layer-chart-data.yml';
-const GH_TOKEN    = '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';
 
-const CLS_FILL    = { emb:'FF4472C4', etop:'FF70AD47', elvl:'FF92D050', emp:'FFF5F7FA' };
+const CLS_FILL    = { emb:'FF4472C4', etop:'FF70AD47', elvl:'FF92D050', sg:'FF00B050', emp:'FFF5F7FA' };
 const ALL_COLOURS = [
   { key:'emb',  label:'EMB Layer',     hex:'#4472C4' },
   { key:'etop', label:'EMB Top',       hex:'#70ad47' },
@@ -158,34 +149,6 @@ function buildCellArray(colRanges,TOTAL,chartFrom,SUB){
   return arr;
 }
 
-// ── FETCH NOW ────────────────────────────────────────────
-async function fetchNow() {
-  const btn=document.getElementById('fetch-btn');
-  const statusEl=document.getElementById('status-bar');
-  btn.classList.add('spinning');
-  btn.disabled=true;
-  statusEl.textContent='Triggering data refresh...';
-  try {
-    const res=await fetch(
-      'https://api.github.com/repos/'+GH_OWNER+'/'+GH_REPO+'/actions/workflows/'+GH_WORKFLOW+'/dispatches',
-      { method:'POST', headers:{ 'Authorization':'Bearer '+GH_TOKEN, 'Accept':'application/vnd.github+json', 'Content-Type':'application/json' }, body:JSON.stringify({ref:'main'}) }
-    );
-    if(res.status===204){
-      statusEl.textContent='Refresh triggered \u2014 reloading data in 20 seconds...';
-      setTimeout(()=>main(), 20000);
-    } else {
-      const err=await res.text();
-      statusEl.textContent='Trigger failed: '+res.status;
-      console.error(err);
-    }
-  } catch(e){
-    statusEl.textContent='Trigger failed: '+e.message;
-  } finally {
-    btn.classList.remove('spinning');
-    btn.disabled=false;
-  }
-}
-
 // ── EXCEL EXPORT ─────────────────────────────────────────
 function exportExcel(){
   if(!excelData.length)return;
@@ -228,7 +191,6 @@ async function main(){
   const loadingEl=document.getElementById('loading');
   const tableEl=document.getElementById('chart-table');
   const exportBtn=document.getElementById('export-btn');
-  const fetchBtn=document.getElementById('fetch-btn');
   try {
     statusEl.textContent='Fetching data...';
     const [j1,j2,j3,j4]=await Promise.all(
@@ -278,13 +240,15 @@ async function main(){
       if(stg&&!ckById[id].stages.includes(stg))ckById[id].stages.push(stg);
     }
     for(const id in ckById)ckById[id].stages.sort((a,b)=>parseInt(a.match(/\d+/)?.[0]||0)-parseInt(b.match(/\d+/)?.[0]||0));
-    const embLevelCks=[],embTopCks=[],embLayerCks=[];
+    const embLevelCks=[],embTopCks=[],embLayerCks=[],sgCks=[];
     for(const ck of Object.values(ckById)){
       const nl=ck.name.trim().toLowerCase();
       if(nl==='embank top level')embLevelCks.push(ck);
       else if(nl==='embank top')embTopCks.push(ck);
+      else if(nl.startsWith('sg'))sgCks.push(ck);
       else embLayerCks.push(ck);
     }
+    sgCks.sort((a,b)=>{const o={st:1,nd:2,rd:3,th:4,top:90,'top level':99};function rank(n){const l=n.trim().toLowerCase();if(l.includes('top level'))return 99;if(l.includes('top'))return 90;const m=l.match(/(\d+)/);return m?parseInt(m[1]):50;}return rank(a.name)-rank(b.name);});
     embLayerCks.sort((a,b)=>(extractRange(a.name)?.from||0)-(extractRange(b.name)?.from||0));
     const usedClasses=new Set();
     const cg=document.getElementById('colgroup');
@@ -300,7 +264,8 @@ async function main(){
       let html='';
       for(const ck of cks){
         usedClasses.add(cls);
-        const ranges=nomRanges.length>0?nomRanges:(extractRange(ck.name)?[extractRange(ck.name)]:[]);
+        let ranges=nomRanges.length>0?nomRanges:(extractRange(ck.name)?[extractRange(ck.name)]:[]);
+        if(ranges.length===0)ranges=[{from:chartFrom,to:chartTo}];
         const stages=[...ck.stages];
         for(let si=0;si<stages.length;si++){
           const layerNum=parseInt(stages[si].match(/\d+/)?.[0]||1);
@@ -313,6 +278,7 @@ async function main(){
       return html;
     }
     let body='';
+    body+=renderSimpleRows(sgCks,'sg',[]);
     body+=renderSimpleRows(embLevelCks,'elvl',nomRangesByName('Embank Top Level'));
     body+=renderSimpleRows(embTopCks,'etop',nomRangesByName('Embank Top'));
     if(embLayerCks.length>0){
@@ -347,7 +313,6 @@ async function main(){
     loadingEl.style.display='none';
     tableEl.style.display='';
     exportBtn.style.display='flex';
-    fetchBtn.style.display='flex';
     statusEl.className='';
     statusEl.textContent='Live data \u2014 Last refreshed: '+new Date().toLocaleTimeString('en-IN')+' (auto-refresh: 1 hr)';
   } catch(err){
