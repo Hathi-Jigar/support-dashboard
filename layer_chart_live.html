@@ -85,8 +85,33 @@ table td, table th { border:1px solid #b0b8c1; text-align:center; vertical-align
 
 <script>
 const REPO_BASE   = 'https://hathi-jigar.github.io/support-dashboard';
-const URLS        = { j1:REPO_BASE+'/data/j1.json', j2:REPO_BASE+'/data/j2.json', j3:REPO_BASE+'/data/j3.json', j4:REPO_BASE+'/data/j4.json' };
 const ARR         = '\u2192';
+
+// Primary: live Metabase APIs (real-time data on every refresh)
+// Fallback: cached GitHub Pages JSON (updated hourly by cron)
+const LIVE_URLS = {
+  j1:'https://metabase-v2.digiqc.com/api/public/card/37b102ad-812e-47a9-a2f1-f410812ab374/query/json',
+  j2:'https://metabase-v2.digiqc.com/api/public/card/68bfaf48-07fd-4328-940b-5b0955280aa7/query/json',
+  j3:'https://metabase-v2.digiqc.com/api/public/card/9778136e-b8a5-44d2-89d5-76ec624e77fd/query/json',
+  j4:'https://metabase-v2.digiqc.com/api/public/card/bd4cc62a-db02-44c2-8fc4-b4ba6e797dc5/query/json'
+};
+const CACHE_URLS = {
+  j1:REPO_BASE+'/data/j1.json',
+  j2:REPO_BASE+'/data/j2.json',
+  j3:REPO_BASE+'/data/j3.json',
+  j4:REPO_BASE+'/data/j4.json'
+};
+async function fetchJSON(key){
+  try {
+    const r=await fetch(LIVE_URLS[key]);
+    if(r.ok){ dataSource='live'; return r.json(); }
+  } catch(e){}
+  const r=await fetch(CACHE_URLS[key]+'?t='+Date.now());
+  if(!r.ok)throw new Error('HTTP '+r.status+' for '+key);
+  dataSource='cached';
+  return r.json();
+}
+let dataSource='live';
 
 const CLS_FILL    = { emb:'FF4472C4', etop:'FF70AD47', elvl:'FF92D050', sg:'FF00B050', gsb:'FFFFFF00', wmm:'FFFF6600', dbm:'FF00B0F0', bc:'FFFF99CC', emp:'FFF5F7FA' };
 
@@ -202,9 +227,8 @@ async function main(){
   const exportBtn=document.getElementById('export-btn');
   try {
     statusEl.textContent='Fetching data...';
-    const [j1,j2,j3,j4]=await Promise.all(
-      Object.values(URLS).map(u=>fetch(u+'?t='+Date.now()).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}))
-    );
+    dataSource='live';
+    const [j1,j2,j3,j4]=await Promise.all(['j1','j2','j3','j4'].map(k=>fetchJSON(k)));
     statusEl.textContent='Building chart...';
     const level2ByParent={};
     for(const r of j2.filter(r=>r['Level']==='2'&&r['Is Active']==='true')){
@@ -341,7 +365,8 @@ async function main(){
     tableEl.style.display='';
     exportBtn.style.display='flex';
     statusEl.className='';
-    statusEl.textContent='Live data \u2014 Last refreshed: '+new Date().toLocaleTimeString('en-IN')+' (auto-refresh: 1 hr)';
+    const srcLabel=dataSource==='live'?'Live from Metabase':'Cached (Metabase unavailable)';
+    statusEl.textContent=srcLabel+' \u2014 '+new Date().toLocaleTimeString('en-IN');
   } catch(err){
     console.error(err);
     loadingEl.innerHTML='<span style="color:#c00;font-size:12px">&#9888; Failed to load: '+err.message+'</span>';
