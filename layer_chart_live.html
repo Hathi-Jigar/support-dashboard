@@ -6,178 +6,37 @@
 <title>Layer Chart</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
-
-body {
-  font-family: Arial, sans-serif;
-  background: #d0d4d8;
-  padding: 16px;
-  font-size: 11px;
-}
-
-.page {
-  background: #fff;
-  margin: 0 auto;
-  border: 2px solid #2c3e50;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.18);
-  width: max-content;
-  min-width: 100%;
-}
-
-/* ── STATUS ── */
-#status-bar {
-  text-align: right;
-  font-size: 9px;
-  color: #888;
-  font-style: italic;
-  padding: 3px 10px;
-  background: #f8f9fa;
-  border-bottom: 1px solid #e0e0e0;
-  min-height: 18px;
-}
+body { font-family:Arial,sans-serif; background:#d0d4d8; padding:16px; font-size:11px; }
+.page { background:#fff; margin:0 auto; border:2px solid #2c3e50; box-shadow:0 2px 12px rgba(0,0,0,0.18); width:max-content; min-width:100%; }
+#status-bar { text-align:right; font-size:9px; color:#888; font-style:italic; padding:3px 10px; background:#f8f9fa; border-bottom:1px solid #e0e0e0; min-height:18px; }
 #status-bar.err { color:#c00; font-weight:bold; font-style:normal; }
-
-/* ── LOADING ── */
 #loading { padding:60px; text-align:center; font-size:14px; color:#666; }
-
-/* ── TITLE ── */
-.title-bar {
-  text-align: center;
-  font-size: 14px;
-  font-weight: bold;
-  padding: 7px 12px;
-  border-bottom: 2px solid #2c3e50;
-  letter-spacing: 0.5px;
-  background: #fff;
-}
-
-/* ── DIRECTION ── */
-.dir-bar {
-  display: grid;
-  grid-template-columns: 160px 1fr 160px;
-  border-bottom: 2px solid #2c3e50;
-  font-size: 10px;
-  background: #f0f4f8;
-}
-.dir-bar > div { padding: 3px 8px; }
-.dir-l { border-right: 1px solid #aaa; font-weight:bold; }
+.title-bar { text-align:center; font-size:14px; font-weight:bold; padding:7px 12px; border-bottom:2px solid #2c3e50; letter-spacing:0.5px; background:#fff; }
+.dir-bar { display:grid; grid-template-columns:160px 1fr 160px; border-bottom:2px solid #2c3e50; font-size:10px; background:#f0f4f8; }
+.dir-bar > div { padding:3px 8px; }
+.dir-l { border-right:1px solid #aaa; font-weight:bold; }
 .dir-m { text-align:center; font-weight:bold; font-size:12px; font-style:italic; letter-spacing:3px; }
 .dir-r { border-left:1px solid #aaa; text-align:right; font-weight:bold; }
-
-/* ── TABLE ── */
 .chart-scroll { overflow-x:auto; }
-
-table {
-  border-collapse: collapse;
-  table-layout: fixed;
-}
-
-table td, table th {
-  border: 1px solid #b0b8c1;
-  text-align: center;
-  vertical-align: middle;
-  padding: 0;
-  overflow: hidden;
-  line-height: 1.25;
-}
-
-/* ── COLUMN WIDTHS ── wider for readability ── */
-.cl   { width: 160px; min-width: 160px; }
-.csub { width: 32px;  min-width: 32px; }   /* increased from 22px */
-
-/* ── CHAINAGE HEADERS ── */
-.ch-block {
-  background: linear-gradient(180deg, #2c5f8a 0%, #3a7cbf 100%);
-  font-weight: bold;
-  font-size: 11px;
-  color: #fff;
-  height: 48px;
-  writing-mode: vertical-lr;
-  transform: rotate(180deg);
-  padding: 3px 0;
-  border: 1px solid #1e4a73;
-  letter-spacing: 0.5px;
-}
-.ch-sub {
-  background: #daeef3;
-  font-size: 8px;
-  color: #444;
-  height: 16px;
-  padding: 1px 0;
-  border: 1px solid #9fbfcc;
-  font-weight: bold;
-}
-.ch-label-hd {
-  background: linear-gradient(180deg, #2c5f8a 0%, #3a7cbf 100%);
-  font-weight: bold;
-  font-size: 12px;
-  color: #fff;
-  text-align: center;
-  vertical-align: middle;
-  border: 1px solid #1e4a73;
-  letter-spacing: 0.5px;
-}
-
-/* ── ROW LABELS ── */
-.rl {
-  text-align: left;
-  padding: 3px 6px;
-  font-size: 10px;
-  font-weight: bold;
-  white-space: normal;
-  word-break: break-word;
-  vertical-align: middle;
-  border: 1px solid #aab !important;
-  background: #f7f9fb;
-}
-.rl-group {
-  text-align: center;
-  font-size: 9.5px;
-  font-weight: bold;
-  white-space: normal;
-  word-break: break-word;
-  vertical-align: middle;
-  padding: 4px 6px;
-  line-height: 1.4;
-  border: 1px solid #aab !important;
-  background: #f0f4f8;
-}
-
-/* ── LAYER COLOURS ── */
-.emb  { background: #4472C4; color: #fff; }
-.etop { background: #70ad47; color: #fff; }
-.elvl { background: #92d050; color: #333; }
-.emp  { background: #f5f7fa; }
-
-/* ── DATA CELL TEXT ── */
-.d {
-  font-size: 8px;
-  padding: 2px 3px;
-  white-space: normal;
-  word-break: break-all;
-  line-height: 1.35;
-  font-weight: bold;
-}
-
-/* ── LEGEND ── */
-.legend {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  padding: 7px 12px;
-  border-top: 2px solid #2c3e50;
-  font-size: 10px;
-  background: #f8f9fa;
-}
-.lg-lbl { font-weight: bold; color: #2c3e50; }
+table { border-collapse:collapse; table-layout:fixed; }
+table td, table th { border:1px solid #b0b8c1; text-align:center; vertical-align:middle; padding:0; overflow:hidden; line-height:1.25; }
+.cl   { width:160px; min-width:160px; }
+.csub { width:32px;  min-width:32px; }
+.ch-block { background:linear-gradient(180deg,#2c5f8a 0%,#3a7cbf 100%); font-weight:bold; font-size:11px; color:#fff; height:48px; writing-mode:vertical-lr; transform:rotate(180deg); padding:3px 0; border:1px solid #1e4a73; letter-spacing:0.5px; }
+.ch-sub { background:#daeef3; font-size:8px; color:#444; height:16px; padding:1px 0; border:1px solid #9fbfcc; font-weight:bold; }
+.ch-label-hd { background:linear-gradient(180deg,#2c5f8a 0%,#3a7cbf 100%); font-weight:bold; font-size:12px; color:#fff; text-align:center; vertical-align:middle; border:1px solid #1e4a73; letter-spacing:0.5px; }
+.rl { text-align:left; padding:3px 6px; font-size:10px; font-weight:bold; white-space:normal; word-break:break-word; vertical-align:middle; border:1px solid #aab !important; background:#f7f9fb; }
+.rl-group { text-align:center; font-size:9.5px; font-weight:bold; white-space:normal; word-break:break-word; vertical-align:middle; padding:4px 6px; line-height:1.4; border:1px solid #aab !important; background:#f0f4f8; }
+.emb  { background:#4472C4; color:#fff; }
+.etop { background:#70ad47; color:#fff; }
+.elvl { background:#92d050; color:#333; }
+.emp  { background:#f5f7fa; }
+.d { font-size:8px; padding:2px 3px; white-space:normal; word-break:break-all; line-height:1.35; font-weight:bold; }
+.legend { display:flex; align-items:center; flex-wrap:wrap; gap:12px; padding:7px 12px; border-top:2px solid #2c3e50; font-size:10px; background:#f8f9fa; }
+.lg-lbl { font-weight:bold; color:#2c3e50; }
 .lg-item { display:flex; align-items:center; gap:5px; font-weight:500; }
 .lg-sw { width:32px; height:14px; border:1px solid #666; border-radius:2px; display:inline-block; }
-
-@media print {
-  body { padding:0; background:#fff; }
-  .page { border:1px solid #333; box-shadow:none; }
-  #status-bar, #loading { display:none !important; }
-}
+@media print { body{padding:0;background:#fff;} .page{border:1px solid #333;box-shadow:none;} #status-bar,#loading{display:none!important;} }
 </style>
 </head>
 <body>
@@ -225,16 +84,16 @@ const ALL_COLOURS = [
 
 function parseCh(s) {
   if (!s) return null;
-  const c = String(s).replace(/\s+/g,'');
-  const m = c.match(/(\d+)\+(\d+)/);
-  if (m) return parseInt(m[1])*1000 + parseInt(m[2]);
+  const c=String(s).replace(/\s+/g,'');
+  const m=c.match(/(\d+)\+(\d+)/);
+  if (m) return parseInt(m[1])*1000+parseInt(m[2]);
   return null;
 }
 function extractRange(s) {
   if (!s) return null;
-  const m = s.match(/(\d[\d\s]*\+[\d\s]+?)\s+to\s+([\d\s]*\+[\d\s]+)/i);
+  const m=s.match(/(\d[\d\s]*\+[\d\s]+?)\s+to\s+([\d\s]*\+[\d\s]+)/i);
   if (!m) return null;
-  const f=parseCh(m[1]), t=parseCh(m[2]);
+  const f=parseCh(m[1]),t=parseCh(m[2]);
   return (f!==null&&t!==null)?{from:f,to:t}:null;
 }
 function fmtCh(m) {
@@ -247,61 +106,52 @@ function fmtDate(s) {
   if (!m) return s||'';
   return m[1].padStart(2,'0')+'.'+(mo[m[2]]||'??')+'.'+m[3].slice(2);
 }
-function colourClass(name) {
-  const n=(name||'').toLowerCase();
-  if (n.includes('embank top level')) return 'elvl';
-  if (n.includes('embank top'))       return 'etop';
-  return 'emb';
-}
 
-// Build a row of TOTAL cells given coloured ranges [{from,to,cls,content}]
-// Each range renders as one merged td spanning its sub-columns
+// Build row cells from an array of coloured blocks
+// ALWAYS renders the full chainage range as a coloured cell
+// regardless of whether RFI data exists
+// colRanges: [{from, to, cls, content}]
+// Empty blocks (no RFI) still render as coloured cell with no text
 function buildRowCells(colRanges, TOTAL, chartFrom, SUB) {
-  // Create a map: startCol -> {span, cls, content}
-  const blocks = [];
+  // Build block list sorted by start col
+  const blocks=[];
   for (const rng of colRanges) {
-    const f = Math.max(rng.from, chartFrom);
-    const t = Math.min(rng.to, chartFrom + TOTAL*SUB);
+    const f=Math.max(rng.from, chartFrom);
+    const t=Math.min(rng.to, chartFrom+TOTAL*SUB);
     if (f>=t) continue;
-    const s = Math.round((f-chartFrom)/SUB);
-    const e = Math.round((t-chartFrom)/SUB);
-    if (e>s) blocks.push({s, e, cls:rng.cls, content:rng.content||''});
+    const s=Math.round((f-chartFrom)/SUB);
+    const e=Math.round((t-chartFrom)/SUB);
+    if (e>s) blocks.push({s,e,cls:rng.cls,content:rng.content||''});
   }
-  // Sort by start col
   blocks.sort((a,b)=>a.s-b.s);
 
-  let html = '';
-  let col  = 0;
+  let html='', col=0;
   for (const blk of blocks) {
-    // Fill gap with empty cells
-    while (col < blk.s) { html+='<td class="emp"></td>'; col++; }
-    // Coloured merged cell
-    const span = blk.e - blk.s;
-    const sp   = span>1 ? ' colspan="'+span+'"' : '';
-    html += '<td class="'+blk.cls+' d"'+sp+'>'+blk.content+'</td>';
-    col = blk.e;
+    while (col<blk.s) { html+='<td class="emp"></td>'; col++; }
+    const span=blk.e-blk.s;
+    const sp=span>1?' colspan="'+span+'"':'';
+    // Always render the coloured block — content may be empty string
+    html+='<td class="'+blk.cls+' d"'+sp+'>'+blk.content+'</td>';
+    col=blk.e;
   }
-  // Fill remaining
-  while (col < TOTAL) { html+='<td class="emp"></td>'; col++; }
+  while (col<TOTAL) { html+='<td class="emp"></td>'; col++; }
   return html;
 }
 
 async function main() {
-  const statusEl  = document.getElementById('status-bar');
-  const loadingEl = document.getElementById('loading');
-  const tableEl   = document.getElementById('chart-table');
+  const statusEl =document.getElementById('status-bar');
+  const loadingEl=document.getElementById('loading');
+  const tableEl  =document.getElementById('chart-table');
 
   try {
-    statusEl.textContent = 'Fetching data...';
-    const [j1,j2,j3,j4] = await Promise.all(
+    statusEl.textContent='Fetching data...';
+    const [j1,j2,j3,j4]=await Promise.all(
       Object.values(URLS).map(u=>fetch(u).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}))
     );
-    statusEl.textContent = 'Building chart...';
+    statusEl.textContent='Building chart...';
 
     // ── JSON2: nomenclature ───────────────────────────────
-    const level1 = j2.filter(r=>r['Level']==='1'&&r['Is Active']==='true')
-                     .sort((a,b)=>parseInt(a['Order'])-parseInt(b['Order']));
-    const level2ByParent = {};
+    const level2ByParent={};
     for (const r of j2.filter(r=>r['Level']==='2'&&r['Is Active']==='true')) {
       const pid=r['Parent Level ID'];
       if (!level2ByParent[pid]) level2ByParent[pid]=[];
@@ -311,31 +161,30 @@ async function main() {
       level2ByParent[pid].sort((a,b)=>parseInt(a['Order'])-parseInt(b['Order']));
 
     // Chart extents from all Level-2 ranges
-    let chartFrom=Infinity, chartTo=-Infinity;
+    let chartFrom=Infinity,chartTo=-Infinity;
     for (const r of j2.filter(r=>r['Level']==='2')) {
       const rng=extractRange(r['Name']);
       if (rng){chartFrom=Math.min(chartFrom,rng.from);chartTo=Math.max(chartTo,rng.to);}
     }
     if (!isFinite(chartFrom)){chartFrom=64000;chartTo=65000;}
     const CHART_LEN=chartTo-chartFrom;
-    const BLOCK=100, SUB=10;
-    const NUM_BLOCKS=CHART_LEN/BLOCK, SUBS=BLOCK/SUB, TOTAL=NUM_BLOCKS*SUBS;
+    const BLOCK=100,SUB=10;
+    const NUM_BLOCKS=CHART_LEN/BLOCK,SUBS=BLOCK/SUB,TOTAL=NUM_BLOCKS*SUBS;
 
-    // Title + directions
     document.getElementById('title-bar').textContent=
       '{ LAYER CHART   Ch :-   '+fmtCh(chartFrom)+'   To   '+fmtCh(chartTo)+'   SIDE :-   RHS }';
-    document.getElementById('dir-left').textContent  = 'Meerut \u2192';
-    document.getElementById('dir-right').textContent = '\u2190 Prayagraj';
+    document.getElementById('dir-left').textContent ='Meerut \u2192';
+    document.getElementById('dir-right').textContent='\u2190 Prayagraj';
 
     // ── JSON4: RFI map ─────────────────────────────────────
-    const K_EQC   = 'Eqc '+ARR+' Eqc Name';
-    const K_STAGE = 'Eqc Stage '+ARR+' Name';
-    const rfiMap  = {};
+    const K_EQC  ='Eqc '+ARR+' Eqc Name';
+    const K_STAGE='Eqc Stage '+ARR+' Name';
+    const rfiMap={};
     for (const r of j4) {
-      const path    =r[K_EQC]  ||'';
-      const stgStr  =r[K_STAGE]||'';
-      const rfiNum  =String(r['Qc Option']||r['ID']);
-      const rfiDate =fmtDate(r['Created At']);
+      const path   =r[K_EQC]  ||'';
+      const stgStr =r[K_STAGE]||'';
+      const rfiNum =String(r['Qc Option']||r['ID']);
+      const rfiDate=fmtDate(r['Created At']);
       const lm=stgStr.match(/layer\s*(\d+)/i);
       if (!lm) continue;
       const layerNum=parseInt(lm[1]);
@@ -357,8 +206,8 @@ async function main() {
     for (const id in ckById)
       ckById[id].stages.sort((a,b)=>parseInt(a.match(/\d+/)?.[0]||0)-parseInt(b.match(/\d+/)?.[0]||0));
 
-    // Classify checklists
-    const embLevelCks=[], embTopCks=[], embLayerCks=[];
+    // Classify
+    const embLevelCks=[],embTopCks=[],embLayerCks=[];
     for (const ck of Object.values(ckById)) {
       const nl=ck.name.toLowerCase();
       if (nl.includes('embank top level'))  embLevelCks.push(ck);
@@ -381,15 +230,23 @@ async function main() {
     h2+='</tr>';
     document.getElementById('chart-head').innerHTML=h1+h2;
 
-    // ── Helper: render simple single-checklist rows ────────
-    function renderSimpleRows(cks, cls, nomRangesFn) {
+    // ── Nom ranges helper ──────────────────────────────────
+    function nomRangesFor(nameContains) {
+      const parent=j2.find(r=>r['Level']==='1'&&r['Name'].toLowerCase().includes(nameContains));
+      if (parent&&level2ByParent[parent['ID']])
+        return level2ByParent[parent['ID']].map(r=>extractRange(r['Name'])).filter(Boolean);
+      return [];
+    }
+
+    // ── Helper: render simple rows (embank top / level) ───
+    function renderSimpleRows(cks,cls,nomRanges) {
       let html='';
       for (const ck of cks) {
         usedClasses.add(cls);
-        const nomRanges=nomRangesFn(ck);
-        const stages=[...ck.stages]; // usually 1
+        const stages=[...ck.stages];
         for (let si=0;si<stages.length;si++) {
           const layerNum=parseInt(stages[si].match(/\d+/)?.[0]||1);
+          // Always render full nomRanges as coloured blocks
           const colRanges=nomRanges.map(nr=>{
             const key=nr.from+'_'+nr.to;
             const rfi=rfiMap[key]?.[layerNum];
@@ -403,89 +260,62 @@ async function main() {
       return html;
     }
 
-    // ── Embank Top Level nominclature ranges ───────────────
-    function nomRangesForCk(ck, targetNameContains) {
-      // Find the level-1 parent in JSON2 whose name matches
-      const parent=j2.find(r=>r['Level']==='1'&&r['Name'].toLowerCase().includes(targetNameContains));
-      if (parent && level2ByParent[parent['ID']])
-        return level2ByParent[parent['ID']].map(r=>extractRange(r['Name'])).filter(Boolean);
-      // Fallback: extract from checklist name
-      const rng=extractRange(ck.name);
-      return rng?[rng]:[];
-    }
-
     let body='';
 
     // 1. Embank Top Level
-    body+=renderSimpleRows(embLevelCks,'elvl',ck=>nomRangesForCk(ck,'embank top level'));
+    body+=renderSimpleRows(embLevelCks,'elvl',nomRangesFor('embank top level'));
 
     // 2. Embank Top
-    body+=renderSimpleRows(embTopCks,'etop',ck=>nomRangesForCk(ck,'embank top'));
+    body+=renderSimpleRows(embTopCks,'etop',nomRangesFor('embank top'));
 
     // 3. Embankment intermediate layers
-    // Key logic: each chainage group has its own number of layers.
-    // We need a global row grid where the BOTTOM row = Layer 1 for all groups,
-    // and each group only fills rows from the bottom up to its max layer count.
+    // ── TOP ALIGNMENT LOGIC ────────────────────────────────
+    // Global row grid has maxLayers rows.
+    // Row 0 (top) = each checklist's HIGHEST layer (its Layer N)
+    // Row 1       = each checklist's (N-1)th layer
+    // ...
+    // Row maxLayers-1 (bottom) = Layer 1 of the checklist with most layers
     //
-    // maxLayers = max stages across all embLayerCks
-    // Row 0 (top)    = highest layer (maxLayers)
-    // Row maxLayers-1 (bottom) = Layer 1
+    // For a checklist with ckLayers layers:
+    //   Row 0            → ck Layer ckLayers   (its top layer)
+    //   Row 1            → ck Layer ckLayers-1
+    //   ...
+    //   Row ckLayers-1   → ck Layer 1
+    //   Row ckLayers..maxLayers-1 → blank (this ck doesn't go this deep)
     //
-    // For a group with N stages:
-    //   it fills rows (maxLayers-N) .. (maxLayers-1) — i.e. bottom N rows
-    //   rows above are empty for that chainage group
+    // In other words: for global row R, this ck's layer = ckLayers - R
+    // If ckLayers - R < 1 → blank for this ck
 
-    if (embLayerCks.length > 0) {
+    if (embLayerCks.length>0) {
       usedClasses.add('emb');
-      const maxLayers = Math.max(...embLayerCks.map(ck=>ck.stages.length));
-      const totalEmbRows = maxLayers;
+      const maxLayers=Math.max(...embLayerCks.map(ck=>ck.stages.length));
 
-      // Build a 2D grid: grid[row][ckIndex] = {colRanges} or null
-      // row 0 = topmost displayed row (highest layer number)
-      // row maxLayers-1 = bottom row (Layer 1)
-      const grid = [];
-      for (let row=0; row<totalEmbRows; row++) {
-        // For this global row, which layer number does it correspond to?
-        // Global row 0 = layer maxLayers, global row maxLayers-1 = layer 1
-        const globalLayerNum = maxLayers - row; // e.g. row0=layer4, row1=layer3, etc.
-
-        const colRangesForRow = [];
+      for (let row=0;row<maxLayers;row++) {
+        // For each checklist, compute which layer this row corresponds to
+        const colRanges=[];
         for (const ck of embLayerCks) {
-          const ckRange = extractRange(ck.name);
+          const ckRange=extractRange(ck.name);
           if (!ckRange) continue;
-          const ckMaxLayer = ck.stages.length;
-          // This checklist starts from Layer 1 at the bottom.
-          // It has data for layers 1..ckMaxLayer.
-          // If globalLayerNum <= ckMaxLayer, this row has a cell for this ck.
-          if (globalLayerNum <= ckMaxLayer && globalLayerNum >= 1) {
-            const key=ckRange.from+'_'+ckRange.to;
-            const rfi=rfiMap[key]?.[globalLayerNum];
-            colRangesForRow.push({
-              from:ckRange.from, to:ckRange.to, cls:'emb',
-              content:rfi?rfi.rfiDate+'<br>/'+rfi.rfiNum:''
-            });
-          }
-          // else: this chainage group doesn't have this layer — gap (white)
-        }
-        grid.push(colRangesForRow);
-      }
+          const ckLayers=ck.stages.length;
+          // Top-alignment: row 0 = ck's highest layer
+          const layerNum=ckLayers-row; // e.g. ck has 4 layers: row0→4, row1→3, row2→2, row3→1
+          if (layerNum<1) continue;   // this ck doesn't have this many layers — blank
 
-      // Render grid rows
-      for (let row=0; row<totalEmbRows; row++) {
+          const key=ckRange.from+'_'+ckRange.to;
+          const rfi=rfiMap[key]?.[layerNum];
+          // Always push the coloured block even without RFI
+          colRanges.push({
+            from:ckRange.from, to:ckRange.to, cls:'emb',
+            content:rfi?rfi.rfiDate+'<br>/'+rfi.rfiNum:''
+          });
+        }
+
         let tr='<tr>';
         if (row===0) {
-          tr+='<td class="rl-group emb" rowspan="'+totalEmbRows+'">' +
+          tr+='<td class="rl-group emb" rowspan="'+maxLayers+'">' +
               'Intermediate layer of<br>Embankment<br>with OGL &amp; C&amp;G</td>';
         }
-
-        // Build cells for this row considering ALL columns
-        // For each chainage group (ck), we know its range → map to cols
-        // Gaps between groups and empty rows render as white
-        const colRanges=grid[row];
-
-        // Build full row using buildRowCells
-        tr+=buildRowCells(colRanges, TOTAL, chartFrom, SUB);
-        tr+='</tr>';
+        tr+=buildRowCells(colRanges,TOTAL,chartFrom,SUB)+'</tr>';
         body+=tr;
       }
     }
@@ -518,7 +348,7 @@ async function main() {
 }
 
 main();
-setInterval(main, 5*60*1000);
+setInterval(main,5*60*1000);
 </script>
 </body>
 </html>
