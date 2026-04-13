@@ -1,0 +1,21 @@
+{
+  "projects": [
+    {
+      "slug": "gr-infra-meerut-prayagraj-rhs-64-65",
+      "org": "GR INFRAPROJECTS LTD.",
+      "projectName": "Meerut - Prayagraj Expressway",
+      "side": "RHS",
+      "dirLeft": "Meerut",
+      "dirRight": "Prayagraj",
+      "chainageBlockSize": 100,
+      "subDivisionSize": 10,
+      "metabase": {
+        "j1": "37b102ad-812e-47a9-a2f1-f410812ab374",
+        "j2": "68bfaf48-07fd-4328-940b-5b0955280aa7",
+        "j3": "9778136e-b8a5-44d2-89d5-76ec624e77fd",
+        "j4": "bd4cc62a-db02-44c2-8fc4-b4ba6e797dc5"
+      },
+      "active": true
+    }
+  ]
+}

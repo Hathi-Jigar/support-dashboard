@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Layer Charts — digiQC</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root { --brand:#2c5f8a; --bg:#f0f2f5; --card:#fff; --border:#e0e0e0; --sub:#666; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color:#1a1a2e; }
+.header { background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%); color:#fff; padding:14px 24px; display:flex; align-items:center; gap:12px; }
+.logo { font-size:20px; font-weight:800; letter-spacing:-0.5px; }
+.header-sep { opacity:0.3; font-size:20px; }
+.header-title { font-size:15px; font-weight:500; opacity:0.85; }
+.container { max-width:1100px; margin:24px auto; padding:0 20px; }
+.org-section { margin-bottom:32px; }
+.org-name { font-size:14px; font-weight:700; color:var(--brand); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px; padding-bottom:6px; border-bottom:2px solid var(--brand); }
+.cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; }
+.card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:20px; transition:box-shadow 0.2s,transform 0.2s; display:flex; flex-direction:column; gap:10px; }
+.card:hover { box-shadow:0 4px 16px rgba(0,0,0,0.1); transform:translateY(-2px); }
+.card.inactive { opacity:0.5; pointer-events:none; }
+.card-title { font-size:15px; font-weight:700; color:#1a1a2e; }
+.card-meta { display:flex; flex-wrap:wrap; gap:8px; font-size:11px; }
+.badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:6px; font-size:11px; font-weight:600; }
+.badge-side { background:#E8F5E9; color:#2E7D32; }
+.badge-dir { background:#E3F2FD; color:#1565C0; }
+.badge-block { background:#FFF3E0; color:#E65100; }
+.card-link { display:inline-flex; align-items:center; gap:6px; margin-top:auto; padding:8px 16px; border-radius:6px; background:var(--brand); color:#fff; text-decoration:none; font-size:12px; font-weight:600; transition:background 0.2s; width:fit-content; }
+.card-link:hover { background:#1e4a73; }
+.card-link svg { width:14px; height:14px; fill:#fff; }
+.loading { text-align:center; padding:60px; color:var(--sub); font-size:14px; }
+.empty { text-align:center; padding:60px; color:var(--sub); }
+</style>
+</head>
+<body>
+<div class="header">
+  <span class="logo">digiQC</span>
+  <span class="header-sep">|</span>
+  <span class="header-title">Layer Charts</span>
+</div>
+<div class="container" id="container">
+  <div class="loading">Loading projects...</div>
+</div>
+<script>
+fetch('projects.json?t='+Date.now())
+  .then(r=>r.json())
+  .then(data=>{
+    const container=document.getElementById('container');
+    const projects=data.projects||[];
+    if(!projects.length){ container.innerHTML='<div class="empty">No projects configured.</div>'; return; }
+
+    // Group by org
+    const byOrg={};
+    for(const p of projects){
+      const org=p.org||'Other';
+      if(!byOrg[org])byOrg[org]=[];
+      byOrg[org].push(p);
+    }
+
+    let html='';
+    for(const org of Object.keys(byOrg).sort()){
+      html+='<div class="org-section">';
+      html+='<div class="org-name">'+org+'</div>';
+      html+='<div class="cards">';
+      for(const p of byOrg[org]){
+        const inactive=p.active===false?' inactive':'';
+        html+='<div class="card'+inactive+'">';
+        html+='<div class="card-title">'+p.projectName+'</div>';
+        html+='<div class="card-meta">';
+        html+='<span class="badge badge-side">'+p.side+'</span>';
+        html+='<span class="badge badge-dir">'+p.dirLeft+' &#8594; '+p.dirRight+'</span>';
+        html+='<span class="badge badge-block">Block: '+p.chainageBlockSize+'m / Sub: '+p.subDivisionSize+'m</span>';
+        html+='</div>';
+        if(p.active!==false){
+          html+='<a class="card-link" href="layer_chart.html?project='+encodeURIComponent(p.slug)+'">';
+          html+='<svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>';
+          html+='View Chart</a>';
+        }
+        html+='</div>';
+      }
+      html+='</div></div>';
+    }
+    container.innerHTML=html;
+  })
+  .catch(err=>{
+    document.getElementById('container').innerHTML='<div class="empty" style="color:#c00">Failed to load: '+err.message+'</div>';
+  });
+</script>
+</body>
+</html>

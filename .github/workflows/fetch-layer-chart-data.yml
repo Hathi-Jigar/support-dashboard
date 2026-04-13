@@ -2,8 +2,12 @@ name: Fetch Layer Chart Data
 
 on:
   schedule:
-    - cron: '*/5 * * * *'  # every 5 minutes
-  workflow_dispatch:        # allow manual trigger (Fetch Now button + GitHub UI)
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: fetch-layer-chart
+  cancel-in-progress: true
 
 jobs:
   fetch:
@@ -15,13 +19,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Fetch Metabase JSON files
+      - name: Fetch all project data
         run: |
-          mkdir -p data
-          curl -sL "https://metabase-v2.digiqc.com/api/public/card/37b102ad-812e-47a9-a2f1-f410812ab374/query/json" -o data/j1.json
-          curl -sL "https://metabase-v2.digiqc.com/api/public/card/68bfaf48-07fd-4328-940b-5b0955280aa7/query/json" -o data/j2.json
-          curl -sL "https://metabase-v2.digiqc.com/api/public/card/9778136e-b8a5-44d2-89d5-76ec624e77fd/query/json" -o data/j3.json
-          curl -sL "https://metabase-v2.digiqc.com/api/public/card/bd4cc62a-db02-44c2-8fc4-b4ba6e797dc5/query/json" -o data/j4.json
+          METABASE_BASE="https://metabase-v2.digiqc.com/api/public/card"
+
+          for row in $(jq -c '.projects[] | select(.active == true)' projects.json); do
+            SLUG=$(echo "$row" | jq -r '.slug')
+            J1=$(echo "$row" | jq -r '.metabase.j1')
+            J2=$(echo "$row" | jq -r '.metabase.j2')
+            J3=$(echo "$row" | jq -r '.metabase.j3')
+            J4=$(echo "$row" | jq -r '.metabase.j4')
+
+            echo "Fetching data for project: $SLUG"
+            mkdir -p "data/$SLUG"
+
+            curl -sL "$METABASE_BASE/$J1/query/json" -o "data/$SLUG/j1.json"
+            curl -sL "$METABASE_BASE/$J2/query/json" -o "data/$SLUG/j2.json"
+            curl -sL "$METABASE_BASE/$J3/query/json" -o "data/$SLUG/j3.json"
+            curl -sL "$METABASE_BASE/$J4/query/json" -o "data/$SLUG/j4.json"
+          done
 
       - name: Commit and push if data changed
         run: |
