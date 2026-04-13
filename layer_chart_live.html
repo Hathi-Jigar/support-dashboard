@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Layer Chart</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:Arial,sans-serif; background:#e8e8e8; padding:10px; font-size:10px; }
+.page { background:#fff; margin:0 auto; border:2px solid #333; width:max-content; min-width:100%; }
+#status-bar { text-align:right; font-size:9px; color:#888; font-style:italic; padding:2px 8px; border-bottom:1px solid #ddd; background:#fafafa; min-height:18px; }
+#status-bar.err { color:#c00; font-weight:bold; font-style:normal; }
+#loading { padding:40px; text-align:center; font-size:13px; color:#555; }
+.title-bar { text-align:center; font-size:13px; font-weight:bold; padding:5px 8px; border-bottom:2px solid #333; letter-spacing:0.3px; }
+.dir-bar { display:grid; grid-template-columns:100px 1fr 100px; border-bottom:1px solid #333; font-size:10px; }
+.dir-bar > div { padding:2px 6px; }
+.dir-l { border-right:1px solid #333; }
+.dir-m { text-align:center; font-weight:bold; font-size:11px; font-style:italic; letter-spacing:2px; }
+.dir-r { border-left:1px solid #333; text-align:right; }
+.chart-scroll { overflow-x:auto; }
+table { border-collapse:collapse; table-layout:fixed; }
+table td, table th { border:1px solid #999; text-align:center; vertical-align:middle; padding:0; overflow:hidden; line-height:1.15; }
+.cl { width:140px; min-width:140px; }
+.csub { width:22px; min-width:22px; }
+.ch-block { background:#BDD7EE; font-weight:bold; font-size:10px; height:40px; writing-mode:vertical-lr; transform:rotate(180deg); padding:2px 0; border:1px solid #555; }
+.ch-sub { background:#DAEEF3; font-size:7.5px; color:#333; height:14px; padding:1px 0; border:1px solid #aaa; }
+.ch-label-hd { background:#BDD7EE; font-weight:bold; font-size:10px; text-align:center; vertical-align:middle; border:1px solid #555; }
+.rl { text-align:left; padding:2px 4px; font-size:9px; white-space:normal; word-break:break-word; vertical-align:middle; border:1px solid #999; }
+.rl-group { text-align:center; font-size:8.5px; white-space:normal; word-break:break-word; vertical-align:middle; padding:3px; line-height:1.3; border:1px solid #999; }
+.emb  { background:#4472C4; color:#fff; }
+.etop { background:#92D050; }
+.elvl { background:#92D050; }
+.emp  { background:#fff; }
+.d { font-size:7.5px; padding:1px 2px; white-space:normal; word-break:break-all; line-height:1.3; }
+.svup-v { background:#C0C0C0; writing-mode:vertical-rl; transform:rotate(180deg); font-size:8px; font-weight:bold; text-align:center; vertical-align:middle; padding:3px 1px; border:1px solid #999; }
+.legend { display:flex; align-items:center; flex-wrap:wrap; gap:8px; padding:5px 8px; border-top:2px solid #333; border-bottom:1px solid #999; font-size:9.5px; background:#fff; }
+.lg-lbl { font-weight:bold; }
+.lg-item { display:flex; align-items:center; gap:3px; }
+.lg-sw { width:26px; height:13px; border:1px solid #666; display:inline-block; }
+.footer { display:grid; grid-template-columns:1fr 1fr 1fr; border-top:1px solid #999; font-size:9.5px; font-weight:bold; text-align:center; }
+.footer div { padding:4px; border-right:1px solid #999; }
+.footer div:last-child { border-right:none; }
+@media print { body{padding:0;background:#fff;} .page{border:1px solid #333;} #status-bar,#loading{display:none!important;} }
+</style>
+</head>
+<body>
+<div class="page">
+  <div id="status-bar">Initialising…</div>
+  <div class="title-bar" id="title-bar">Loading…</div>
+  <div class="dir-bar">
+    <div class="dir-l" id="dir-left"></div>
+    <div class="dir-m">← &nbsp;&nbsp; MAIN CARRIAGE WAY &nbsp;&nbsp; →</div>
+    <div class="dir-r" id="dir-right"></div>
+  </div>
+  <div class="chart-scroll">
+    <div id="loading">⏳ &nbsp; Loading layer chart data…</div>
+    <table id="chart-table" style="display:none;">
+      <colgroup id="colgroup"><col class="cl"></colgroup>
+      <thead id="chart-head"></thead>
+      <tbody id="chart-body"></tbody>
+    </table>
+  </div>
+  <div class="legend">
+    <span class="lg-lbl">Colour Code →</span>
+    <span class="lg-item"><span class="lg-sw" style="background:#E8E8E8;"></span> C&amp;G &amp; OGL</span>
+    <span class="lg-item"><span class="lg-sw" style="background:#C0C0C0;"></span> Excavation</span>
+    <span class="lg-item"><span class="lg-sw" style="background:#4472C4;"></span> EMB Layer</span>
+    <span class="lg-item"><span class="lg-sw" style="background:#92D050;"></span> EMB Top</span>
+    <span class="lg-item"><span class="lg-sw" style="background:#00B050;"></span> SG Layer</span>
+    <span class="lg-item"><span class="lg-sw" style="background:#FFFF00;border-color:#aaa;"></span> GSB</span>
+    <span class="lg-item"><span class="lg-sw" style="background:#FF6600;"></span> WMM</span>
+    <span class="lg-item"><span class="lg-sw" style="background:#00B0F0;"></span> DBM</span>
+    <span class="lg-item"><span class="lg-sw" style="background:#FF99CC;"></span> BC</span>
+  </div>
+  <div class="footer">
+    <div>For Contractor</div>
+    <div>For Concessionaire</div>
+    <div>For Client / Consultant</div>
+  </div>
+</div>
+<script>
+// Data files served from same GitHub Pages domain — no CORS issue
+const BASE = window.location.href.replace(/\/[^\/]*$/, '');
+const URLS = {
+  j1: BASE + '/data/j1.json',
+  j2: BASE + '/data/j2.json',
+  j3: BASE + '/data/j3.json',
+  j4: BASE + '/data/j4.json',
+};
+
+function parseCh(s) {
+  if (!s) return null;
+  const c = String(s).replace(/\s+/g,'');
+  const m = c.match(/(\d+)\+([\d]+)/);
+  if (m) return parseInt(m[1])*1000+parseInt(m[2]);
+  return null;
+}
+function extractRange(s) {
+  if (!s) return null;
+  const m = s.match(/(\d[\d\s]*\+[\d\s]+?)\s+to\s+([\d\s]*\+[\d\s]+)/i);
+  if (!m) return null;
+  const f=parseCh(m[1]), t=parseCh(m[2]);
+  return (f!==null&&t!==null)?{from:f,to:t}:null;
+}
+function fmtCh(m) {
+  return String(Math.floor(m/1000)).padStart(3,'0')+'+'+String(m%1000).padStart(3,'0');
+}
+function fmtDate(s) {
+  const mo={Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
+  const m=s&&s.match(/(\d+)\s+([A-Za-z]+)[^,]*,\s*(\d{4})/);
+  if (!m) return s||'';
+  return m[1].padStart(2,'0')+'.'+( mo[m[2]]||'??')+'.'+m[3].slice(2);
+}
+function colourClass(name) {
+  const n=(name||'').toLowerCase();
+  if (n.includes('embank top level')) return 'elvl';
+  if (n.includes('embank top'))       return 'etop';
+  return 'emb';
+}
+function place(cells,startCol,span,content,cls) {
+  if (startCol<0||startCol>=cells.length) return;
+  const sp=Math.min(span,cells.length-startCol);
+  cells[startCol]={content,cls,span:sp};
+  for (let i=1;i<sp;i++) cells[startCol+i]={skip:true};
+}
+function renderCells(cells,defaultCls) {
+  let h='';
+  for (let i=0;i<cells.length;i++) {
+    const c=cells[i];
+    if (!c)     { h+=`<td class="${defaultCls} emp"></td>`; continue; }
+    if (c.skip) { continue; }
+    const sp=c.span>1?` colspan="${c.span}"`:\';
+    h+=`<td class="${c.cls||defaultCls} d"${sp}>${c.content||''}</td>`;
+  }
+  return h;
+}
+
+async function main() {
+  const statusEl=document.getElementById('status-bar');
+  const loadingEl=document.getElementById('loading');
+  const tableEl=document.getElementById('chart-table');
+  try {
+    statusEl.textContent='Fetching data…';
+    const [j1,j2,j3,j4]=await Promise.all(
+      Object.values(URLS).map(u=>fetch(u).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status+' '+u);return r.json();}))
+    );
+    statusEl.textContent='Building chart…';
+
+    // JSON2: nomenclature tree
+    const level1=j2.filter(r=>r['Level']==='1'&&r['Is Active']==='true')
+      .sort((a,b)=>parseInt(a['Order'])-parseInt(b['Order']));
+    const level2ByParent={};
+    for (const r of j2.filter(r=>r['Level']==='2'&&r['Is Active']==='true')) {
+      const pid=r['Parent Level ID'];
+      if (!level2ByParent[pid]) level2ByParent[pid]=[];
+      level2ByParent[pid].push(r);
+    }
+    for (const pid in level2ByParent)
+      level2ByParent[pid].sort((a,b)=>parseInt(a['Order'])-parseInt(b['Order']));
+
+    // Chart extents from all Level-2 ranges
+    let chartFrom=Infinity,chartTo=-Infinity;
+    for (const r of j2.filter(r=>r['Level']==='2')) {
+      const rng=extractRange(r['Name']);
+      if (rng){chartFrom=Math.min(chartFrom,rng.from);chartTo=Math.max(chartTo,rng.to);}
+    }
+    if (!isFinite(chartFrom)){chartFrom=64000;chartTo=65000;}
+    const CHART_LEN=chartTo-chartFrom;
+    const BLOCK=100, SUB=10;
+    const NUM_BLOCKS=CHART_LEN/BLOCK, SUBS=BLOCK/SUB, TOTAL=NUM_BLOCKS*SUBS;
+
+    function rangeToSpan(from,to) {
+      const f=Math.max(from,chartFrom),t=Math.min(to,chartTo);
+      if (f>=t) return null;
+      const s=Math.round((f-chartFrom)/SUB),e=Math.round((t-chartFrom)/SUB);
+      return e>s?{startCol:s,span:e-s}:null;
+    }
+
+    // Title
+    document.getElementById('title-bar').textContent=
+      `{ LAYER CHART   Ch :-   ${fmtCh(chartFrom)}   To   ${fmtCh(chartTo)}   SIDE :-   RHS }`;
+    document.getElementById('dir-left').textContent='Meerut →';
+    document.getElementById('dir-right').textContent='← Prayagraj';
+
+    // JSON3: eqcId -> range
+    const eqcRangeMap={};
+    for (const r of j3) if (String(r['Level'])==='2') {
+      const rng=extractRange(r['Level Name']);
+      if (rng) eqcRangeMap[String(r['Eqc ID'])]=rng;
+    }
+
+    // JSON4: rfiMap[from_to][layerNum]
+    const rfiMap={};
+    for (const r of j4) {
+      const path=r['Eqc → Eqc Name']||'';
+      const stageStr=r['Eqc Stage → Name']||'';
+      const rfiNum=String(r['Qc Option']||r['ID']);
+      const rfiDate=fmtDate(r['Created At']);
+      const lm=stageStr.match(/layer\s*(\d+)/i);
+      if (!lm) continue;
+      const layerNum=parseInt(lm[1]);
+      const rng=extractRange(path);
+      if (!rng) continue;
+      const key=`${rng.from}_${rng.to}`;
+      if (!rfiMap[key]) rfiMap[key]={};
+      rfiMap[key][layerNum]={rfiDate,rfiNum};
+    }
+
+    // JSON1: checklists
+    const ckById={};
+    for (const r of j1) {
+      const id=String(r['ID']),nm=r['Name'],stg=r['Project Eqc Type Stage → Name'];
+      if (!ckById[id]) ckById[id]={name:nm,stages:[]};
+      if (stg&&!ckById[id].stages.includes(stg)) ckById[id].stages.push(stg);
+    }
+    for (const id in ckById)
+      ckById[id].stages.sort((a,b)=>parseInt(a.match(/\d+/)?.[0]||0)-parseInt(b.match(/\d+/)?.[0]||0));
+
+    // Build colgroup + headers
+    const cg=document.getElementById('colgroup');
+    for (let i=0;i<TOTAL;i++){const c=document.createElement('col');c.className='csub';cg.appendChild(c);}
+    let h1=`<tr><th class="ch-label-hd" rowspan="2">CHAINAGE</th>`;
+    for (let b=1;b<=NUM_BLOCKS;b++)
+      h1+=`<th class="ch-block" colspan="${SUBS}">${((chartFrom+b*BLOCK)/1000).toFixed(3)}</th>`;
+    h1+='</tr>';
+    let h2='<tr>';
+    for (let b=0;b<NUM_BLOCKS;b++) for (let s=1;s<=SUBS;s++) h2+=`<td class="ch-sub">${s*SUB}</td>`;
+    h2+='</tr>';
+    document.getElementById('chart-head').innerHTML=h1+h2;
+
+    // Build body
+    let body='';
+    for (const wt of level1) {
+      const wtId=wt['ID'],wtName=wt['Name'],cls=colourClass(wtName);
+      const chainageNodes=level2ByParent[wtId]||[];
+      const matched=Object.values(ckById).filter(ck=>{
+        const cl=ck.name.toLowerCase(),wl=wtName.toLowerCase();
+        return cl.includes(wl)||wl.includes(cl.split('(')[0].trim());
+      }).sort((a,b)=>(extractRange(a.name)?.from||0)-(extractRange(b.name)?.from||0));
+
+      if (matched.length===0) {
+        const cells=new Array(TOTAL).fill(null);
+        for (const cn of chainageNodes){const rng=extractRange(cn['Name']);if(rng){const sp=rangeToSpan(rng.from,rng.to);if(sp)place(cells,sp.startCol,sp.span,'',cls);}}
+        body+=`<tr><td class="rl ${cls}">${wtName}</td>${renderCells(cells,cls)}</tr>`;
+        continue;
+      }
+
+      const totalRows=matched.reduce((s,ck)=>s+ck.stages.length,0);
+      let firstRow=true;
+      for (const ck of matched) {
+        const ckRange=extractRange(ck.name);
+        for (let si=0;si<ck.stages.length;si++) {
+          const stageName=ck.stages[si];
+          const layerNum=parseInt(stageName.match(/\d+/)?.[0]||1);
+          const cells=new Array(TOTAL).fill(null);
+          const ranges=ckRange?[ckRange]:chainageNodes.map(cn=>extractRange(cn['Name'])).filter(Boolean);
+          for (const rng of ranges) {
+            const sp=rangeToSpan(rng.from,rng.to);
+            if (!sp) continue;
+            const key=`${rng.from}_${rng.to}`;
+            const rfi=rfiMap[key]?.[layerNum];
+            place(cells,sp.startCol,sp.span,rfi?`${rfi.rfiDate}<br>/${rfi.rfiNum}`:'',cls);
+          }
+          let row='<tr>';
+          if (firstRow) row+=`<td class="rl-group ${cls}" rowspan="${totalRows}">${wtName}</td>`;
+          row+=renderCells(cells,cls)+'</tr>';
+          body+=row;
+          firstRow=false;
+        }
+      }
+    }
+
+    document.getElementById('chart-body').innerHTML=body;
+    loadingEl.style.display='none';
+    tableEl.style.display='';
+    statusEl.className='';
+    statusEl.textContent=`Live data — Last refreshed: ${new Date().toLocaleTimeString('en-IN')}`;
+  } catch(err) {
+    console.error(err);
+    loadingEl.innerHTML=`<span style="color:#c00;font-size:11px">⚠ Failed to load: ${err.message}</span>`;
+    statusEl.className='err';
+    statusEl.textContent='Data unavailable';
+  }
+}
+main();
+setInterval(main, 5*60*1000);
+</script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+name: Fetch Layer Chart Data
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'   # every 5 minutes
+  workflow_dispatch:         # allow manual trigger
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch Metabase JSON files
+        run: |
+          mkdir -p data
+          curl -sL "https://metabase-v2.digiqc.com/api/public/card/37b102ad-812e-47a9-a2f1-f410812ab374/query/json" -o data/j1.json
+          curl -sL "https://metabase-v2.digiqc.com/api/public/card/68bfaf48-07fd-4328-940b-5b0955280aa7/query/json" -o data/j2.json
+          curl -sL "https://metabase-v2.digiqc.com/api/public/card/9778136e-b8a5-44d2-89d5-76ec624e77fd/query/json" -o data/j3.json
+          curl -sL "https://metabase-v2.digiqc.com/api/public/card/bd4cc62a-db02-44c2-8fc4-b4ba6e797dc5/query/json" -o data/j4.json
+
+      - name: Commit and push if data changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git diff --cached --quiet || git commit -m "chore: refresh layer chart data [skip ci]"
+          git push
