@@ -17,8 +17,6 @@ body { font-family:Arial,sans-serif; background:#d0d4d8; padding:16px; font-size
 .top-btn svg { width:13px; height:13px; fill:#fff; flex-shrink:0; }
 .top-btn.green { background:#1e6e42; }
 .top-btn.green:hover { background:#155234; }
-.top-btn.blue  { background:#2c5f8a; }
-.top-btn.blue:hover  { background:#1e4a73; }
 #loading { padding:60px; text-align:center; font-size:14px; color:#666; }
 .title-bar { text-align:center; font-size:14px; font-weight:bold; padding:7px 12px; border-bottom:2px solid #2c3e50; letter-spacing:0.5px; background:#fff; }
 .dir-bar { display:grid; grid-template-columns:160px 1fr 160px; border-bottom:2px solid #2c3e50; font-size:10px; background:#f0f4f8; }
@@ -34,17 +32,9 @@ table td, table th { border:1px solid #b0b8c1; text-align:center; vertical-align
 .ch-block { background:linear-gradient(180deg,#2c5f8a 0%,#3a7cbf 100%); font-weight:bold; font-size:11px; color:#fff; height:48px; writing-mode:vertical-lr; transform:rotate(180deg); padding:3px 0; border:1px solid #1e4a73; letter-spacing:0.5px; }
 .ch-sub { background:#daeef3; font-size:8px; color:#444; height:16px; padding:1px 0; border:1px solid #9fbfcc; font-weight:bold; }
 .ch-label-hd { background:linear-gradient(180deg,#2c5f8a 0%,#3a7cbf 100%); font-weight:bold; font-size:12px; color:#fff; text-align:center; vertical-align:middle; border:1px solid #1e4a73; letter-spacing:0.5px; }
-.rl { text-align:left; padding:5px 8px; font-size:10px; font-weight:bold; white-space:normal; word-break:break-word; vertical-align:middle; border:1px solid #aab !important; background:#f7f9fb; line-height:1.4; }
-.rl-group { text-align:left; padding:5px 8px; font-size:9.5px; font-weight:bold; white-space:normal; word-break:break-word; vertical-align:middle; line-height:1.4; border:1px solid #aab !important; background:#f0f4f8; }
-.emb  { background:#4472C4; color:#fff; }
-.etop { background:#70ad47; color:#fff; }
-.elvl { background:#92d050; color:#333; }
-.sg   { background:#00B050; color:#fff; }
-.gsb  { background:#FFFF00; color:#333; }
-.wmm  { background:#FF6600; color:#fff; }
-.dbm  { background:#00B0F0; color:#fff; }
-.bc   { background:#FF99CC; color:#333; }
-.emp  { background:#f5f7fa; }
+.rl { text-align:left; padding:5px 8px; font-size:10px; font-weight:bold; white-space:normal; word-break:break-word; vertical-align:middle; border:1px solid #aab !important; line-height:1.4; }
+.rl-group { text-align:left; padding:5px 8px; font-size:9.5px; font-weight:bold; white-space:normal; word-break:break-word; vertical-align:middle; line-height:1.4; border:1px solid #aab !important; }
+.emp { background:#f5f7fa; }
 .d { font-size:8px; padding:3px 2px; white-space:normal; word-break:break-word; line-height:1.4; font-weight:bold; height:28px; vertical-align:middle; }
 .legend { display:flex; align-items:center; flex-wrap:wrap; gap:12px; padding:7px 12px; border-top:2px solid #2c3e50; font-size:10px; background:#f8f9fa; }
 .lg-lbl { font-weight:bold; color:#2c3e50; }
@@ -84,35 +74,51 @@ table td, table th { border:1px solid #b0b8c1; text-align:center; vertical-align
 </div>
 
 <script>
-const REPO_BASE   = 'https://hathi-jigar.github.io/support-dashboard';
-const URLS        = { j1:REPO_BASE+'/data/j1.json', j2:REPO_BASE+'/data/j2.json', j3:REPO_BASE+'/data/j3.json', j4:REPO_BASE+'/data/j4.json' };
-const ARR         = '\u2192';
+const REPO_BASE = 'https://hathi-jigar.github.io/support-dashboard';
+const URLS = { j1:REPO_BASE+'/data/j1.json', j2:REPO_BASE+'/data/j2.json', j3:REPO_BASE+'/data/j3.json', j4:REPO_BASE+'/data/j4.json' };
+const ARR = '\u2192';
+const EMP = { bg:'#f5f7fa', fg:'#333333', fill:'F5F7FA' };
 
-const CLS_FILL    = { emb:'FF4472C4', etop:'FF70AD47', elvl:'FF92D050', sg:'FF00B050', gsb:'FFFFFF00', wmm:'FFFF6600', dbm:'FF00B0F0', bc:'FFFF99CC', emp:'FFF5F7FA' };
-
-// Style config — maps j2 Level 1 name patterns to CSS class, legend label, hex, and rendering mode.
-// "grouped:true" means multiple j1 checkpoints with chainage in their names (embankment layers).
-// Checked in order — first match wins.
-const TYPE_STYLES = [
-  { pattern:/embankment|og.*cg/i,  cls:'emb',  label:'EMB Layer',     hex:'#4472C4', grouped:true },
-  { pattern:/top\s*level/i,        cls:'elvl', label:'EMB Top Level', hex:'#92d050' },
-  { pattern:/top$/i,               cls:'etop', label:'EMB Top',       hex:'#70ad47' },
-  { pattern:/^sg/i,                cls:'sg',   label:'SG Layer',      hex:'#00B050' },
-  { pattern:/gsb|ctsb/i,           cls:'gsb',  label:'GSB',           hex:'#FFFF00', border:'#aaa' },
-  { pattern:/wmm/i,                cls:'wmm',  label:'WMM',           hex:'#FF6600' },
-  { pattern:/dbm/i,                cls:'dbm',  label:'DBM',           hex:'#00B0F0' },
-  { pattern:/^bc/i,                cls:'bc',   label:'BC',            hex:'#FF99CC' },
+// ── Per-Level-1 color palette ──────────────────────────────
+// Each checklist type gets its own unique color.
+// Known types get traditional construction chart colours; unknown get auto-assigned.
+const COLOR_MAP = [
+  { p:/embankment|og.*cg/i,   bg:'#4472C4', fg:'#FFFFFF', fill:'4472C4', grouped:true },
+  { p:/sg.*top.*level/i,      bg:'#90EE90', fg:'#333333', fill:'90EE90' },
+  { p:/sg.*top$/i,            bg:'#228B22', fg:'#FFFFFF', fill:'228B22' },
+  { p:/sg.*2/i,               bg:'#2E8B57', fg:'#FFFFFF', fill:'2E8B57' },
+  { p:/sg.*1/i,               bg:'#00B050', fg:'#FFFFFF', fill:'00B050' },
+  { p:/^sg/i,                 bg:'#3CB371', fg:'#FFFFFF', fill:'3CB371' },
+  { p:/top\s*level/i,         bg:'#92D050', fg:'#333333', fill:'92D050' },
+  { p:/top$/i,                bg:'#70AD47', fg:'#FFFFFF', fill:'70AD47' },
+  { p:/gsb|ctsb/i,            bg:'#FFFF00', fg:'#333333', fill:'FFFF00' },
+  { p:/wmm/i,                 bg:'#FF6600', fg:'#FFFFFF', fill:'FF6600' },
+  { p:/dbm/i,                 bg:'#00B0F0', fg:'#FFFFFF', fill:'00B0F0' },
+  { p:/^bc/i,                 bg:'#FF99CC', fg:'#333333', fill:'FF99CC' },
 ];
-function getTypeStyle(name){ for(const s of TYPE_STYLES) if(s.pattern.test(name)) return s; return { cls:'emp', label:name, hex:'#ccc' }; }
-
-let excelData=[], excelTitle='', excelChFrom=0, excelChTo=0, excelTOTAL=0, excelSUB=10;
-
-function parseCh(s) {
-  if(!s)return null;
-  const c=String(s).replace(/\s+/g,''), m=c.match(/^(\d+)\+(\d+)$/);
-  return m ? parseInt(m[1])*1000+parseInt(m[2]) : null;
+const EXTRA_COLORS = [
+  { bg:'#8B4513', fg:'#FFFFFF', fill:'8B4513' },
+  { bg:'#9370DB', fg:'#FFFFFF', fill:'9370DB' },
+  { bg:'#20B2AA', fg:'#FFFFFF', fill:'20B2AA' },
+  { bg:'#DC143C', fg:'#FFFFFF', fill:'DC143C' },
+  { bg:'#FF8C00', fg:'#FFFFFF', fill:'FF8C00' },
+];
+let extraIdx=0;
+function getColor(name){
+  for(const c of COLOR_MAP) if(c.p.test(name)) return { bg:c.bg, fg:c.fg, fill:c.fill, grouped:!!c.grouped };
+  const c=EXTRA_COLORS[extraIdx%EXTRA_COLORS.length]; extraIdx++;
+  return { bg:c.bg, fg:c.fg, fill:c.fill, grouped:false };
 }
-function extractRange(s) {
+function hex6(h){ const x=h.replace('#',''); return x.length===3?x[0]+x[0]+x[1]+x[1]+x[2]+x[2]:x; }
+
+let excelData=[], excelMerges=[], excelTitle='', excelChFrom=0, excelChTo=0, excelTOTAL=0, excelSUB=10;
+
+function parseCh(s){
+  if(!s)return null;
+  const c=String(s).replace(/\s+/g,''),m=c.match(/^(\d+)\+(\d+)$/);
+  return m?parseInt(m[1])*1000+parseInt(m[2]):null;
+}
+function extractRange(s){
   if(!s)return null;
   const m=s.match(/(\d[\d\s]*\+\s*[\d]+)\s+to\s+(\d[\d\s]*\+\s*[\d]+)/i);
   if(!m)return null;
@@ -120,45 +126,48 @@ function extractRange(s) {
   return(f!==null&&t!==null)?{from:f,to:t}:null;
 }
 function fmtCh(m){ return String(Math.floor(m/1000)).padStart(3,'0')+'+'+String(m%1000).padStart(3,'0'); }
-function fmtDate(s) {
+function fmtDate(s){
   if(!s)return'';
   const mo={Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
   const m=s.match(/(\d{1,2})\s+([A-Za-z]{3})[,\s]+(2\d{3})/);
-  return m ? m[1].padStart(2,'0')+'-'+(mo[m[2]]||'??')+'-'+m[3].slice(2) : s;
+  return m?m[1].padStart(2,'0')+'-'+(mo[m[2]]||'??')+'-'+m[3].slice(2):s;
 }
-function cellLabel(rfi){ return rfi ? rfi.rfiDate+' / '+rfi.rfiNum : ''; }
+function cellLabel(rfi){ return rfi?rfi.rfiDate+' / '+rfi.rfiNum:''; }
 
-function buildRowCells(colRanges,TOTAL,chartFrom,SUB) {
+// ── Build HTML cells with inline colors ──────────────────────
+function buildRowCells(colRanges,TOTAL,chartFrom,SUB){
   const blocks=[];
   for(const rng of colRanges){
     const f=Math.max(rng.from,chartFrom),t=Math.min(rng.to,chartFrom+TOTAL*SUB);
     if(f>=t)continue;
     const s=Math.round((f-chartFrom)/SUB),e=Math.round((t-chartFrom)/SUB);
-    if(e>s)blocks.push({s,e,cls:rng.cls,content:rng.content||''});
+    if(e>s)blocks.push({s,e,bg:rng.bg,fg:rng.fg,content:rng.content||''});
   }
   blocks.sort((a,b)=>a.s-b.s);
   let html='',col=0;
   for(const blk of blocks){
     while(col<blk.s){html+='<td class="emp d"></td>';col++;}
     const span=blk.e-blk.s,sp=span>1?' colspan="'+span+'"':'';
-    html+='<td class="'+blk.cls+' d"'+sp+'>'+blk.content+'</td>';
+    html+='<td class="d" style="background:'+blk.bg+';color:'+blk.fg+'"'+sp+'>'+blk.content+'</td>';
     col=blk.e;
   }
   while(col<TOTAL){html+='<td class="emp d"></td>';col++;}
   return html;
 }
+
+// ── Build cell array for Excel with color info ───────────────
 function buildCellArray(colRanges,TOTAL,chartFrom,SUB){
-  const arr=Array(TOTAL).fill(null).map(()=>({content:'',cls:'emp'}));
+  const arr=Array(TOTAL).fill(null).map(()=>({content:'',fill:EMP.fill,fg:EMP.fg}));
   for(const rng of colRanges){
     const f=Math.max(rng.from,chartFrom),t=Math.min(rng.to,chartFrom+TOTAL*SUB);
     if(f>=t)continue;
     const s=Math.round((f-chartFrom)/SUB),e=Math.round((t-chartFrom)/SUB);
-    for(let i=s;i<e&&i<TOTAL;i++)arr[i]={content:rng.content||'',cls:rng.cls};
+    for(let i=s;i<e&&i<TOTAL;i++)arr[i]={content:rng.content||'',fill:rng.fill,fg:rng.fg};
   }
   return arr;
 }
 
-// ── EXCEL EXPORT ─────────────────────────────────────────
+// ── EXCEL EXPORT ─────────────────────────────────────────────
 function exportExcel(){
   if(!excelData.length)return;
   const wb=XLSX.utils.book_new(),wsData=[];
@@ -173,28 +182,41 @@ function exportExcel(){
   const ws=XLSX.utils.aoa_to_sheet(wsData);
   ws['!cols']=[{wch:28}];for(let i=0;i<excelTOTAL;i++)ws['!cols'].push({wch:10});
   const totalCols=excelTOTAL+1;
-  ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:totalCols-1}}];
-  let mc=1;for(let b=0;b<excelTOTAL/SUBS;b++){ws['!merges'].push({s:{r:2,c:mc},e:{r:2,c:mc+SUBS-1}});mc+=SUBS;}
+
+  // Merges: title row + chainage block headers + grouped row labels
+  const merges=[{s:{r:0,c:0},e:{r:0,c:totalCols-1}}];
+  let mc=1;for(let b=0;b<excelTOTAL/SUBS;b++){merges.push({s:{r:2,c:mc},e:{r:2,c:mc+SUBS-1}});mc+=SUBS;}
+  for(const m of excelMerges) merges.push(m);
+  ws['!merges']=merges;
+
   const B={top:{style:'thin'},bottom:{style:'thin'},left:{style:'thin'},right:{style:'thin'}};
   function addr(r,c){return XLSX.utils.encode_cell({r,c});}
+
+  // Title row
   if(ws[addr(0,0)])ws[addr(0,0)].s={fill:{patternType:'solid',fgColor:{rgb:'1E2D3D'}},font:{bold:true,color:{rgb:'FFFFFF'},sz:13},alignment:{horizontal:'center'},border:B};
-  for(let c=0;c<totalCols;c++){const cell=ws[addr(2,c)];if(cell)cell.s={fill:{patternType:'solid',fgColor:{rgb:'2C5F8A'}},font:{bold:true,color:{rgb:'FFFFFF'},sz:10},alignment:{horizontal:'center'},border:B};}
+  // Header row 1 (chainage blocks)
+  for(let c=0;c<totalCols;c++){const cell=ws[addr(2,c)];if(cell)cell.s={fill:{patternType:'solid',fgColor:{rgb:'2C5F8A'}},font:{bold:true,color:{rgb:'FFFFFF'},sz:10},alignment:{horizontal:'center',vertical:'center'},border:B};}
+  // Header row 2 (sub-divisions)
   for(let c=0;c<totalCols;c++){const cell=ws[addr(3,c)];if(cell)cell.s={fill:{patternType:'solid',fgColor:{rgb:'DAEEF3'}},font:{bold:true,sz:8},alignment:{horizontal:'center'},border:B};}
+  // Data rows
   for(let ri=0;ri<excelData.length;ri++){
     const row=excelData[ri],er=4+ri;
+    // Row label cell — use the row's own color
     const lc=ws[addr(er,0)];
-    if(lc)lc.s={fill:{patternType:'solid',fgColor:{rgb:'F0F4F8'}},font:{bold:true,sz:9},alignment:{horizontal:'left',vertical:'center',wrapText:true},border:B};
+    if(lc)lc.s={fill:{patternType:'solid',fgColor:{rgb:row.labelFill||'F0F4F8'}},font:{bold:true,sz:9,color:{rgb:hex6(row.labelFg||'#333333')}},alignment:{horizontal:'left',vertical:'center',wrapText:true},border:B};
+    // Data cells
     for(let ci=0;ci<row.cells.length;ci++){
       const cell=ws[addr(er,ci+1)];if(!cell)continue;
-      const clsKey=row.cells[ci].cls,fg=(CLS_FILL[clsKey]||'FFF5F7FA').replace(/^FF/,'');
-      cell.s={fill:{patternType:'solid',fgColor:{rgb:fg}},font:{bold:!!cell.v,sz:8,color:{rgb:clsKey!=='emp'?'FFFFFF':'333333'}},alignment:{horizontal:'center',vertical:'center',wrapText:true},border:B};
+      const c=row.cells[ci];
+      const isEmpty=c.fill===EMP.fill;
+      cell.s={fill:{patternType:'solid',fgColor:{rgb:c.fill}},font:{bold:!!cell.v,sz:8,color:{rgb:isEmpty?'333333':hex6(c.fg)}},alignment:{horizontal:'center',vertical:'center',wrapText:true},border:B};
     }
   }
   XLSX.utils.book_append_sheet(wb,ws,'Layer Chart');
   XLSX.writeFile(wb,'LayerChart_'+fmtCh(excelChFrom)+'_'+fmtCh(excelChTo)+'_RHS.xlsx');
 }
 
-// ── MAIN ─────────────────────────────────────────────────
+// ── MAIN ─────────────────────────────────────────────────────
 async function main(){
   const statusEl=document.getElementById('status-bar');
   const loadingEl=document.getElementById('loading');
@@ -202,6 +224,7 @@ async function main(){
   const exportBtn=document.getElementById('export-btn');
   try {
     statusEl.textContent='Fetching data...';
+    extraIdx=0;
     const [j1,j2,j3,j4]=await Promise.all(
       Object.values(URLS).map(u=>fetch(u+'?t='+Date.now()).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}))
     );
@@ -223,13 +246,12 @@ async function main(){
     const NUM_BLOCKS=CHART_LEN/BLOCK,SUBS=BLOCK/SUB,TOTAL=NUM_BLOCKS*SUBS;
     excelChFrom=chartFrom;excelChTo=chartTo;excelTOTAL=TOTAL;excelSUB=SUB;
     excelTitle='{ LAYER CHART   Ch :-   '+fmtCh(chartFrom)+'   To   '+fmtCh(chartTo)+'   SIDE :-   RHS }';
-    excelData=[];
+    excelData=[];excelMerges=[];
     document.getElementById('title-bar').textContent=excelTitle;
     document.getElementById('dir-left').textContent='Meerut \u2192';
     document.getElementById('dir-right').textContent='\u2190 Prayagraj';
 
-    // Build RFI map from j4 — keyed by "typeName_from_to" to avoid cross-type collision
-    // (e.g. Embank Top and SG 1st share the same chainage ranges)
+    // Build RFI map from j4 — keyed by "typeName_from_to"
     const K_EQC='Eqc '+ARR+' Eqc Name',K_STAGE='Eqc Stage '+ARR+' Name',rfiMap={};
     for(const r of j4){
       const path=r[K_EQC]||'',stgStr=r[K_STAGE]||'';
@@ -242,6 +264,8 @@ async function main(){
       rfiMap[key][layerNum]={rfiDate,rfiNum};
     }
     function rfiKey(typeName,from,to){ return typeName.trim().toLowerCase()+'_'+from+'_'+to; }
+
+    // Parse checkpoints from j1
     const K_STG='Project Eqc Type Stage '+ARR+' Name',ckById={};
     for(const r of j1){
       const id=String(r['ID']),nm=r['Name'],stg=r[K_STG];
@@ -251,7 +275,7 @@ async function main(){
     for(const id in ckById)ckById[id].stages.sort((a,b)=>parseInt(a.match(/\d+/)?.[0]||0)-parseInt(b.match(/\d+/)?.[0]||0));
 
     // ── Dynamic rendering driven by j2 Level 1 entries ──
-    const usedStyles=[];
+    const legendItems=[];
     const cg=document.getElementById('colgroup');
     if(cg.children.length<=1){for(let i=0;i<TOTAL;i++){const c=document.createElement('col');c.className='csub';cg.appendChild(c);}}
     let h1='<tr><th class="ch-label-hd" rowspan="2">CHAINAGE</th>';
@@ -262,21 +286,24 @@ async function main(){
     h2+='</tr>';
     document.getElementById('chart-head').innerHTML=h1+h2;
 
-    // Get Level 1 entries in reverse Order (highest layer first in chart)
+    // Level 1 entries in reverse Order (highest layer first)
     const level1s=j2.filter(r=>r['Level']==='1'&&r['Is Active']==='true')
       .sort((a,b)=>parseInt(b['Order'])-parseInt(a['Order']));
 
-    function renderSimpleRows(cks,cls,nomRanges,typeName){
+    function renderSimpleRows(cks,color,nomRanges,typeName){
       let html='';
       for(const ck of cks){
         const ranges=nomRanges.length>0?nomRanges:(extractRange(ck.name)?[extractRange(ck.name)]:[]);
         const stages=[...ck.stages];
         for(let si=0;si<stages.length;si++){
           const layerNum=parseInt(stages[si].match(/\d+/)?.[0]||1);
-          const colRanges=ranges.map(nr=>{const k=rfiKey(typeName,nr.from,nr.to),rfi=rfiMap[k]?.[layerNum];return{from:nr.from,to:nr.to,cls,content:cellLabel(rfi)};});
+          const colRanges=ranges.map(nr=>{const k=rfiKey(typeName,nr.from,nr.to),rfi=rfiMap[k]?.[layerNum];return{from:nr.from,to:nr.to,bg:color.bg,fg:color.fg,fill:color.fill,content:cellLabel(rfi)};});
           const rs=stages.length>1&&si===0?' rowspan="'+stages.length+'"':'';
-          html+='<tr>'+(si===0?'<td class="rl '+cls+'"'+rs+'>'+ck.name+'</td>':'')+buildRowCells(colRanges,TOTAL,chartFrom,SUB)+'</tr>';
-          excelData.push({rowLabel:si===0?ck.name:'',cls,cells:buildCellArray(colRanges,TOTAL,chartFrom,SUB)});
+          html+='<tr>'+(si===0?'<td class="rl" style="background:'+color.bg+';color:'+color.fg+'"'+rs+'>'+ck.name+'</td>':'')+buildRowCells(colRanges,TOTAL,chartFrom,SUB)+'</tr>';
+          const excelRow={rowLabel:si===0?ck.name:'',labelFill:color.fill,labelFg:color.fg,cells:buildCellArray(colRanges,TOTAL,chartFrom,SUB)};
+          // Merge row label in Excel if rowspan
+          if(stages.length>1&&si===0) excelMerges.push({s:{r:4+excelData.length,c:0},e:{r:4+excelData.length+stages.length-1,c:0}});
+          excelData.push(excelRow);
         }
       }
       return html;
@@ -284,13 +311,12 @@ async function main(){
 
     let body='';
     for(const l1 of level1s){
-      const style=getTypeStyle(l1['Name']);
-      const cls=style.cls;
+      const color=getColor(l1['Name']);
       const typeName=l1['Name'];
       const nomRanges=(level2ByParent[l1['ID']]||[]).map(r=>extractRange(r['Name'])).filter(Boolean);
 
-      if(style.grouped){
-        // Grouped rendering — multiple j1 checkpoints with chainage in name
+      if(color.grouped){
+        // Grouped rendering — embankment-style with chainage in j1 names
         const cks=Object.values(ckById).filter(ck=>{
           const rng=extractRange(ck.name);
           if(!rng)return false;
@@ -298,29 +324,32 @@ async function main(){
         });
         cks.sort((a,b)=>(extractRange(a.name)?.from||0)-(extractRange(b.name)?.from||0));
         if(cks.length>0){
-          usedStyles.push(style);
+          legendItems.push({name:typeName,bg:color.bg});
           const maxLayers=Math.max(...cks.map(ck=>ck.stages.length));
+          const groupStartRow=excelData.length;
           for(let row=0;row<maxLayers;row++){
             const colRanges=[];
             for(const ck of cks){
               const ckRange=extractRange(ck.name);if(!ckRange)continue;
               const layerNum=ck.stages.length-row;if(layerNum<1)continue;
               const k=rfiKey(typeName,ckRange.from,ckRange.to),rfi=rfiMap[k]?.[layerNum];
-              colRanges.push({from:ckRange.from,to:ckRange.to,cls,content:cellLabel(rfi)});
+              colRanges.push({from:ckRange.from,to:ckRange.to,bg:color.bg,fg:color.fg,fill:color.fill,content:cellLabel(rfi)});
             }
             let tr='<tr>';
-            if(row===0)tr+='<td class="rl-group '+cls+'" rowspan="'+maxLayers+'">'+typeName.replace(/&/g,'&amp;')+'</td>';
+            if(row===0)tr+='<td class="rl-group" style="background:'+color.bg+';color:'+color.fg+'" rowspan="'+maxLayers+'">'+typeName.replace(/&/g,'&amp;')+'</td>';
             tr+=buildRowCells(colRanges,TOTAL,chartFrom,SUB)+'</tr>';
             body+=tr;
-            excelData.push({rowLabel:row===0?typeName:'',cls,cells:buildCellArray(colRanges,TOTAL,chartFrom,SUB)});
+            excelData.push({rowLabel:row===0?typeName:'',labelFill:color.fill,labelFg:color.fg,cells:buildCellArray(colRanges,TOTAL,chartFrom,SUB)});
           }
+          // Merge grouped row label in Excel
+          if(maxLayers>1) excelMerges.push({s:{r:4+groupStartRow,c:0},e:{r:4+groupStartRow+maxLayers-1,c:0}});
         }
       } else {
-        // Simple rendering — match j1 checkpoints by name to this Level 1
+        // Simple rendering — match j1 checkpoints by name
         const cks=Object.values(ckById).filter(ck=>ck.name.trim().toLowerCase()===typeName.trim().toLowerCase());
         if(cks.length>0){
-          usedStyles.push(style);
-          body+=renderSimpleRows(cks,cls,nomRanges,typeName);
+          legendItems.push({name:typeName,bg:color.bg});
+          body+=renderSimpleRows(cks,color,nomRanges,typeName);
         }
       }
     }
@@ -328,13 +357,9 @@ async function main(){
     document.getElementById('chart-body').innerHTML=body;
     const legendEl=document.getElementById('legend');
     legendEl.innerHTML='<span class="lg-lbl">Colour Code &#8594;</span>';
-    const seenKeys=new Set();
-    for(const style of usedStyles){
-      if(seenKeys.has(style.cls))continue;
-      seenKeys.add(style.cls);
+    for(const item of legendItems){
       const span=document.createElement('span');span.className='lg-item';
-      const border=style.border?';border-color:'+style.border:'';
-      span.innerHTML='<span class="lg-sw" style="background:'+style.hex+border+';"></span> '+style.label;
+      span.innerHTML='<span class="lg-sw" style="background:'+item.bg+'"></span> '+item.name;
       legendEl.appendChild(span);
     }
     loadingEl.style.display='none';
