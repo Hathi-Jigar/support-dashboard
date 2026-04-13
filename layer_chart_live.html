@@ -31,17 +31,7 @@ table td, table th { border:1px solid #b0b8c1; text-align:center; vertical-align
 .etop { background:#70ad47; color:#fff; }
 .elvl { background:#92d050; color:#333; }
 .emp  { background:#f5f7fa; }
-/* Data cell — fixed height so rows are uniform */
-.d {
-  font-size:8px;
-  padding:3px 2px;
-  white-space:normal;
-  word-break:break-word;
-  line-height:1.4;
-  font-weight:bold;
-  height:28px;
-  vertical-align:middle;
-}
+.d { font-size:8px; padding:3px 2px; white-space:normal; word-break:break-word; line-height:1.4; font-weight:bold; height:28px; vertical-align:middle; }
 .legend { display:flex; align-items:center; flex-wrap:wrap; gap:12px; padding:7px 12px; border-top:2px solid #2c3e50; font-size:10px; background:#f8f9fa; }
 .lg-lbl { font-weight:bold; color:#2c3e50; }
 .lg-item { display:flex; align-items:center; gap:5px; font-weight:500; }
@@ -92,24 +82,16 @@ const ALL_COLOURS = [
   { key:'bc',   label:'BC',            hex:'#FF99CC' },
 ];
 
-// Parse chainage string — handles spaces before/after +
-// e.g. "64 + 000", "64+000", "64 +300", "64+ 140" → metres integer
 function parseCh(s) {
   if (!s) return null;
-  // Remove all whitespace then match digits+digits
   const c = String(s).replace(/\s+/g, '');
   const m = c.match(/^(\d+)\+(\d+)$/);
   if (m) return parseInt(m[1]) * 1000 + parseInt(m[2]);
   return null;
 }
 
-// Extract {from, to} metres from a string like
-// "chainage 64 + 000 to 64 + 140" or "chainage 64 + 140 to 64 +300"
-// Handles irregular spacing around + and between numbers
 function extractRange(s) {
   if (!s) return null;
-  // Match two chainage values separated by "to"
-  // Each chainage: digits, optional spaces, +, optional spaces, digits
   const m = s.match(/(\d[\d\s]*\+\s*[\d]+)\s+to\s+(\d[\d\s]*\+\s*[\d]+)/i);
   if (!m) return null;
   const f = parseCh(m[1]);
@@ -121,19 +103,24 @@ function fmtCh(m) {
   return String(Math.floor(m / 1000)).padStart(3, '0') + '+' + String(m % 1000).padStart(3, '0');
 }
 
+// Format date: "13 Apr, 2026, 4:03 PM" → "13.04.26"
+// Robust regex handles any spacing/comma variation
 function fmtDate(s) {
+  if (!s) return '';
   const mo = {Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',
                Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
-  const m = s && s.match(/(\d+)\s+([A-Za-z]+)[^,]*,\s*(\d{4})/);
-  if (!m) return s || '';
-  return m[1].padStart(2,'0') + '.' + (mo[m[2]]||'??') + '.' + m[3].slice(2);
+  const m = s.match(/(\d{1,2})\s+([A-Za-z]{3})[,\s]+(2\d{3})/);
+  if (m) return m[1].padStart(2,'0') + '.' + (mo[m[2]] || '??') + '.' + m[3].slice(2);
+  return s;
 }
 
-// Build row cells — ALWAYS renders full chainage range as coloured block
-// colRanges: [{from, to, cls, content}]
-// Gaps between blocks render as white empty cells
+// Cell label: "DD.MM.YY / RFI#" — both on one line
+function cellLabel(rfi) {
+  if (!rfi) return '';
+  return rfi.rfiDate + ' / ' + rfi.rfiNum;
+}
+
 function buildRowCells(colRanges, TOTAL, chartFrom, SUB) {
-  // Convert ranges to column blocks
   const blocks = [];
   for (const rng of colRanges) {
     const f = Math.max(rng.from, chartFrom);
@@ -144,18 +131,14 @@ function buildRowCells(colRanges, TOTAL, chartFrom, SUB) {
     if (e > s) blocks.push({ s, e, cls: rng.cls, content: rng.content || '' });
   }
   blocks.sort((a, b) => a.s - b.s);
-
   let html = '', col = 0;
   for (const blk of blocks) {
-    // White gap before this block
     while (col < blk.s) { html += '<td class="emp d"></td>'; col++; }
-    // Coloured block — always rendered, content may be empty
     const span = blk.e - blk.s;
     const sp   = span > 1 ? ' colspan="' + span + '"' : '';
     html += '<td class="' + blk.cls + ' d"' + sp + '>' + blk.content + '</td>';
     col = blk.e;
   }
-  // White gap after last block
   while (col < TOTAL) { html += '<td class="emp d"></td>'; col++; }
   return html;
 }
@@ -184,14 +167,10 @@ async function main() {
     for (const pid in level2ByParent)
       level2ByParent[pid].sort((a, b) => parseInt(a['Order']) - parseInt(b['Order']));
 
-    // Chart extents — use ALL Level-2 entries
     let chartFrom = Infinity, chartTo = -Infinity;
     for (const r of j2.filter(r => r['Level'] === '2')) {
       const rng = extractRange(r['Name']);
-      if (rng) {
-        chartFrom = Math.min(chartFrom, rng.from);
-        chartTo   = Math.max(chartTo,   rng.to);
-      }
+      if (rng) { chartFrom = Math.min(chartFrom, rng.from); chartTo = Math.max(chartTo, rng.to); }
     }
     if (!isFinite(chartFrom)) { chartFrom = 64000; chartTo = 65000; }
     const CHART_LEN = chartTo - chartFrom;
@@ -203,16 +182,12 @@ async function main() {
     document.getElementById('dir-left').textContent  = 'Meerut \u2192';
     document.getElementById('dir-right').textContent = '\u2190 Prayagraj';
 
-    // Get Level-2 chainage ranges for a Level-1 node by exact name
     function nomRangesByName(exactName) {
       const parent = j2.find(r =>
-        r['Level'] === '1' &&
-        r['Name'].trim().toLowerCase() === exactName.trim().toLowerCase()
+        r['Level'] === '1' && r['Name'].trim().toLowerCase() === exactName.trim().toLowerCase()
       );
       if (!parent) return [];
-      return (level2ByParent[parent['ID']] || [])
-        .map(r => extractRange(r['Name']))
-        .filter(Boolean);
+      return (level2ByParent[parent['ID']] || []).map(r => extractRange(r['Name'])).filter(Boolean);
     }
 
     // ── JSON4: RFI map ──────────────────────────────────────
@@ -246,13 +221,12 @@ async function main() {
       ckById[id].stages.sort((a, b) =>
         parseInt(a.match(/\d+/)?.[0] || 0) - parseInt(b.match(/\d+/)?.[0] || 0));
 
-    // Classify checklists — exact match to avoid "embank top" catching "embank top level"
     const embLevelCks = [], embTopCks = [], embLayerCks = [];
     for (const ck of Object.values(ckById)) {
       const nl = ck.name.trim().toLowerCase();
-      if (nl === 'embank top level')        embLevelCks.push(ck);
-      else if (nl === 'embank top')         embTopCks.push(ck);
-      else                                   embLayerCks.push(ck);
+      if (nl === 'embank top level')   embLevelCks.push(ck);
+      else if (nl === 'embank top')    embTopCks.push(ck);
+      else                              embLayerCks.push(ck);
     }
     embLayerCks.sort((a, b) => (extractRange(a.name)?.from || 0) - (extractRange(b.name)?.from || 0));
 
@@ -273,7 +247,6 @@ async function main() {
     h2 += '</tr>';
     document.getElementById('chart-head').innerHTML = h1 + h2;
 
-    // ── Helper: simple rows (embank top / level) ────────────
     function renderSimpleRows(cks, cls, nomRanges) {
       let html = '';
       for (const ck of cks) {
@@ -287,7 +260,7 @@ async function main() {
           const colRanges = ranges.map(nr => {
             const key = nr.from + '_' + nr.to;
             const rfi = rfiMap[key]?.[layerNum];
-            return { from: nr.from, to: nr.to, cls, content: rfi ? rfi.rfiDate + '<br>' + rfi.rfiNum : '' };
+            return { from: nr.from, to: nr.to, cls, content: cellLabel(rfi) };
           });
           const rs = stages.length > 1 && si === 0 ? ' rowspan="' + stages.length + '"' : '';
           html += '<tr>' + (si === 0 ? '<td class="rl ' + cls + '"' + rs + '>' + ck.name + '</td>' : '') +
@@ -298,47 +271,25 @@ async function main() {
     }
 
     let body = '';
-
-    // 1. Embank Top Level
     body += renderSimpleRows(embLevelCks, 'elvl', nomRangesByName('Embank Top Level'));
+    body += renderSimpleRows(embTopCks,   'etop', nomRangesByName('Embank Top'));
 
-    // 2. Embank Top
-    body += renderSimpleRows(embTopCks, 'etop', nomRangesByName('Embank Top'));
-
-    // 3. Embankment intermediate layers
-    // TOP ALIGNMENT: row 0 = each ck's highest layer (top), rows go downward
-    // For ck with N layers, global row R → layerNum = N - R
-    // If N - R < 1 → this ck has no data for this row (blank/white gap)
     if (embLayerCks.length > 0) {
       usedClasses.add('emb');
       const maxLayers = Math.max(...embLayerCks.map(ck => ck.stages.length));
 
-      // Get the chainage ranges for Embankment from JSON2 nomenclature
-      const embNomRanges = nomRangesByName('Embankment (OG & CG)');
-
       for (let row = 0; row < maxLayers; row++) {
         const colRanges = [];
-
         for (const ck of embLayerCks) {
-          // Get this ck's chainage range from JSON2 — match by chainage in ck name
-          const ckRange = extractRange(ck.name);
+          const ckRange  = extractRange(ck.name);
           if (!ckRange) continue;
-
-          const ckLayers  = ck.stages.length;
-          const layerNum  = ckLayers - row;  // top-align: row0=ckLayers, row1=ckLayers-1...
-          if (layerNum < 1) continue;         // ck doesn't have this many rows → white gap
-
+          const ckLayers = ck.stages.length;
+          const layerNum = ckLayers - row;
+          if (layerNum < 1) continue;
           const key = ckRange.from + '_' + ckRange.to;
           const rfi = rfiMap[key]?.[layerNum];
-          // Always push coloured block — empty content if no RFI yet
-          colRanges.push({
-            from:    ckRange.from,
-            to:      ckRange.to,
-            cls:     'emb',
-            content: rfi ? rfi.rfiDate + '<br>' + rfi.rfiNum : ''
-          });
+          colRanges.push({ from: ckRange.from, to: ckRange.to, cls: 'emb', content: cellLabel(rfi) });
         }
-
         let tr = '<tr>';
         if (row === 0) {
           tr += '<td class="rl-group emb" rowspan="' + maxLayers + '">' +
