@@ -25,8 +25,33 @@ table td, table th { border:1px solid #b0b8c1; text-align:center; vertical-align
 .ch-block { background:linear-gradient(180deg,#2c5f8a 0%,#3a7cbf 100%); font-weight:bold; font-size:11px; color:#fff; height:48px; writing-mode:vertical-lr; transform:rotate(180deg); padding:3px 0; border:1px solid #1e4a73; letter-spacing:0.5px; }
 .ch-sub { background:#daeef3; font-size:8px; color:#444; height:16px; padding:1px 0; border:1px solid #9fbfcc; font-weight:bold; }
 .ch-label-hd { background:linear-gradient(180deg,#2c5f8a 0%,#3a7cbf 100%); font-weight:bold; font-size:12px; color:#fff; text-align:center; vertical-align:middle; border:1px solid #1e4a73; letter-spacing:0.5px; }
-.rl { text-align:left; padding:3px 6px; font-size:10px; font-weight:bold; white-space:normal; word-break:break-word; vertical-align:middle; border:1px solid #aab !important; background:#f7f9fb; }
-.rl-group { text-align:center; font-size:9.5px; font-weight:bold; white-space:normal; word-break:break-word; vertical-align:middle; padding:4px 6px; line-height:1.4; border:1px solid #aab !important; background:#f0f4f8; }
+
+/* ── ROW LABELS — left aligned ── */
+.rl {
+  text-align:left;
+  padding:4px 8px;
+  font-size:10px;
+  font-weight:bold;
+  white-space:normal;
+  word-break:break-word;
+  vertical-align:middle;
+  border:1px solid #aab !important;
+  background:#f7f9fb;
+  line-height:1.4;
+}
+.rl-group {
+  text-align:left;
+  padding:4px 8px;
+  font-size:9.5px;
+  font-weight:bold;
+  white-space:normal;
+  word-break:break-word;
+  vertical-align:middle;
+  line-height:1.4;
+  border:1px solid #aab !important;
+  background:#f0f4f8;
+}
+
 .emb  { background:#4472C4; color:#fff; }
 .etop { background:#70ad47; color:#fff; }
 .elvl { background:#92d050; color:#333; }
@@ -107,34 +132,28 @@ function fmtDate(s) {
   return m[1].padStart(2,'0')+'.'+(mo[m[2]]||'??')+'.'+m[3].slice(2);
 }
 
-// Build row cells from an array of coloured blocks
-// ALWAYS renders the full chainage range as a coloured cell
-// regardless of whether RFI data exists
+// Build row cells — always renders full chainage range as coloured block
 // colRanges: [{from, to, cls, content}]
-// Empty blocks (no RFI) still render as coloured cell with no text
 function buildRowCells(colRanges, TOTAL, chartFrom, SUB) {
-  // Build block list sorted by start col
   const blocks=[];
   for (const rng of colRanges) {
-    const f=Math.max(rng.from, chartFrom);
-    const t=Math.min(rng.to, chartFrom+TOTAL*SUB);
+    const f=Math.max(rng.from,chartFrom);
+    const t=Math.min(rng.to,chartFrom+TOTAL*SUB);
     if (f>=t) continue;
     const s=Math.round((f-chartFrom)/SUB);
     const e=Math.round((t-chartFrom)/SUB);
     if (e>s) blocks.push({s,e,cls:rng.cls,content:rng.content||''});
   }
   blocks.sort((a,b)=>a.s-b.s);
-
-  let html='', col=0;
+  let html='',col=0;
   for (const blk of blocks) {
-    while (col<blk.s) { html+='<td class="emp"></td>'; col++; }
+    while (col<blk.s){html+='<td class="emp"></td>';col++;}
     const span=blk.e-blk.s;
     const sp=span>1?' colspan="'+span+'"':'';
-    // Always render the coloured block — content may be empty string
     html+='<td class="'+blk.cls+' d"'+sp+'>'+blk.content+'</td>';
     col=blk.e;
   }
-  while (col<TOTAL) { html+='<td class="emp"></td>'; col++; }
+  while (col<TOTAL){html+='<td class="emp"></td>';col++;}
   return html;
 }
 
@@ -151,6 +170,7 @@ async function main() {
     statusEl.textContent='Building chart...';
 
     // ── JSON2: nomenclature ───────────────────────────────
+    // Build parent→children map for Level-2 nodes
     const level2ByParent={};
     for (const r of j2.filter(r=>r['Level']==='2'&&r['Is Active']==='true')) {
       const pid=r['Parent Level ID'];
@@ -160,7 +180,12 @@ async function main() {
     for (const pid in level2ByParent)
       level2ByParent[pid].sort((a,b)=>parseInt(a['Order'])-parseInt(b['Order']));
 
-    // Chart extents from all Level-2 ranges
+    // Build Level-1 nodes indexed by ID for quick lookup
+    const level1ById={};
+    for (const r of j2.filter(r=>r['Level']==='1'))
+      level1ById[r['ID']]=r;
+
+    // Chart extents
     let chartFrom=Infinity,chartTo=-Infinity;
     for (const r of j2.filter(r=>r['Level']==='2')) {
       const rng=extractRange(r['Name']);
@@ -175,6 +200,18 @@ async function main() {
       '{ LAYER CHART   Ch :-   '+fmtCh(chartFrom)+'   To   '+fmtCh(chartTo)+'   SIDE :-   RHS }';
     document.getElementById('dir-left').textContent ='Meerut \u2192';
     document.getElementById('dir-right').textContent='\u2190 Prayagraj';
+
+    // Get nom ranges for a Level-1 node by exact name match
+    // exactName: exact string to match (case-insensitive)
+    function nomRangesByExactName(exactName) {
+      const parent=j2.find(r=>
+        r['Level']==='1' &&
+        r['Name'].toLowerCase().trim()===exactName.toLowerCase().trim()
+      );
+      if (!parent) return [];
+      return (level2ByParent[parent['ID']]||[])
+        .map(r=>extractRange(r['Name'])).filter(Boolean);
+    }
 
     // ── JSON4: RFI map ─────────────────────────────────────
     const K_EQC  ='Eqc '+ARR+' Eqc Name';
@@ -204,15 +241,21 @@ async function main() {
       if (stg&&!ckById[id].stages.includes(stg)) ckById[id].stages.push(stg);
     }
     for (const id in ckById)
-      ckById[id].stages.sort((a,b)=>parseInt(a.match(/\d+/)?.[0]||0)-parseInt(b.match(/\d+/)?.[0]||0));
+      ckById[id].stages.sort((a,b)=>
+        parseInt(a.match(/\d+/)?.[0]||0)-parseInt(b.match(/\d+/)?.[0]||0));
 
-    // Classify
+    // Classify checklists using exact name matching to avoid overlap
     const embLevelCks=[],embTopCks=[],embLayerCks=[];
     for (const ck of Object.values(ckById)) {
-      const nl=ck.name.toLowerCase();
-      if (nl.includes('embank top level'))  embLevelCks.push(ck);
-      else if (nl.includes('embank top'))   embTopCks.push(ck);
-      else                                   embLayerCks.push(ck);
+      const nl=ck.name.toLowerCase().trim();
+      // exact: "embank top level" or starts with it
+      if (nl==='embank top level'||nl.startsWith('embank top level'))
+        embLevelCks.push(ck);
+      // exact: "embank top" (not level)
+      else if ((nl==='embank top'||nl.startsWith('embank top'))&&!nl.includes('level'))
+        embTopCks.push(ck);
+      else
+        embLayerCks.push(ck);
     }
     embLayerCks.sort((a,b)=>(extractRange(a.name)?.from||0)-(extractRange(b.name)?.from||0));
 
@@ -230,24 +273,19 @@ async function main() {
     h2+='</tr>';
     document.getElementById('chart-head').innerHTML=h1+h2;
 
-    // ── Nom ranges helper ──────────────────────────────────
-    function nomRangesFor(nameContains) {
-      const parent=j2.find(r=>r['Level']==='1'&&r['Name'].toLowerCase().includes(nameContains));
-      if (parent&&level2ByParent[parent['ID']])
-        return level2ByParent[parent['ID']].map(r=>extractRange(r['Name'])).filter(Boolean);
-      return [];
-    }
-
-    // ── Helper: render simple rows (embank top / level) ───
+    // ── Helper: render simple rows ─────────────────────────
     function renderSimpleRows(cks,cls,nomRanges) {
       let html='';
       for (const ck of cks) {
         usedClasses.add(cls);
+        // If no nom ranges found, fall back to range in checklist name
+        const ranges=nomRanges.length>0
+          ? nomRanges
+          : (extractRange(ck.name)?[extractRange(ck.name)]:[]);
         const stages=[...ck.stages];
         for (let si=0;si<stages.length;si++) {
           const layerNum=parseInt(stages[si].match(/\d+/)?.[0]||1);
-          // Always render full nomRanges as coloured blocks
-          const colRanges=nomRanges.map(nr=>{
+          const colRanges=ranges.map(nr=>{
             const key=nr.from+'_'+nr.to;
             const rfi=rfiMap[key]?.[layerNum];
             return {from:nr.from,to:nr.to,cls,content:rfi?rfi.rfiDate+'<br>/'+rfi.rfiNum:''};
@@ -262,50 +300,36 @@ async function main() {
 
     let body='';
 
-    // 1. Embank Top Level
-    body+=renderSimpleRows(embLevelCks,'elvl',nomRangesFor('embank top level'));
+    // 1. Embank Top Level — get nom ranges by exact level-1 name
+    const elvlRanges=nomRangesByExactName('Embank Top Level');
+    body+=renderSimpleRows(embLevelCks,'elvl',elvlRanges);
 
-    // 2. Embank Top
-    body+=renderSimpleRows(embTopCks,'etop',nomRangesFor('embank top'));
+    // 2. Embank Top — exact name, must not include "level"
+    const etopRanges=nomRangesByExactName('Embank Top');
+    body+=renderSimpleRows(embTopCks,'etop',etopRanges);
 
     // 3. Embankment intermediate layers
-    // ── TOP ALIGNMENT LOGIC ────────────────────────────────
-    // Global row grid has maxLayers rows.
-    // Row 0 (top) = each checklist's HIGHEST layer (its Layer N)
-    // Row 1       = each checklist's (N-1)th layer
-    // ...
-    // Row maxLayers-1 (bottom) = Layer 1 of the checklist with most layers
-    //
-    // For a checklist with ckLayers layers:
-    //   Row 0            → ck Layer ckLayers   (its top layer)
-    //   Row 1            → ck Layer ckLayers-1
-    //   ...
-    //   Row ckLayers-1   → ck Layer 1
-    //   Row ckLayers..maxLayers-1 → blank (this ck doesn't go this deep)
-    //
-    // In other words: for global row R, this ck's layer = ckLayers - R
-    // If ckLayers - R < 1 → blank for this ck
-
+    // TOP ALIGNMENT: row 0 = each ck's highest layer, rows go downward
+    // For global row R and ck with N layers: layerNum = N - R
+    // If N - R < 1 → blank for this ck on this row
     if (embLayerCks.length>0) {
       usedClasses.add('emb');
       const maxLayers=Math.max(...embLayerCks.map(ck=>ck.stages.length));
 
       for (let row=0;row<maxLayers;row++) {
-        // For each checklist, compute which layer this row corresponds to
         const colRanges=[];
         for (const ck of embLayerCks) {
           const ckRange=extractRange(ck.name);
           if (!ckRange) continue;
           const ckLayers=ck.stages.length;
-          // Top-alignment: row 0 = ck's highest layer
-          const layerNum=ckLayers-row; // e.g. ck has 4 layers: row0→4, row1→3, row2→2, row3→1
-          if (layerNum<1) continue;   // this ck doesn't have this many layers — blank
+          const layerNum=ckLayers-row; // top-align: row0 = ck's top layer
+          if (layerNum<1) continue;    // ck doesn't have this row → blank
 
           const key=ckRange.from+'_'+ckRange.to;
           const rfi=rfiMap[key]?.[layerNum];
-          // Always push the coloured block even without RFI
+          // Always push coloured block — content empty if no RFI yet
           colRanges.push({
-            from:ckRange.from, to:ckRange.to, cls:'emb',
+            from:ckRange.from,to:ckRange.to,cls:'emb',
             content:rfi?rfi.rfiDate+'<br>/'+rfi.rfiNum:''
           });
         }
