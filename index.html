@@ -415,6 +415,19 @@ th {
 .rl-count-maint{background:#DBEAFE;color:#1E40AF}
 .rl-ms-open{color:#D97706}
 .rl-ms-closed{color:#16A34A}
+
+/* Release table */
+.rl-table{width:100%;border-collapse:collapse;background:var(--white);border-radius:var(--radius);border:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+.rl-table th{background:#F9FAFB;padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:#6B7280;text-transform:uppercase;letter-spacing:0.6px;border-bottom:2px solid #E5E7EB;white-space:nowrap;position:sticky;top:0;z-index:2}
+.rl-table td{padding:12px 14px;border-bottom:1px solid #E5E7EB;font-size:13px;color:#374151;line-height:1.5;vertical-align:middle}
+.rl-table tr:last-child td{border-bottom:none}
+.rl-table tr:hover td{background:#F9FAFB}
+.rl-table th:nth-child(1),.rl-table td:nth-child(1){width:200px;font-weight:600}
+.rl-table th:nth-child(2),.rl-table td:nth-child(2){width:120px}
+.rl-table th:nth-child(3),.rl-table td:nth-child(3){width:100px}
+.rl-table th:nth-child(4),.rl-table td:nth-child(4){width:200px}
+.rl-table th:nth-child(5),.rl-table td:nth-child(5){width:120px}
+.rl-table th:nth-child(6),.rl-table td:nth-child(6){width:220px}
 </style>
 </head>
 <body>
@@ -594,7 +607,7 @@ th {
 </div>
 
 <div class="table-wrap">
-  <table class="table">
+  <table class="rl-table">
     <thead>
       <tr>
         <th>Version</th>
@@ -2799,6 +2812,7 @@ async function confirmGenerate(){
   const{number:msNumber,title:msTitle}=rlPendingMilestone;
   const version=rlExtractVersion(msTitle);
   const token=getToken();
+  if(!token){showToast('Not authenticated','error');return}
 
   rlShowProgress('Generating release note...','Fetching issues from milestone');
   try{
@@ -2810,7 +2824,10 @@ async function confirmGenerate(){
         `https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues?milestone=${msNumber}&state=all&per_page=100&page=${page}`,
         {headers:{'Authorization':`token ${token}`,'Accept':'application/vnd.github.v3+json'}}
       );
-      if(!res.ok) throw new Error(`Issues: ${res.status}`);
+      if(!res.ok){
+        const errText=await res.text().catch(()=>'');
+        throw new Error(`Fetch issues failed (${res.status}): ${errText.substring(0,200)}`);
+      }
       const batch=await res.json();
       if(batch.length===0) break;
       issues.push(...batch.filter(i=>!i.pull_request));
@@ -2837,15 +2854,18 @@ async function confirmGenerate(){
     rlShowProgress('Generating release note...','Fetching page template');
     if(!rlTemplateContent){
       const tmpl=await rlGhGetFile(RL_TEMPLATE_PATH);
-      if(!tmpl) throw new Error('Template not found at docs/release-notes/template/index.html');
+      if(!tmpl) throw new Error('Template not found at docs/release-notes/template/index.html — ensure the file exists in the product-management repo');
       rlTemplateContent=tmpl.content;
     }
 
-    // Step 5: Save data.json
+    // Step 5: Save data.json (wait for completion before next write to avoid 409)
     rlShowProgress('Saving release note...','Saving data.json');
     const dataPath=`docs/release-notes/${version}/data.json`;
     const existingData=await rlGhGetJSON(dataPath);
     await rlGhPutJSON(dataPath,dataJson,existingData?existingData.sha:null);
+
+    // Small delay to avoid GitHub 409 conflict on rapid sequential writes
+    await new Promise(r=>setTimeout(r,1500));
 
     // Step 6: Save index.html
     rlShowProgress('Saving release note...','Saving detail page');
@@ -2853,8 +2873,16 @@ async function confirmGenerate(){
     const existingIndex=await rlGhGetFile(indexPath);
     await rlGhPutFile(indexPath,rlTemplateContent,existingIndex?existingIndex.sha:null,`Add release note page for ${version}`);
 
-    // Step 7: Update dashboard.json
+    // Small delay before next write
+    await new Promise(r=>setTimeout(r,1500));
+
+    // Step 7: Update dashboard.json — re-fetch to get latest sha
     rlShowProgress('Saving release note...','Updating dashboard');
+    const freshDash=await rlGhGetJSON(RL_DASHBOARD_PATH);
+    if(freshDash){
+      rlDashboard=freshDash.content;
+      rlDashboardSha=freshDash.sha;
+    }
     const dashEntry={
       version,
       milestoneNumber:msNumber,
@@ -2877,7 +2905,7 @@ async function confirmGenerate(){
     showToast(`Release note for ${version} generated!`,'');
     rlRenderTable();
 
-    // Open detail page for review
+    // Open detail page for review (GitHub Pages needs ~1 min to deploy)
     window.open(`${RL_DETAIL_BASE}${encodeURIComponent(version)}/?edit=1`,'_blank');
 
   }catch(e){
