@@ -878,8 +878,19 @@ async function loadIssues(){
       ghGet(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues?labels=Gleap&state=open&per_page=100`),
       ghGet(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues?labels=Gleap&state=closed&per_page=100`)
     ]);
-    const openIssues=openRes.ok?await openRes.json():[];
-    const closedIssues=closedRes.ok?await closedRes.json():[];
+    if(!openRes.ok||!closedRes.ok){
+      const status=!openRes.ok?openRes.status:closedRes.status;
+      let errMsg='Failed to load bugs';
+      if(status===401)errMsg='Access token is invalid or expired — please log in again with a new token';
+      else if(status===403)errMsg='Access token does not have permission to read bugs — ensure token has "repo" scope';
+      else if(status===404)errMsg='Repository not found — check token has access to digiqc-hq/product-management';
+      else errMsg+=` (HTTP ${status})`;
+      showToast(errMsg,'error');
+      document.getElementById('bugTableBody').innerHTML=`<tr><td colspan="15"><div class="empty-state"><div class="icon">&#9888;&#65039;</div><div class="title">${errMsg}</div></div></td></tr>`;
+      return;
+    }
+    const openIssues=await openRes.json();
+    const closedIssues=await closedRes.json();
     const all=[...openIssues,...closedIssues].filter(i=>!i.pull_request);
 
     allBugs=await Promise.all(all.map(async issue=>{
