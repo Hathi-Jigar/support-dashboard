@@ -2926,53 +2926,74 @@ async function confirmGenerate(){
 
 function rlBuildDataJson(version,msNumber,msTitle,features,bugs,maintenance){
   const userName=getName()||'Unknown';
-  const sections=[];
+  // Build single HTML document (not per-section)
+  let html='';
 
   // Title
-  sections.push({id:'title',type:'title',label:'Title',
-    content:`<h1>digiQC Release Note &mdash; Version ${rlEsc(version)}</h1>`});
+  html+=`<h1>digiQC Release Note &mdash; Version ${rlEsc(version)}</h1>`;
+  html+='<hr>';
 
-  // Big Win
-  const bigWinItems=features.map(f=>`<li>${rlEsc(f.title.replace(/^US:\s*/i,''))}</li>`);
-  sections.push({id:'bigwin',type:'bigwin',label:'Big Win',
-    content:bigWinItems.length>0?`<ul>${bigWinItems.join('')}</ul>`:'<p><em>Key improvements in this release</em></p>'});
+  // Big Win (blockquote)
+  if(features.length>0){
+    html+='<h2>Big Win</h2>';
+    html+='<blockquote><ul>';
+    features.forEach(f=>{html+=`<li>${rlEsc(f.title.replace(/^US:\s*/i,''))}</li>`});
+    html+='</ul></blockquote>';
+  }
 
   // 1. Introduction
-  const introItems=features.map(f=>`<li><strong>${rlEsc(f.title.replace(/^US:\s*/i,''))}</strong></li>`);
-  sections.push({id:'introduction',type:'section',label:'1. Introduction',
-    content:`<p>Version ${rlEsc(version)} brings ${features.length} new feature${features.length!==1?'s':''}, ${bugs.length} bug fix${bugs.length!==1?'es':''}, and ${maintenance.length} optimisation${maintenance.length!==1?'s':''}.</p>`+(introItems.length>0?`<ul>${introItems.join('')}</ul>`:'')});
+  html+='<h2>1. Introduction</h2>';
+  html+=`<p>Version ${rlEsc(version)} brings ${features.length} new feature${features.length!==1?'s':''}, ${bugs.length} bug fix${bugs.length!==1?'es':''}, and ${maintenance.length} optimisation${maintenance.length!==1?'s':''}.</p>`;
+  if(features.length>0){
+    html+='<ul>';
+    features.forEach(f=>{html+=`<li><strong>${rlEsc(f.title.replace(/^US:\s*/i,''))}</strong></li>`});
+    html+='</ul>';
+  }
 
   // 2. Why You Will Love This
-  sections.push({id:'why-love',type:'section',label:'2. Why You Will Love This',
-    content:'<p><em>[Edit this section to highlight key benefits for users]</em></p>'});
+  html+='<h2>2. Why You Will Love This</h2>';
+  html+='<p><em>[Edit this section to highlight key benefits for users]</em></p>';
 
-  // 3. Feature-wise Details
-  let featContent='';
-  const subsections=[];
-  features.forEach((f,i)=>{
-    const title=f.title.replace(/^US:\s*/i,'').trim();
-    const desc=rlExtractDescription(f.body);
-    featContent+=`<h3>3.${i+1} ${rlEsc(title)}</h3><p>${desc||'<em>[Add feature details]</em>'}</p>`;
-    subsections.push({issueNumber:f.number,title});
-  });
-  sections.push({id:'features',type:'section',label:'3. Feature-wise Details',
-    content:featContent||'<p><em>No features in this milestone.</em></p>',subsections});
+  // 3. Feature-wise Details — pull from "Release Note Details" section
+  html+='<h2>3. Feature-wise Details</h2>';
+  if(features.length>0){
+    features.forEach((f,i)=>{
+      const title=f.title.replace(/^US:\s*/i,'').trim();
+      const rnDetails=rlExtractReleaseNoteDetails(f.body);
+      html+=`<h3>3.${i+1} ${rlEsc(title)}</h3>`;
+      if(rnDetails){
+        html+=rlMarkdownToHtml(rnDetails);
+      }else{
+        html+=`<p><em>[No "Release Note Details" section found in issue #${f.number} — add content here]</em></p>`;
+      }
+    });
+  }else{
+    html+='<p><em>No features in this milestone.</em></p>';
+  }
 
   // 4. Overall Impact
-  sections.push({id:'impact',type:'section',label:'4. Overall Impact',
-    content:'<p><em>[Edit this section to summarize combined impact]</em></p>'});
+  html+='<h2>4. Overall Impact</h2>';
+  html+='<p><em>[Edit this section to summarize the combined impact of all features]</em></p>';
 
   // 5. Bug Fixes
-  const bugHtml=bugs.length>0
-    ?'<ul>'+bugs.map(b=>`<li>Fixed: ${rlEsc(b.title)} (<a href="${rlEsc(b.html_url)}" target="_blank">#${b.number}</a>)</li>`).join('')+'</ul>'
-    :'<p><em>No bug fixes in this release.</em></p>';
-  sections.push({id:'bugfixes',type:'section',label:'5. Bug Fixes',content:bugHtml});
+  html+='<h2>5. Bug Fixes</h2>';
+  if(bugs.length>0){
+    html+='<ul>';
+    bugs.forEach(b=>{html+=`<li>Fixed: ${rlEsc(b.title)} (<a href="${rlEsc(b.html_url)}" target="_blank">#${b.number}</a>)</li>`});
+    html+='</ul>';
+  }else{
+    html+='<p><em>No bug fixes in this release.</em></p>';
+  }
 
   // 6. Optimisations
-  const maintHtml=maintenance.length>0
-    ?'<ul>'+maintenance.map(m=>`<li>${rlEsc(m.title)} (<a href="${rlEsc(m.html_url)}" target="_blank">#${m.number}</a>)</li>`).join('')+'</ul>'
-    :'<p><em>No optimisations in this release.</em></p>';
-  sections.push({id:'optimisations',type:'section',label:'6. Optimisations',content:maintHtml});
+  html+='<h2>6. Optimisations</h2>';
+  if(maintenance.length>0){
+    html+='<ul>';
+    maintenance.forEach(m=>{html+=`<li>${rlEsc(m.title)} (<a href="${rlEsc(m.html_url)}" target="_blank">#${m.number}</a>)</li>`});
+    html+='</ul>';
+  }else{
+    html+='<p><em>No optimisations in this release.</em></p>';
+  }
 
   return{
     version,milestoneNumber:msNumber,milestoneTitle:msTitle,
@@ -2980,7 +3001,7 @@ function rlBuildDataJson(version,msNumber,msTitle,features,bugs,maintenance){
     lastEditedAt:new Date().toISOString(),
     lastEditedBy:userName,
     status:'draft',
-    sections,
+    content:html,
     sourceIssues:{
       features:features.map(f=>f.number),
       bugs:bugs.map(b=>b.number),
@@ -2995,11 +3016,40 @@ function rlEsc(text){
   return String(text).replace(/[&<>"']/g,m=>map[m]);
 }
 
-function rlExtractDescription(body){
-  if(!body)return'';
-  const lines=body.split('\n').map(l=>l.trim()).filter(l=>l&&!l.startsWith('#')&&!l.startsWith('---')&&!l.startsWith('**')&&!l.startsWith('|')&&!l.startsWith('- ['));
-  const first=lines.slice(0,3).join(' ');
-  return first.length>300?rlEsc(first.substring(0,300))+'...':rlEsc(first);
+// Extract "## Release Note Details" section from issue body
+function rlExtractReleaseNoteDetails(body){
+  if(!body)return null;
+  // Match ## Release Note Details or ## 📣 Release Note Details (with or without emoji)
+  const regex=/##\s*(?:\u{1F4E3}\s*)?Release Note Details\s*\n([\s\S]*?)(?=\n##\s|\n---\s*$|$)/iu;
+  const match=body.match(regex);
+  if(!match)return null;
+  return match[1].trim();
+}
+
+// Simple markdown to HTML for release note content
+function rlMarkdownToHtml(md){
+  if(!md)return'';
+  let html=md;
+  // Bold
+  html=html.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  // Italic
+  html=html.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g,'<em>$1</em>');
+  // Bullet lists
+  const lines=html.split('\n');
+  let result='',inList=false;
+  for(const line of lines){
+    const trimmed=line.trim();
+    if(trimmed.startsWith('- ')||trimmed.startsWith('* ')){
+      if(!inList){result+='<ul>';inList=true}
+      result+=`<li>${trimmed.substring(2)}</li>`;
+    }else{
+      if(inList){result+='</ul>';inList=false}
+      if(trimmed==='')result+='';
+      else result+=`<p>${trimmed}</p>`;
+    }
+  }
+  if(inList)result+='</ul>';
+  return result;
 }
 
 // ============================================================
