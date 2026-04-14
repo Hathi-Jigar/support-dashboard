@@ -277,12 +277,11 @@ async function main(){
     if(!projectConfig) throw new Error('Project "'+projectSlug+'" not found in projects.json');
     document.title='Layer Chart \u2014 '+projectConfig.projectName+' \u2014 '+projectConfig.side;
 
-    statusEl.textContent='Fetching live data from Metabase...';
-    const MB='https://metabase-v2.digiqc.com/api/public/card';
-    const mb=projectConfig.metabase;
-    const URLS={j1:MB+'/'+mb.j1+'/query/json',j2:MB+'/'+mb.j2+'/query/json',j3:MB+'/'+mb.j3+'/query/json',j4:MB+'/'+mb.j4+'/query/json'};
+    statusEl.textContent='Fetching data...';
+    const dataBase=REPO_BASE+'/data/'+projectSlug;
+    const URLS={j1:dataBase+'/j1.json',j2:dataBase+'/j2.json',j3:dataBase+'/j3.json',j4:dataBase+'/j4.json'};
     const [j1,j2,j3,j4]=await Promise.all(
-      Object.values(URLS).map(u=>fetch(u).then(r=>{if(!r.ok)throw new Error('Metabase HTTP '+r.status);return r.json();}))
+      Object.values(URLS).map(u=>fetch(u+'?t='+Date.now()).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}))
     );
     statusEl.textContent='Building chart...';
     const level2ByParent={};
@@ -423,7 +422,7 @@ async function main(){
     tableEl.style.display='';
     exportBtn.style.display='flex';
     statusEl.className='';
-    statusEl.textContent='Live from Metabase \u2014 Last refreshed: '+new Date().toLocaleTimeString('en-IN')+' (auto-refresh: 5 min)';
+    statusEl.textContent='Live data \u2014 Last refreshed: '+new Date().toLocaleTimeString('en-IN')+' (auto-refresh: 5 min)';
   } catch(err){
     console.error(err);
     loadingEl.innerHTML='<span style="color:#c00;font-size:12px">&#9888; Failed to load: '+err.message+'</span>';
