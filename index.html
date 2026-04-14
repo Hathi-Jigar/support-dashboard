@@ -2925,36 +2925,52 @@ async function confirmGenerate(){
 
 function rlBuildDataJson(version,msNumber,msTitle,features,bugs,maintenance){
   const userName=getName()||'Unknown';
-  // Build single HTML document (not per-section)
+  const isMulti=features.length>1;
   let html='';
 
-  // Title
-  html+=`<h1>digiQC Release Note &mdash; Version ${rlEsc(version)}</h1>`;
-  html+='<hr>';
+  // Title (SKILL: centered, bold, orange)
+  html+=`<h1 style="text-align:center;color:#FC5027">Release Note for ${rlEsc(version)}</h1><hr>`;
 
-  // Big Win (blockquote)
+  // Big Win Box (SKILL: yellow FFF3CD, numbered bold before→after stats)
+  html+=`<blockquote style="background:#FFF3CD;border-left:4px solid #FFD54F;padding:16px 20px">`;
+  html+=`<p style="text-align:center"><strong><u>Big win for digiQC users:</u></strong></p>`;
   if(features.length>0){
-    html+='<h2>Big Win</h2>';
-    html+='<blockquote><ul>';
-    features.forEach(f=>{html+=`<li>${rlEsc(f.title.replace(/^US:\s*/i,''))}</li>`});
-    html+='</ul></blockquote>';
+    html+='<ol>';
+    features.forEach(f=>{
+      const title=f.title.replace(/^US:\s*/i,'').trim();
+      const rnDetails=rlExtractReleaseNoteDetails(f.body);
+      // Try to extract a measurable win from the overview
+      const overview=rnDetails?rnDetails.split('\n').find(l=>l.trim()&&!l.startsWith('**')&&!l.startsWith('-')&&!l.startsWith('#')):'';
+      html+=`<li><strong>${rlEsc(title)}</strong>${overview?' — '+rlEsc(overview.substring(0,120)):''}</li>`;
+    });
+    html+='</ol>';
+  }else{
+    html+=`<p><em>[Add 3-5 measurable before→after wins here]</em></p>`;
+  }
+  html+=`</blockquote>`;
+
+  // Section 1 — Introduction (SKILL: 2-3 paragraphs + numbered capabilities + navigation path)
+  html+=`<h2>1. Introduction</h2>`;
+  html+=`<p>digiQC version ${rlEsc(version)} introduces ${features.length} new feature${features.length!==1?'s':''}`
+    +(bugs.length>0?`, ${bugs.length} bug fix${bugs.length!==1?'es':''}`:'')+
+    (maintenance.length>0?`, and ${maintenance.length} optimisation${maintenance.length!==1?'s':''}`:'')+
+    ` to help teams work faster and more efficiently.</p>`;
+  if(features.length>0){
+    html+=`<p>With this release, users can now:</p><ol>`;
+    features.forEach(f=>{
+      html+=`<li><strong>${rlEsc(f.title.replace(/^US:\s*/i,'').trim())}</strong></li>`;
+    });
+    html+=`</ol>`;
   }
 
-  // 1. Introduction
-  html+='<h2>1. Introduction</h2>';
-  html+=`<p>Version ${rlEsc(version)} brings ${features.length} new feature${features.length!==1?'s':''}, ${bugs.length} bug fix${bugs.length!==1?'es':''}, and ${maintenance.length} optimisation${maintenance.length!==1?'s':''}.</p>`;
-  if(features.length>0){
-    html+='<ul>';
-    features.forEach(f=>{html+=`<li><strong>${rlEsc(f.title.replace(/^US:\s*/i,''))}</strong></li>`});
-    html+='</ul>';
-  }
+  // Section 2 — Why you will love this (SKILL: 4-6 numbered benefit statements)
+  html+=`<h2>2. Why You Will Love This</h2>`;
+  html+=`<p><em>[Edit: Add 4-6 numbered benefit statements from the user's perspective. Focus on time saved, clicks reduced, consistency.]</em></p>`;
+  html+=`<ol><li><em>Example: Bulk operations save hours of repetitive one-by-one setup</em></li>`;
+  html+=`<li><em>Example: Consistent configuration across all checklists in a single action</em></li></ol>`;
 
-  // 2. Why You Will Love This
-  html+='<h2>2. Why You Will Love This</h2>';
-  html+='<p><em>[Edit this section to highlight key benefits for users]</em></p>';
-
-  // 3. Feature-wise Details — pull from "Release Note Details" section
-  html+='<h2>3. Feature-wise Details</h2>';
+  // Section 3 — Feature-wise Details (SKILL: pull from Release Note Details)
+  html+=`<h2>3. Feature-wise Details</h2>`;
   if(features.length>0){
     features.forEach((f,i)=>{
       const title=f.title.replace(/^US:\s*/i,'').trim();
@@ -2963,35 +2979,46 @@ function rlBuildDataJson(version,msNumber,msTitle,features,bugs,maintenance){
       if(rnDetails){
         html+=rlMarkdownToHtml(rnDetails);
       }else{
-        html+=`<p><em>[No "Release Note Details" section found in issue #${f.number} — add content here]</em></p>`;
+        html+=`<p><em>[No "Release Note Details" section found in issue #${f.number}]</em></p>`;
+      }
+      // Image placeholder
+      html+=`<p style="background:#F5F5F5;padding:40px 20px;text-align:center;border-radius:8px;color:#666"><em>[Insert screenshot here]</em></p>`;
+      html+=`<p style="text-align:center;color:#666;font-style:italic;font-size:10pt">Image ${i+1}: ${rlEsc(title)}</p>`;
+      // How to use (SKILL: only for multi-feature releases)
+      if(isMulti){
+        html+=`<h3>How to use this feature</h3>`;
+        html+=`<p><em>[Follow these steps to use ${rlEsc(title)}:]</em></p>`;
+        html+=`<ol><li><em>Go to [navigation path]</em></li><li><em>Click [action]</em></li><li><em>Configure [settings]</em></li><li><em>Save</em></li></ol>`;
       }
     });
   }else{
-    html+='<p><em>No features in this milestone.</em></p>';
+    html+=`<p><em>No features in this milestone.</em></p>`;
   }
 
-  // 4. Overall Impact
-  html+='<h2>4. Overall Impact</h2>';
-  html+='<p><em>[Edit this section to summarize the combined impact of all features]</em></p>';
+  // Section 4 — Overall Impact (SKILL: 3 short paragraphs)
+  html+=`<h2>4. Overall Impact</h2>`;
+  html+=`<p><em>[Paragraph 1: General statement about what this release achieves for the platform]</em></p>`;
+  html+=`<p><em>[Paragraph 2: What it means for clients — onboarding, standardisation, admin time]</em></p>`;
+  html+=`<p><em>[Paragraph 3: Closing contrast — "What earlier required X can now be done in Y"]</em></p>`;
 
-  // 5. Bug Fixes
-  html+='<h2>5. Bug Fixes</h2>';
+  // Section 5 — Bug Fixes (SKILL: numbered, "[Module] — Description")
   if(bugs.length>0){
-    html+='<ul>';
-    bugs.forEach(b=>{html+=`<li>Fixed: ${rlEsc(b.title)} (<a href="${rlEsc(b.html_url)}" target="_blank">#${b.number}</a>)</li>`});
-    html+='</ul>';
-  }else{
-    html+='<p><em>No bug fixes in this release.</em></p>';
+    html+=`<h2>5. Bug Fixes</h2><ol>`;
+    bugs.forEach(b=>{
+      const labels=b.labels.map(l=>l.name).filter(l=>['Backend','App','Web'].includes(l));
+      const module=labels.length>0?labels[0]:'General';
+      html+=`<li><strong>${rlEsc(module)}</strong> — ${rlEsc(b.title.replace(/^BUG:\s*/i,''))} (<a href="${rlEsc(b.html_url)}" target="_blank">#${b.number}</a>)</li>`;
+    });
+    html+=`</ol>`;
   }
 
-  // 6. Optimisations
-  html+='<h2>6. Optimisations</h2>';
+  // Section 6 — Optimisations (SKILL: numbered, "[Module] — What improved")
   if(maintenance.length>0){
-    html+='<ul>';
-    maintenance.forEach(m=>{html+=`<li>${rlEsc(m.title)} (<a href="${rlEsc(m.html_url)}" target="_blank">#${m.number}</a>)</li>`});
-    html+='</ul>';
-  }else{
-    html+='<p><em>No optimisations in this release.</em></p>';
+    html+=`<h2>6. Optimisations</h2><ol>`;
+    maintenance.forEach(m=>{
+      html+=`<li>${rlEsc(m.title)} (<a href="${rlEsc(m.html_url)}" target="_blank">#${m.number}</a>)</li>`;
+    });
+    html+=`</ol>`;
   }
 
   return{
