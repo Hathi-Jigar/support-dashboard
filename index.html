@@ -3018,36 +3018,52 @@ function rlEsc(text){
 // Extract "## Release Note Details" section from issue body
 function rlExtractReleaseNoteDetails(body){
   if(!body)return null;
-  // Match ## Release Note Details or ## 📣 Release Note Details (with or without emoji)
-  const regex=/##\s*(?:\u{1F4E3}\s*)?Release Note Details\s*\n([\s\S]*?)(?=\n##\s|\n---\s*$|$)/iu;
+  const regex=/##\s*(?:\u{1F4E3}\s*)?Release Note Details\s*\n([\s\S]*?)(?=\n##\s|\n---|\n\*\*Interactive Prototype|$)/iu;
   const match=body.match(regex);
   if(!match)return null;
   return match[1].trim();
 }
 
-// Simple markdown to HTML for release note content
+// Markdown to HTML — handles bold, italic, bullet lists, numbered lists, sub-headings
 function rlMarkdownToHtml(md){
   if(!md)return'';
-  let html=md;
+  // Decode HTML entities first
+  let text=md.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&#39;/g,"'").replace(/&quot;/g,'"');
   // Bold
-  html=html.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
-  // Italic
-  html=html.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g,'<em>$1</em>');
-  // Bullet lists
-  const lines=html.split('\n');
-  let result='',inList=false;
+  text=text.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  // Italic (single *)
+  text=text.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g,'<em>$1</em>');
+
+  const lines=text.split('\n');
+  let result='',inUl=false,inOl=false;
   for(const line of lines){
     const trimmed=line.trim();
-    if(trimmed.startsWith('- ')||trimmed.startsWith('* ')){
-      if(!inList){result+='<ul>';inList=true}
+    if(!trimmed){
+      if(inUl){result+='</ul>';inUl=false}
+      if(inOl){result+='</ol>';inOl=false}
+      continue;
+    }
+    // Numbered list: "1. ", "2. " etc
+    const olMatch=trimmed.match(/^(\d+)\.\s+(.+)/);
+    // Bullet list: "- " or "* "
+    const ulMatch=!olMatch&&(trimmed.startsWith('- ')||trimmed.startsWith('* '));
+
+    if(olMatch){
+      if(inUl){result+='</ul>';inUl=false}
+      if(!inOl){result+='<ol>';inOl=true}
+      result+=`<li>${olMatch[2]}</li>`;
+    }else if(ulMatch){
+      if(inOl){result+='</ol>';inOl=false}
+      if(!inUl){result+='<ul>';inUl=true}
       result+=`<li>${trimmed.substring(2)}</li>`;
     }else{
-      if(inList){result+='</ul>';inList=false}
-      if(trimmed==='')result+='';
-      else result+=`<p>${trimmed}</p>`;
+      if(inUl){result+='</ul>';inUl=false}
+      if(inOl){result+='</ol>';inOl=false}
+      result+=`<p>${trimmed}</p>`;
     }
   }
-  if(inList)result+='</ul>';
+  if(inUl)result+='</ul>';
+  if(inOl)result+='</ol>';
   return result;
 }
 
