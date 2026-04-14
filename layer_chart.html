@@ -194,28 +194,22 @@ function exportExcel(){
   const hdr2=[''];
   for(let b=0;b<NUM_BLOCKS;b++)for(let s=1;s<=SUBS;s++)hdr2.push(s*excelSUB);
   wsData.push(hdr2);
-  // Row 4+: data (use null for subordinate merge labels so aoa_to_sheet leaves them empty)
-  for(const row of excelData){const r=[row.rowLabel||null];for(const c of row.cells)r.push(c.content);wsData.push(r);}
+  // Row 4+: data
+  for(const row of excelData){const r=[row.rowLabel];for(const c of row.cells)r.push(c.content);wsData.push(r);}
 
   const ws=XLSX.utils.aoa_to_sheet(wsData);
   ws['!cols']=[{wch:28}];for(let i=0;i<excelTOTAL;i++)ws['!cols'].push({wch:10});
 
-  // Collect ALL merges upfront (including CHAINAGE label)
-  const merges=[{s:{r:0,c:0},e:{r:0,c:totalCols-1}},{s:{r:2,c:0},e:{r:3,c:0}}];
-  let mc=1;for(let b=0;b<NUM_BLOCKS;b++){merges.push({s:{r:2,c:mc},e:{r:2,c:mc+SUBS-1}});mc+=SUBS;}
-  for(const m of excelMerges) merges.push(m);
-
   function addr(r,c){return XLSX.utils.encode_cell({r,c});}
-  // Ensure every cell in the sheet exists so merged cells get borders
+  // Ensure every cell in the sheet exists so borders render
   const totalRows=4+excelData.length;
   for(let r=0;r<totalRows;r++)for(let c=0;c<totalCols;c++){const a=addr(r,c);if(!ws[a])ws[a]={v:'',t:'s'};}
 
   // Style: title row
   ws[addr(0,0)].s={fill:{patternType:'solid',fgColor:{rgb:'1E2D3D'}},font:{bold:true,color:{rgb:'FFFFFF'},sz:13},alignment:{horizontal:'center',vertical:'center'},border:B};
-  // Style all title merge cells (so borders show)
   for(let c=1;c<totalCols;c++)ws[addr(0,c)].s={fill:{patternType:'solid',fgColor:{rgb:'1E2D3D'}},border:B};
 
-  // Style: chainage block headers (row 2) — all cells get dark blue fill + border
+  // Style: chainage block headers (row 2)
   const hdrStyle={fill:{patternType:'solid',fgColor:{rgb:'2C5F8A'}},font:{bold:true,color:{rgb:'FFFFFF'},sz:10},alignment:{horizontal:'center',vertical:'center'},border:B};
   for(let c=0;c<totalCols;c++)ws[addr(2,c)].s={...hdrStyle};
 
@@ -226,10 +220,8 @@ function exportExcel(){
   // Style: data rows
   for(let ri=0;ri<excelData.length;ri++){
     const row=excelData[ri],er=4+ri;
-    // Row label cell
     const labelStyle={fill:{patternType:'solid',fgColor:{rgb:row.labelFill||'F0F4F8'}},font:{bold:true,sz:9,color:{rgb:hex6(row.labelFg||'#333333')}},alignment:{horizontal:'left',vertical:'center',wrapText:true},border:B};
     ws[addr(er,0)].s=labelStyle;
-    // Data cells
     for(let ci=0;ci<row.cells.length;ci++){
       const c=row.cells[ci];
       const isEmpty=c.fill===EMP.fill;
@@ -237,28 +229,15 @@ function exportExcel(){
     }
   }
 
-  // Ensure merged row-label cells all have the same style
-  for(const m of excelMerges){
-    const topStyle=ws[addr(m.s.r,m.s.c)].s;
-    for(let r=m.s.r+1;r<=m.e.r;r++){ws[addr(r,0)].s={...topStyle};}
-  }
+  // Add sheet to workbook FIRST, then set merges (SheetJS pattern)
+  XLSX.utils.book_append_sheet(wb,ws,'Layer Chart');
 
-  // Clear subordinate merge cells — replace with clean stub so xlsx writer merges correctly
-  for(const m of merges){
-    for(let r=m.s.r;r<=m.e.r;r++){
-      for(let c=m.s.c;c<=m.e.c;c++){
-        if(r===m.s.r&&c===m.s.c)continue;
-        const a=addr(r,c);
-        const kept=ws[a]?ws[a].s:undefined;
-        ws[a]={t:'z',s:kept};
-      }
-    }
-  }
-
-  // Set merges right before writing
+  // Build merges array
+  const merges=[{s:{r:0,c:0},e:{r:0,c:totalCols-1}},{s:{r:2,c:0},e:{r:3,c:0}}];
+  let mc=1;for(let b=0;b<NUM_BLOCKS;b++){merges.push({s:{r:2,c:mc},e:{r:2,c:mc+SUBS-1}});mc+=SUBS;}
+  for(const m of excelMerges) merges.push(m);
   ws['!merges']=merges;
 
-  XLSX.utils.book_append_sheet(wb,ws,'Layer Chart');
   XLSX.writeFile(wb,'LayerChart_'+fmtCh(excelChFrom)+'_'+fmtCh(excelChTo)+'_'+excelSide+'.xlsx');
 }
 
