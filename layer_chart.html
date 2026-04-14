@@ -194,17 +194,16 @@ function exportExcel(){
   const hdr2=[''];
   for(let b=0;b<NUM_BLOCKS;b++)for(let s=1;s<=SUBS;s++)hdr2.push(s*excelSUB);
   wsData.push(hdr2);
-  // Row 4+: data
-  for(const row of excelData){const r=[row.rowLabel];for(const c of row.cells)r.push(c.content);wsData.push(r);}
+  // Row 4+: data (use null for subordinate merge labels so aoa_to_sheet leaves them empty)
+  for(const row of excelData){const r=[row.rowLabel||null];for(const c of row.cells)r.push(c.content);wsData.push(r);}
 
   const ws=XLSX.utils.aoa_to_sheet(wsData);
   ws['!cols']=[{wch:28}];for(let i=0;i<excelTOTAL;i++)ws['!cols'].push({wch:10});
 
-  // Merges
-  const merges=[{s:{r:0,c:0},e:{r:0,c:totalCols-1}}];
+  // Collect ALL merges upfront (including CHAINAGE label)
+  const merges=[{s:{r:0,c:0},e:{r:0,c:totalCols-1}},{s:{r:2,c:0},e:{r:3,c:0}}];
   let mc=1;for(let b=0;b<NUM_BLOCKS;b++){merges.push({s:{r:2,c:mc},e:{r:2,c:mc+SUBS-1}});mc+=SUBS;}
   for(const m of excelMerges) merges.push(m);
-  ws['!merges']=merges;
 
   function addr(r,c){return XLSX.utils.encode_cell({r,c});}
   // Ensure every cell in the sheet exists so merged cells get borders
@@ -244,22 +243,23 @@ function exportExcel(){
     for(let r=m.s.r+1;r<=m.e.r;r++){ws[addr(r,0)].s={...topStyle};}
   }
 
-  // Clear values in hidden merge cells (Excel needs them empty for merge to render)
-  for(const m of ws['!merges']){
+  // Clear subordinate merge cells — replace with clean stub so xlsx writer merges correctly
+  for(const m of merges){
     for(let r=m.s.r;r<=m.e.r;r++){
       for(let c=m.s.c;c<=m.e.c;c++){
         if(r===m.s.r&&c===m.s.c)continue;
         const a=addr(r,c);
-        if(ws[a]){delete ws[a].v;ws[a].t='z';}
+        const kept=ws[a]?ws[a].s:undefined;
+        ws[a]={t:'z',s:kept};
       }
     }
   }
 
-  // Also merge CHAINAGE label across rows 2-3 (like HTML rowspan=2)
-  ws['!merges'].push({s:{r:2,c:0},e:{r:3,c:0}});
+  // Set merges right before writing
+  ws['!merges']=merges;
 
   XLSX.utils.book_append_sheet(wb,ws,'Layer Chart');
-  XLSX.writeFile(wb,'LayerChart_'+fmtCh(excelChFrom)+'_'+fmtCh(excelChTo)+'_'+excelSide+'.xlsx',{cellStyles:true});
+  XLSX.writeFile(wb,'LayerChart_'+fmtCh(excelChFrom)+'_'+fmtCh(excelChTo)+'_'+excelSide+'.xlsx');
 }
 
 // ── MAIN ─────────────────────────────────────────────────────
