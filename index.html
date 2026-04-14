@@ -105,6 +105,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600;white-space:nowrap}
 .badge-open{background:var(--open-bg);color:var(--open)}
 .badge-closed{background:var(--closed-bg);color:var(--closed)}
+.badge-warning{background:#FEF3C7;color:#92400E;border:1px solid #F59E0B}
 
 .platform-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:6px;background:var(--bg);color:var(--sub);border:1px solid var(--border)}
 .tag-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:6px;display:inline-block}
@@ -389,6 +390,31 @@ th {
   .detail-panel{width:100%}
   .search-input{width:150px}
 }
+
+/* Release Notes Tab */
+@keyframes spin{to{transform:rotate(360deg)}}
+.rl-badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600}
+.rl-badge-none{background:#F3F4F6;color:#6B7280}
+.rl-badge-draft{background:var(--open-bg);color:var(--open)}
+.rl-badge-published{background:var(--closed-bg);color:var(--closed)}
+.rl-btn{padding:5px 14px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;font-family:inherit;transition:background .15s}
+.rl-btn-generate{background:var(--brand);color:white}
+.rl-btn-generate:hover{background:#c63a08}
+.rl-btn-generate:disabled{background:var(--muted);cursor:not-allowed}
+.rl-btn-view{background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE;text-decoration:none;display:inline-block}
+.rl-btn-view:hover{background:#DBEAFE}
+.rl-btn-edit{background:var(--brand-light);color:#C2410C;border:1px solid #FED7AA;text-decoration:none;display:inline-block}
+.rl-btn-edit:hover{background:#FFEDD5}
+.rl-btn-regen{background:#F3F4F6;color:#6B7280;border:1px solid var(--border)}
+.rl-btn-regen:hover{background:#E5E7EB}
+.rl-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.rl-counts{display:flex;gap:6px;flex-wrap:wrap}
+.rl-count{font-size:10px;font-weight:600;padding:2px 8px;border-radius:999px}
+.rl-count-feat{background:#EDE9FE;color:#5B21B6}
+.rl-count-bug{background:#FEE2E2;color:#991B1B}
+.rl-count-maint{background:#DBEAFE;color:#1E40AF}
+.rl-ms-open{color:#D97706}
+.rl-ms-closed{color:#16A34A}
 </style>
 </head>
 <body>
@@ -411,6 +437,7 @@ th {
   <button class="main-tab active" onclick="switchMainTab('bugs',this)">&#128027; Bug Tracker</button>
   <button class="main-tab" onclick="switchMainTab('onboarding',this)">&#128640; Onboarding Tracker</button>
   <button class="main-tab" onclick="switchMainTab('tasks',this)">&#128203; Task Tracker</button>
+  <button class="main-tab" onclick="switchMainTab('releases',this)">&#128640; Upcoming Release</button>
 </div>
 
 <div class="setup-banner" id="setupBanner">
@@ -434,6 +461,7 @@ th {
   <button class="filter-chip active" onclick="setFilter('all',this)">All</button>
   <button class="filter-chip" onclick="setFilter('open',this)">Open</button>
   <button class="filter-chip" onclick="setFilter('closed',this)">Closed</button>
+  <button class="filter-chip" onclick="setFilter('invalid',this)" style="color:#92400E">&#9888; Invalid Close</button>
   <input class="search-input" placeholder="Search by title..." oninput="searchBugs(this.value)" id="searchBox">
 </div>
 
@@ -554,6 +582,60 @@ th {
 </div>
 
 </div><!-- /tabTasks -->
+
+<!-- ============ UPCOMING RELEASE TAB ============ -->
+<div class="tab-content" id="tabReleases">
+
+<div class="stats-bar" id="releaseStatsBar">
+  <div class="stat-card"><div class="stat-value" id="rlStatTotal">&mdash;</div><div class="stat-label">Milestones</div></div>
+  <div class="stat-card open"><div class="stat-value" id="rlStatDraft">&mdash;</div><div class="stat-label">Draft</div></div>
+  <div class="stat-card closed"><div class="stat-value" id="rlStatPublished">&mdash;</div><div class="stat-label">Published</div></div>
+  <div class="stat-card"><div class="stat-value" id="rlStatPending">&mdash;</div><div class="stat-label">Not Generated</div></div>
+</div>
+
+<div class="table-wrap">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Version</th>
+        <th>Due Date</th>
+        <th>State</th>
+        <th>Issues</th>
+        <th>Release Note</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="releaseTableBody">
+      <tr><td colspan="6"><div class="empty-state"><div class="icon">&#128640;</div><div class="title">Loading...</div></div></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Generate Confirmation Modal -->
+<div class="detail-overlay" id="generateOverlay" style="display:none" onclick="if(event.target===this)closeGenerateModal()">
+  <div class="detail-panel" style="max-width:480px;margin:auto;top:50%;transform:translateY(-50%);border-radius:12px">
+    <div class="dp-header">
+      <span class="dp-title" id="genModalTitle">Generate Release Note</span>
+      <button class="dp-close" onclick="closeGenerateModal()">&#10005;</button>
+    </div>
+    <div class="dp-body" style="padding:20px 24px">
+      <p id="genModalDesc" style="font-size:13px;color:var(--sub);line-height:1.6;margin-bottom:20px">This will fetch all issues linked to this milestone and create a release note. Continue?</p>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="filter-chip" onclick="closeGenerateModal()">Cancel</button>
+        <button class="filter-chip" style="background:var(--brand);color:white;border-color:var(--brand)" id="genModalConfirmBtn" onclick="confirmGenerate()">Generate</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Generate Progress Overlay -->
+<div id="genProgressOverlay" style="display:none;position:fixed;inset:0;background:rgba(255,255,255,0.92);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:16px">
+  <div style="width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--brand);border-radius:50%;animation:spin .6s linear infinite"></div>
+  <div id="genProgressText" style="font-size:14px;font-weight:600;color:var(--text)">Generating release note...</div>
+  <div id="genProgressSub" style="font-size:12px;color:var(--sub);max-width:400px;text-align:center">Fetching issues from milestone</div>
+</div>
+
+</div><!-- /tabReleases -->
 
 <!-- Detail Panel (Bug Tracker) -->
 <div class="detail-overlay" id="detailOverlay" onclick="if(event.target===this)closeDetail()">
@@ -723,11 +805,15 @@ function switchMainTab(tab,el){
   document.getElementById('tabBugs').classList.toggle('active',tab==='bugs');
   document.getElementById('tabOnboarding').classList.toggle('active',tab==='onboarding');
   document.getElementById('tabTasks').classList.toggle('active',tab==='tasks');
+  document.getElementById('tabReleases').classList.toggle('active',tab==='releases');
   if(tab==='onboarding'&&obCompanies.length===0&&getToken()){
     loadOnboardingData();
   }
   if(tab==='tasks'&&taskItems.length===0&&getToken()){
     loadTaskData();
+  }
+  if(tab==='releases'&&rlMilestones.length===0&&getToken()){
+    loadReleaseData();
   }
 }
 
@@ -735,6 +821,7 @@ function handleRefresh(){
   if(activeMainTab==='bugs') loadIssues();
   else if(activeMainTab==='onboarding') loadOnboardingData();
   else if(activeMainTab==='tasks') loadTaskData();
+  else if(activeMainTab==='releases') loadReleaseData();
 }
 
 // ============================================================
@@ -883,9 +970,10 @@ async function saveConfig(){
 
 async function loadIssues(){
   try{
-    const [openRes,closedRes]=await Promise.all([
+    const [openRes,closedGleapRes,closedSupportRes]=await Promise.all([
       ghGet(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues?labels=Gleap&state=open&per_page=100`),
-      ghGet(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues?labels=Gleap&state=closed&per_page=100`)
+      ghGet(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues?labels=Gleap&state=closed&per_page=100`),
+      ghGet(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues?labels=${encodeURIComponent('\ud83d\udd12 Closed from Support')}&state=closed&per_page=100`)
     ]);
     if(!openRes.ok||!closedRes.ok){
       const status=!openRes.ok?openRes.status:closedRes.status;
@@ -1168,8 +1256,10 @@ function renderTable(){
 
   tbody.innerHTML=filtered.map((b,i)=>{
     const isOpen=b.state==='open';
-    const badgeCls=isOpen?'badge-open':'badge-closed';
-    const badgeText=isOpen?'\ud83d\udd35 Open':'\ud83d\udd12 Closed';
+    const isClosedFromSupport=!isOpen&&b.labels.includes('\ud83d\udd12 Closed from Support');
+    const isInvalidClose=!isOpen&&!isClosedFromSupport;
+    const badgeCls=isOpen?'badge-open':isInvalidClose?'badge-warning':'badge-closed';
+    const badgeText=isOpen?'\ud83d\udd35 Open':isInvalidClose?'\u26a0\ufe0f Closed (not via Support)':'\ud83d\udd12 Closed';
     const tat=isOpen?tatSince(b.created_at):b.closed_at?formatDuration(new Date(b.closed_at)-new Date(b.created_at)):'\u2014';
     const tatCls=isOpen&&daysSince(b.created_at)>3?'tat-cell overdue':'tat-cell';
     const esc=s=>(s||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
@@ -1220,8 +1310,10 @@ function renderDetail(bug){
   const isOpen=bug.state==='open';
   document.getElementById('dpTitle').textContent=`#${bug.number} \u2014 ${bug.title}`;
   const badge=document.getElementById('dpBadge');
-  badge.textContent=isOpen?'\ud83d\udd35 Open':'\ud83d\udd12 Closed';
-  badge.className=`badge ${isOpen?'badge-open':'badge-closed'}`;
+  const detailIsClosedFromSupport=!isOpen&&bug.labels.includes('\ud83d\udd12 Closed from Support');
+  const detailIsInvalidClose=!isOpen&&!detailIsClosedFromSupport;
+  badge.textContent=isOpen?'\ud83d\udd35 Open':detailIsInvalidClose?'\u26a0\ufe0f Closed (not via Support)':'\ud83d\udd12 Closed';
+  badge.className=`badge ${isOpen?'badge-open':detailIsInvalidClose?'badge-warning':'badge-closed'}`;
 
   document.getElementById('dpIssueLink').innerHTML=`<a href="${bug.html_url}" target="_blank" style="color:var(--brand);text-decoration:none">${bug.html_url}</a>`+
     (bug.gleapLink?` &nbsp;\u00b7&nbsp; <a href="${bug.gleapLink}" target="_blank" style="color:var(--sub);text-decoration:none;font-size:12px">Open in Gleap</a>`:'');
@@ -2509,9 +2601,373 @@ function getTableKey(table) {
 }
 
 // ============================================================
+// UPCOMING RELEASE TAB
+// ============================================================
+let rlMilestones=[];
+let rlDashboard={lastUpdated:null,releases:[]};
+let rlDashboardSha=null;
+let rlTemplateContent=null;
+let rlPendingMilestone=null;
+const RL_DASHBOARD_PATH='docs/release-notes/dashboard.json';
+const RL_TEMPLATE_PATH='docs/release-notes/template/index.html';
+const RL_DETAIL_BASE='https://digiqc-hq.github.io/product-management/release-notes/';
+
+function rlExtractVersion(title){
+  const m=title.match(/(?:Release[- ]?|v)([\d.]+)/i);
+  return m?m[1]:title.replace(/[^a-zA-Z0-9.]/g,'-');
+}
+
+async function rlGhFetch(path,opts={}){
+  const token=getToken();
+  if(!token) throw new Error('Not authenticated');
+  const url=path.startsWith('https://')?path:`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/${path}`;
+  const headers={'Authorization':`token ${token}`,'Accept':'application/vnd.github.v3+json',...(opts.headers||{})};
+  const res=await fetch(url,{...opts,headers});
+  if(!res.ok){const err=await res.text().catch(()=>'');throw new Error(`GitHub API ${res.status}: ${err}`)}
+  return res;
+}
+
+async function rlGhGetJSON(filePath){
+  try{
+    const res=await rlGhFetch(`contents/${filePath}`);
+    const data=await res.json();
+    const content=JSON.parse(decodeURIComponent(escape(atob(data.content.replace(/\n/g,'')))));
+    return{content,sha:data.sha};
+  }catch(e){if(e.message.includes('404'))return null;throw e}
+}
+
+async function rlGhPutJSON(filePath,content,sha){
+  const body={message:`Update ${filePath.split('/').pop()}`,content:btoa(unescape(encodeURIComponent(JSON.stringify(content,null,2)))),...(sha?{sha}:{})};
+  const res=await rlGhFetch(`contents/${filePath}`,{method:'PUT',body:JSON.stringify(body)});
+  const result=await res.json();
+  return result.content.sha;
+}
+
+async function rlGhGetFile(filePath){
+  try{
+    const res=await rlGhFetch(`contents/${filePath}`);
+    const data=await res.json();
+    return{content:data.content.replace(/\n/g,''),sha:data.sha};
+  }catch(e){if(e.message.includes('404'))return null;throw e}
+}
+
+async function rlGhPutFile(filePath,base64Content,sha,message){
+  const body={message:message||`Add ${filePath.split('/').pop()}`,content:base64Content,...(sha?{sha}:{})};
+  const res=await rlGhFetch(`contents/${filePath}`,{method:'PUT',body:JSON.stringify(body)});
+  const result=await res.json();
+  return result.content.sha;
+}
+
+async function loadReleaseData(){
+  const token=getToken();
+  if(!token)return;
+  document.getElementById('releaseTableBody').innerHTML='<tr><td colspan="6"><div class="empty-state"><div class="icon">&#128640;</div><div class="title">Loading milestones...</div></div></td></tr>';
+  try{
+    const[msRes,dashResult]=await Promise.all([
+      fetch(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/milestones?state=all&per_page=100&sort=due_on&direction=desc`,{
+        headers:{'Authorization':`token ${token}`,'Accept':'application/vnd.github.v3+json'}
+      }),
+      rlGhGetJSON(RL_DASHBOARD_PATH)
+    ]);
+    if(!msRes.ok) throw new Error(`Milestones: ${msRes.status}`);
+    rlMilestones=await msRes.json();
+    if(dashResult){
+      rlDashboard=dashResult.content;
+      rlDashboardSha=dashResult.sha;
+    }
+    rlRenderTable();
+  }catch(e){
+    console.error('Release load failed:',e);
+    document.getElementById('releaseTableBody').innerHTML=`<tr><td colspan="6"><div class="empty-state"><div class="icon">&#9888;</div><div class="title">Failed to load: ${e.message}</div></div></td></tr>`;
+  }
+}
+
+function rlRenderTable(){
+  const tbody=document.getElementById('releaseTableBody');
+  if(rlMilestones.length===0){
+    tbody.innerHTML='<tr><td colspan="6"><div class="empty-state"><div class="icon">&#128640;</div><div class="title">No milestones found</div><div class="subtitle">Create a milestone in GitHub to get started</div></div></td></tr>';
+    rlUpdateStats();
+    return;
+  }
+  const sorted=[...rlMilestones].sort((a,b)=>{
+    if(a.state!==b.state) return a.state==='open'?-1:1;
+    return new Date(b.due_on||b.created_at)-new Date(a.due_on||a.created_at);
+  });
+  let html='';
+  for(const ms of sorted){
+    const version=rlExtractVersion(ms.title);
+    const release=rlDashboard.releases.find(r=>r.milestoneNumber===ms.number);
+    const status=release?release.status:'none';
+
+    // Badge
+    let badge;
+    if(status==='published') badge='<span class="rl-badge rl-badge-published">Published</span>';
+    else if(status==='draft') badge='<span class="rl-badge rl-badge-draft">Draft</span>';
+    else badge='<span class="rl-badge rl-badge-none">Not Generated</span>';
+
+    // Milestone state
+    const stateHtml=ms.state==='closed'
+      ?'<span class="rl-ms-closed">&#9989; Closed</span>'
+      :'<span class="rl-ms-open">&#9898; Open</span>';
+
+    // Issue counts
+    let countsHtml='';
+    if(release&&status!=='none'){
+      countsHtml='<div class="rl-counts">';
+      if(release.featureCount) countsHtml+=`<span class="rl-count rl-count-feat">${release.featureCount} features</span>`;
+      if(release.bugCount) countsHtml+=`<span class="rl-count rl-count-bug">${release.bugCount} bugs</span>`;
+      if(release.maintenanceCount) countsHtml+=`<span class="rl-count rl-count-maint">${release.maintenanceCount} maint</span>`;
+      countsHtml+='</div>';
+    }else{
+      const total=ms.open_issues+(ms.closed_issues||0);
+      countsHtml=`<span style="font-size:12px;color:var(--sub)">${total} total</span>`;
+    }
+
+    // Actions
+    let actions='<div class="rl-actions">';
+    if(status==='none'){
+      actions+=`<button class="rl-btn rl-btn-generate" onclick="rlStartGenerate(${ms.number},'${ms.title.replace(/'/g,"\\'")}')">Generate</button>`;
+    }else{
+      actions+=`<a class="rl-btn rl-btn-view" href="${RL_DETAIL_BASE}${encodeURIComponent(version)}/" target="_blank">View</a>`;
+      actions+=`<a class="rl-btn rl-btn-edit" href="${RL_DETAIL_BASE}${encodeURIComponent(version)}/?edit=1" target="_blank">Edit</a>`;
+      actions+=`<button class="rl-btn rl-btn-regen" onclick="rlStartGenerate(${ms.number},'${ms.title.replace(/'/g,"\\'")}')">Regenerate</button>`;
+    }
+    actions+='</div>';
+
+    html+=`<tr>
+      <td style="font-weight:600">${ms.title}</td>
+      <td>${ms.due_on?formatDate(ms.due_on):'—'}</td>
+      <td>${stateHtml}</td>
+      <td>${countsHtml}</td>
+      <td>${badge}</td>
+      <td>${actions}</td>
+    </tr>`;
+  }
+  tbody.innerHTML=html;
+  rlUpdateStats();
+}
+
+function rlUpdateStats(){
+  const total=rlMilestones.length;
+  let draft=0,published=0,pending=0;
+  for(const ms of rlMilestones){
+    const release=rlDashboard.releases.find(r=>r.milestoneNumber===ms.number);
+    if(!release||release.status==='none') pending++;
+    else if(release.status==='draft') draft++;
+    else if(release.status==='published') published++;
+  }
+  document.getElementById('rlStatTotal').textContent=total;
+  document.getElementById('rlStatDraft').textContent=draft;
+  document.getElementById('rlStatPublished').textContent=published;
+  document.getElementById('rlStatPending').textContent=pending;
+}
+
+// ── Generate Flow ──
+function rlStartGenerate(msNumber,msTitle){
+  rlPendingMilestone={number:msNumber,title:msTitle};
+  const version=rlExtractVersion(msTitle);
+  const existing=rlDashboard.releases.find(r=>r.milestoneNumber===msNumber);
+  document.getElementById('genModalTitle').textContent=existing?`Regenerate — ${version}`:`Generate — ${version}`;
+  document.getElementById('genModalDesc').textContent=existing
+    ?`This will re-fetch all issues and overwrite the existing release note for ${msTitle}. Any manual edits will be lost. Continue?`
+    :`This will fetch all issues linked to ${msTitle} and create a release note. Continue?`;
+  document.getElementById('genModalConfirmBtn').textContent=existing?'Regenerate':'Generate';
+  document.getElementById('generateOverlay').style.display='flex';
+}
+
+function closeGenerateModal(){
+  document.getElementById('generateOverlay').style.display='none';
+  rlPendingMilestone=null;
+}
+
+function rlShowProgress(title,sub){
+  document.getElementById('genProgressText').textContent=title;
+  document.getElementById('genProgressSub').textContent=sub;
+  document.getElementById('genProgressOverlay').style.display='flex';
+}
+function rlHideProgress(){
+  document.getElementById('genProgressOverlay').style.display='none';
+}
+
+async function confirmGenerate(){
+  closeGenerateModal();
+  if(!rlPendingMilestone) return;
+  const{number:msNumber,title:msTitle}=rlPendingMilestone;
+  const version=rlExtractVersion(msTitle);
+  const token=getToken();
+
+  rlShowProgress('Generating release note...','Fetching issues from milestone');
+  try{
+    // Step 1: Fetch issues
+    const issues=[];
+    let page=1;
+    while(true){
+      const res=await fetch(
+        `https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues?milestone=${msNumber}&state=all&per_page=100&page=${page}`,
+        {headers:{'Authorization':`token ${token}`,'Accept':'application/vnd.github.v3+json'}}
+      );
+      if(!res.ok) throw new Error(`Issues: ${res.status}`);
+      const batch=await res.json();
+      if(batch.length===0) break;
+      issues.push(...batch.filter(i=>!i.pull_request));
+      if(batch.length<100) break;
+      page++;
+    }
+
+    // Step 2: Classify
+    rlShowProgress('Generating release note...',`Classifying ${issues.length} issues`);
+    const features=[],bugs=[],maintenance=[];
+    for(const issue of issues){
+      const labels=issue.labels.map(l=>l.name.toLowerCase());
+      const title=issue.title;
+      if(labels.some(l=>l.includes('bug'))) bugs.push(issue);
+      else if(labels.includes('maintenance')) maintenance.push(issue);
+      else if(title.startsWith('US:')) features.push(issue);
+    }
+
+    // Step 3: Build data.json
+    rlShowProgress('Generating release note...','Building release note content');
+    const dataJson=rlBuildDataJson(version,msNumber,msTitle,features,bugs,maintenance);
+
+    // Step 4: Fetch template
+    rlShowProgress('Generating release note...','Fetching page template');
+    if(!rlTemplateContent){
+      const tmpl=await rlGhGetFile(RL_TEMPLATE_PATH);
+      if(!tmpl) throw new Error('Template not found at docs/release-notes/template/index.html');
+      rlTemplateContent=tmpl.content;
+    }
+
+    // Step 5: Save data.json
+    rlShowProgress('Saving release note...','Saving data.json');
+    const dataPath=`docs/release-notes/${version}/data.json`;
+    const existingData=await rlGhGetJSON(dataPath);
+    await rlGhPutJSON(dataPath,dataJson,existingData?existingData.sha:null);
+
+    // Step 6: Save index.html
+    rlShowProgress('Saving release note...','Saving detail page');
+    const indexPath=`docs/release-notes/${version}/index.html`;
+    const existingIndex=await rlGhGetFile(indexPath);
+    await rlGhPutFile(indexPath,rlTemplateContent,existingIndex?existingIndex.sha:null,`Add release note page for ${version}`);
+
+    // Step 7: Update dashboard.json
+    rlShowProgress('Saving release note...','Updating dashboard');
+    const dashEntry={
+      version,
+      milestoneNumber:msNumber,
+      milestoneTitle:msTitle,
+      status:'draft',
+      generatedAt:new Date().toISOString(),
+      publishedAt:null,
+      issueCount:issues.length,
+      featureCount:features.length,
+      bugCount:bugs.length,
+      maintenanceCount:maintenance.length
+    };
+    const idx=rlDashboard.releases.findIndex(r=>r.milestoneNumber===msNumber);
+    if(idx>=0) rlDashboard.releases[idx]={...rlDashboard.releases[idx],...dashEntry};
+    else rlDashboard.releases.push(dashEntry);
+    rlDashboard.lastUpdated=new Date().toISOString();
+    rlDashboardSha=await rlGhPutJSON(RL_DASHBOARD_PATH,rlDashboard,rlDashboardSha);
+
+    rlHideProgress();
+    showToast(`Release note for ${version} generated!`,'');
+    rlRenderTable();
+
+  }catch(e){
+    console.error('Generate failed:',e);
+    rlHideProgress();
+    showToast(`Generate failed: ${e.message}`,'error');
+  }
+}
+
+function rlBuildDataJson(version,msNumber,msTitle,features,bugs,maintenance){
+  const userName=getName()||'Unknown';
+  const sections=[];
+
+  // Title
+  sections.push({id:'title',type:'title',label:'Title',
+    content:`<h1>digiQC Release Note &mdash; Version ${rlEsc(version)}</h1>`});
+
+  // Big Win
+  const bigWinItems=features.map(f=>`<li>${rlEsc(f.title.replace(/^US:\s*/i,''))}</li>`);
+  sections.push({id:'bigwin',type:'bigwin',label:'Big Win',
+    content:bigWinItems.length>0?`<ul>${bigWinItems.join('')}</ul>`:'<p><em>Key improvements in this release</em></p>'});
+
+  // 1. Introduction
+  const introItems=features.map(f=>`<li><strong>${rlEsc(f.title.replace(/^US:\s*/i,''))}</strong></li>`);
+  sections.push({id:'introduction',type:'section',label:'1. Introduction',
+    content:`<p>Version ${rlEsc(version)} brings ${features.length} new feature${features.length!==1?'s':''}, ${bugs.length} bug fix${bugs.length!==1?'es':''}, and ${maintenance.length} optimisation${maintenance.length!==1?'s':''}.</p>`+(introItems.length>0?`<ul>${introItems.join('')}</ul>`:'')});
+
+  // 2. Why You Will Love This
+  sections.push({id:'why-love',type:'section',label:'2. Why You Will Love This',
+    content:'<p><em>[Edit this section to highlight key benefits for users]</em></p>'});
+
+  // 3. Feature-wise Details
+  let featContent='';
+  const subsections=[];
+  features.forEach((f,i)=>{
+    const title=f.title.replace(/^US:\s*/i,'').trim();
+    const desc=rlExtractDescription(f.body);
+    featContent+=`<h3>3.${i+1} ${rlEsc(title)}</h3><p>${desc||'<em>[Add feature details]</em>'}</p>`;
+    subsections.push({issueNumber:f.number,title});
+  });
+  sections.push({id:'features',type:'section',label:'3. Feature-wise Details',
+    content:featContent||'<p><em>No features in this milestone.</em></p>',subsections});
+
+  // 4. Overall Impact
+  sections.push({id:'impact',type:'section',label:'4. Overall Impact',
+    content:'<p><em>[Edit this section to summarize combined impact]</em></p>'});
+
+  // 5. Bug Fixes
+  const bugHtml=bugs.length>0
+    ?'<ul>'+bugs.map(b=>`<li>Fixed: ${rlEsc(b.title)} (<a href="${rlEsc(b.html_url)}" target="_blank">#${b.number}</a>)</li>`).join('')+'</ul>'
+    :'<p><em>No bug fixes in this release.</em></p>';
+  sections.push({id:'bugfixes',type:'section',label:'5. Bug Fixes',content:bugHtml});
+
+  // 6. Optimisations
+  const maintHtml=maintenance.length>0
+    ?'<ul>'+maintenance.map(m=>`<li>${rlEsc(m.title)} (<a href="${rlEsc(m.html_url)}" target="_blank">#${m.number}</a>)</li>`).join('')+'</ul>'
+    :'<p><em>No optimisations in this release.</em></p>';
+  sections.push({id:'optimisations',type:'section',label:'6. Optimisations',content:maintHtml});
+
+  return{
+    version,milestoneNumber:msNumber,milestoneTitle:msTitle,
+    generatedAt:new Date().toISOString(),
+    lastEditedAt:new Date().toISOString(),
+    lastEditedBy:userName,
+    status:'draft',
+    sections,
+    sourceIssues:{
+      features:features.map(f=>f.number),
+      bugs:bugs.map(b=>b.number),
+      maintenance:maintenance.map(m=>m.number)
+    }
+  };
+}
+
+function rlEsc(text){
+  if(!text)return'';
+  const map={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'};
+  return String(text).replace(/[&<>"']/g,m=>map[m]);
+}
+
+function rlExtractDescription(body){
+  if(!body)return'';
+  const lines=body.split('\n').map(l=>l.trim()).filter(l=>l&&!l.startsWith('#')&&!l.startsWith('---')&&!l.startsWith('**')&&!l.startsWith('|')&&!l.startsWith('- ['));
+  const first=lines.slice(0,3).join(' ');
+  return first.length>300?rlEsc(first.substring(0,300))+'...':rlEsc(first);
+}
+
+// ============================================================
 // INIT
 // ============================================================
 checkSetup();
+
+// Handle #releases hash in URL to auto-switch to Upcoming Release tab
+if(window.location.hash==='#releases'){
+  const rlTab=document.querySelector('.main-tab:last-child');
+  if(rlTab) switchMainTab('releases',rlTab);
+}
 </script>
 </body>
 </html>
