@@ -3027,24 +3027,6 @@ async function confirmGenerate(){
     rlDashboard.lastUpdated=new Date().toISOString();
     rlDashboardSha=await rlGhPutJSON(RL_DASHBOARD_PATH,rlDashboard,rlDashboardSha);
 
-    // Step 8: Trigger Claude AI to enhance content (async, non-blocking)
-    rlShowStep('Enhancing with AI...','Sending to Claude for better content');
-    try{
-      const featuresForAI=features.map(f=>({title:f.title.replace(/^US:\s*/i,''),releaseNoteDetails:rlExtractReleaseNoteDetails(f.body)||''}));
-      const bugsForAI=bugs.map(b=>({title:b.title}));
-      const maintForAI=maintenance.map(m=>({title:m.title}));
-      await rlGhFetch('dispatches',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-        event_type:'generate-release-content',
-        client_payload:{
-          version,
-          data_path:`docs/release-notes/${version}/data.json`,
-          features_json:JSON.stringify(featuresForAI),
-          bugs_json:JSON.stringify(bugsForAI),
-          maintenance_json:JSON.stringify(maintForAI)
-        }
-      })});
-    }catch(e){console.warn('AI dispatch failed (non-blocking):',e.message)}
-
     // Success — show in modal
     const pageUrl=`${RL_DETAIL_BASE}${encodeURIComponent(version)}/`;
     document.getElementById('genModalBox').innerHTML=`
@@ -3052,8 +3034,7 @@ async function confirmGenerate(){
         <div style="font-size:48px;margin-bottom:12px">&#9989;</div>
         <div style="font-size:16px;font-weight:700;color:#166534;margin-bottom:6px">Release Note Generated!</div>
         <div style="font-size:13px;color:var(--sub);margin-bottom:6px">Version ${rlEsc(version)} — ${features.length} features, ${bugs.length} bugs, ${maintenance.length} optimisations</div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:4px">GitHub Pages takes ~1 minute to deploy the new page</div>
-        <div style="font-size:11px;color:#5B21B6;margin-bottom:16px">&#10024; Claude AI is enhancing the content in the background — refresh the page in ~2 minutes for richer text</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:16px">GitHub Pages takes ~1 minute to deploy the new page</div>
       </div>
       <div style="display:flex;gap:10px;justify-content:center">
         <button class="rl-btn" style="background:var(--white);color:var(--text);border:1px solid var(--border)" onclick="rlGenerating=false;closeGenerateModal()">Close</button>
