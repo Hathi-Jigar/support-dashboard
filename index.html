@@ -2873,6 +2873,9 @@ async function confirmGenerate(){
     showToast(`Release note for ${version} generated!`,'');
     rlRenderTable();
 
+    // Open detail page for review
+    window.open(`${RL_DETAIL_BASE}${encodeURIComponent(version)}/?edit=1`,'_blank');
+
   }catch(e){
     console.error('Generate failed:',e);
     rlHideProgress();
