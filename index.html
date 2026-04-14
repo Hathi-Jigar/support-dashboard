@@ -2852,13 +2852,12 @@ async function confirmGenerate(){
     rlShowStep('Building release note...',`${features.length} features, ${bugs.length} bugs, ${maintenance.length} optimisations`);
     const dataJson=rlBuildDataJson(version,msNumber,msTitle,features,bugs,maintenance);
 
-    // Step 4: Fetch template
+    // Step 4: Fetch template (always fresh — don't use cached)
     rlShowStep('Preparing files...','Fetching page template');
-    if(!rlTemplateContent){
-      const tmpl=await rlGhGetFile(RL_TEMPLATE_PATH);
-      if(!tmpl) throw new Error('Template not found at docs/release-notes/template/index.html');
-      rlTemplateContent=tmpl.content;
-    }
+    rlTemplateContent=null;
+    const tmpl=await rlGhGetFile(RL_TEMPLATE_PATH);
+    if(!tmpl) throw new Error('Template not found at docs/release-notes/template/index.html');
+    rlTemplateContent=tmpl.content;
 
     // Step 5: Save data.json
     rlShowStep('Saving to GitHub...','Creating data.json');
