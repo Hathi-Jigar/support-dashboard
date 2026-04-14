@@ -612,24 +612,22 @@ th {
 </div>
 
 <!-- Generate Confirmation Modal -->
-<div class="detail-overlay" id="generateOverlay" style="display:none" onclick="if(event.target===this)closeGenerateModal()">
-  <div class="detail-panel" style="max-width:480px;margin:auto;top:50%;transform:translateY(-50%);border-radius:12px">
-    <div class="dp-header">
-      <span class="dp-title" id="genModalTitle">Generate Release Note</span>
-      <button class="dp-close" onclick="closeGenerateModal()">&#10005;</button>
+<div id="generateOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:500;align-items:center;justify-content:center" onclick="if(event.target===this)closeGenerateModal()">
+  <div style="background:var(--white);border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.15);padding:24px 28px;max-width:480px;width:90%">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <span style="font-size:16px;font-weight:700" id="genModalTitle">Generate Release Note</span>
+      <button style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--sub);padding:4px" onclick="closeGenerateModal()">&#10005;</button>
     </div>
-    <div class="dp-body" style="padding:20px 24px">
-      <p id="genModalDesc" style="font-size:13px;color:var(--sub);line-height:1.6;margin-bottom:20px">This will fetch all issues linked to this milestone and create a release note. Continue?</p>
-      <div style="display:flex;gap:10px;justify-content:flex-end">
-        <button class="filter-chip" onclick="closeGenerateModal()">Cancel</button>
-        <button class="filter-chip" style="background:var(--brand);color:white;border-color:var(--brand)" id="genModalConfirmBtn" onclick="confirmGenerate()">Generate</button>
-      </div>
+    <p id="genModalDesc" style="font-size:13px;color:var(--sub);line-height:1.6;margin-bottom:20px">This will fetch all issues linked to this milestone and create a release note. Continue?</p>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="rl-btn" style="background:var(--white);color:var(--text);border:1px solid var(--border)" onclick="closeGenerateModal()">Cancel</button>
+      <button class="rl-btn rl-btn-generate" id="genModalConfirmBtn" onclick="confirmGenerate()">Generate</button>
     </div>
   </div>
 </div>
 
 <!-- Generate Progress Overlay -->
-<div id="genProgressOverlay" style="display:none;position:fixed;inset:0;background:rgba(255,255,255,0.92);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:16px">
+<div id="genProgressOverlay" style="display:none;position:fixed;inset:0;background:rgba(255,255,255,0.92);z-index:600;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--brand);border-radius:50%;animation:spin .6s linear infinite"></div>
   <div id="genProgressText" style="font-size:14px;font-weight:600;color:var(--text)">Generating release note...</div>
   <div id="genProgressSub" style="font-size:12px;color:var(--sub);max-width:400px;text-align:center">Fetching issues from milestone</div>
@@ -975,8 +973,11 @@ async function loadIssues(){
       ghGet(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues?labels=Gleap&state=closed&per_page=100`),
       ghGet(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues?labels=${encodeURIComponent('\ud83d\udd12 Closed from Support')}&state=closed&per_page=100`)
     ]);
-    if(!openRes.ok||!closedRes.ok){
-      const status=!openRes.ok?openRes.status:closedRes.status;
+    const openIssues=openRes.ok?await openRes.json():[];
+    const closedGleapIssues=closedGleapRes.ok?await closedGleapRes.json():[];
+    const closedSupportIssues=closedSupportRes.ok?await closedSupportRes.json():[];
+    if(!openRes.ok&&!closedGleapRes.ok){
+      const status=openRes.status;
       let errMsg='Failed to load bugs';
       if(status===401)errMsg='Access token is invalid or expired — please log in again with a new token';
       else if(status===403)errMsg='Access token does not have permission to read bugs — ensure token has "repo" scope';
@@ -986,9 +987,12 @@ async function loadIssues(){
       document.getElementById('bugTableBody').innerHTML=`<tr><td colspan="15"><div class="empty-state"><div class="icon">&#9888;&#65039;</div><div class="title">${errMsg}</div></div></td></tr>`;
       return;
     }
-    const openIssues=await openRes.json();
-    const closedIssues=await closedRes.json();
-    const all=[...openIssues,...closedIssues].filter(i=>!i.pull_request);
+    // Deduplicate by issue number (some may have both labels)
+    const seen=new Set();
+    const all=[...openIssues,...closedGleapIssues,...closedSupportIssues].filter(i=>{
+      if(i.pull_request||seen.has(i.number))return false;
+      seen.add(i.number);return true;
+    });
 
     allBugs=await Promise.all(all.map(async issue=>{
       const meta=await loadMeta(issue.number);
