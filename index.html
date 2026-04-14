@@ -402,6 +402,7 @@ th {
   <div class="header-right" id="headerRight">
     <span id="reviewerDisplay"></span>
     <button class="refresh-btn" onclick="handleRefresh()" style="display:none" id="refreshBtn">&#8635; Refresh</button>
+    <button class="refresh-btn" onclick="handleLogout()" style="display:none" id="logoutBtn">Logout</button>
   </div>
 </div>
 
@@ -744,6 +745,7 @@ function checkSetup(){
     document.getElementById('setupBanner').classList.add('hidden');
     document.getElementById('reviewerDisplay').innerHTML='Logged in as: <span class="reviewer-name">'+getName()+'</span>';
     document.getElementById('refreshBtn').style.display='';
+    document.getElementById('logoutBtn').style.display='';
     init();
   }
 }
@@ -757,7 +759,14 @@ function saveSetup(){
   document.getElementById('setupBanner').classList.add('hidden');
   document.getElementById('reviewerDisplay').innerHTML='Logged in as: <span class="reviewer-name">'+name+'</span>';
   document.getElementById('refreshBtn').style.display='';
+  document.getElementById('logoutBtn').style.display='';
   init();
+}
+
+function handleLogout(){
+  localStorage.removeItem('support_token');
+  localStorage.removeItem('support_name');
+  location.reload();
 }
 
 async function init(){
