@@ -3067,106 +3067,141 @@ function rlBuildDataJson(version,msNumber,msTitle,features,bugs,maintenance){
   const isMulti=features.length>1;
   let html='';
 
-  // Title (SKILL: centered, bold, orange)
+  // Parse all rich data from each feature issue
+  const featureData=features.map(f=>{
+    const body=f.body||'';
+    return{
+      title:f.title.replace(/^US:\s*/i,'').trim(),
+      number:f.number,
+      brief:rlExtractBrief(body),
+      jtd:rlExtractJTD(body),
+      persona:rlExtractPersona(body),
+      userStory:rlExtractUserStory(body),
+      releaseNote:rlExtractReleaseNoteDetails(body),
+      benefits:rlExtractWhoBenefits(body),
+      htmlUrl:f.html_url
+    };
+  });
+
+  // ── Title ──
   html+=`<h1 style="text-align:center;color:#FC5027">Release Note for ${rlEsc(version)}</h1><hr>`;
 
-  // Big Win Box (SKILL: yellow FFF3CD, numbered bold before→after stats)
+  // ── Big Win Box (from User Persona → Success + Frustration) ──
   html+=`<blockquote style="background:#FFF3CD;border-left:4px solid #FFD54F;padding:16px 20px">`;
   html+=`<p style="text-align:center"><strong><u>Big win for digiQC users:</u></strong></p>`;
-  if(features.length>0){
-    if(features.length===1){
-      const f=features[0];const title=f.title.replace(/^US:\s*/i,'').trim();
-      const rnDetails=rlExtractReleaseNoteDetails(f.body);
-      const overview=rnDetails?rnDetails.split('\n').find(l=>l.trim()&&!l.startsWith('**')&&!l.startsWith('-')&&!l.startsWith('#')):'';
-      html+=`<p><strong>${rlEsc(title)}</strong>${overview?' — '+rlEsc(overview.substring(0,150)):''}</p>`;
-    }else{
-      html+='<ol>';
-      features.forEach(f=>{
-        const title=f.title.replace(/^US:\s*/i,'').trim();
-        const rnDetails=rlExtractReleaseNoteDetails(f.body);
-        const overview=rnDetails?rnDetails.split('\n').find(l=>l.trim()&&!l.startsWith('**')&&!l.startsWith('-')&&!l.startsWith('#')):'';
-        html+=`<li><strong>${rlEsc(title)}</strong>${overview?' — '+rlEsc(overview.substring(0,120)):''}</li>`;
-      });
-      html+='</ol>';
+  const bigWins=[];
+  featureData.forEach(fd=>{
+    fd.persona.forEach(p=>{
+      const frustration=p.frustration||'';
+      const success=p.success||'';
+      if(frustration&&success){
+        bigWins.push(`<strong>${rlEsc(fd.title)}</strong> — ${rlEsc(success)} (previously: ${rlEsc(frustration)})`);
+      }else if(success){
+        bigWins.push(`<strong>${rlEsc(fd.title)}</strong> — ${rlEsc(success)}`);
+      }
+    });
+    if(bigWins.length===0&&fd.brief){
+      bigWins.push(`<strong>${rlEsc(fd.title)}</strong> — ${rlEsc(fd.brief.substring(0,150))}`);
     }
-  }else{
-    html+=`<p><em>[Add 3-5 measurable before→after wins here]</em></p>`;
-  }
+  });
+  if(bigWins.length===1){html+=`<p>${bigWins[0]}</p>`}
+  else if(bigWins.length>1){html+='<ol>';bigWins.slice(0,5).forEach(w=>{html+=`<li>${w}</li>`});html+='</ol>'}
+  else{html+=`<p><em>[Add measurable before→after wins here]</em></p>`}
   html+=`</blockquote>`;
 
-  // Section 1 — Introduction (SKILL: 2-3 paragraphs + numbered capabilities + navigation path)
+  // ── Section 1 — Introduction (from Brief Description + JTD roles) ──
   html+=`<h2>1. Introduction</h2>`;
-  html+=`<p>digiQC version ${rlEsc(version)} introduces ${features.length} new feature${features.length!==1?'s':''}`
-    +(bugs.length>0?`, ${bugs.length} bug fix${bugs.length!==1?'es':''}`:'')+
-    (maintenance.length>0?`, and ${maintenance.length} optimisation${maintenance.length!==1?'s':''}`:'')+
-    ` to help teams work faster and more efficiently.</p>`;
-  if(features.length===1){
-    html+=`<p>With this release, users can now <strong>${rlEsc(features[0].title.replace(/^US:\s*/i,'').trim())}</strong>.</p>`;
-  }else if(features.length>1){
-    html+=`<p>With this release, users can now:</p><ol>`;
-    features.forEach(f=>{html+=`<li><strong>${rlEsc(f.title.replace(/^US:\s*/i,'').trim())}</strong></li>`});
-    html+=`</ol>`;
-  }
-
-  // Section 2 — Why you will love this (extract from Who Benefits & How)
-  html+=`<h2>2. Why You Will Love This</h2>`;
-  const allBenefits=[];
-  features.forEach(f=>{
-    const benefits=rlExtractWhoBenefits(f.body||'');
-    benefits.forEach(b=>allBenefits.push(b));
-  });
-  if(allBenefits.length>0){
-    html+='<ol>';
-    allBenefits.slice(0,6).forEach(b=>{html+=`<li>${rlEsc(b)}</li>`});
-    html+='</ol>';
+  // Use Brief Description for intro paragraph
+  const introBriefs=featureData.map(fd=>fd.brief).filter(Boolean);
+  if(introBriefs.length>0){
+    html+=`<p>${rlEsc(introBriefs[0])}</p>`;
   }else{
-    // Fallback: generate from feature titles
-    html+='<ol>';
-    features.forEach(f=>{
-      const title=f.title.replace(/^US:\s*/i,'').trim();
-      html+=`<li>${rlEsc(title)} — making your workflow faster and more efficient</li>`;
-    });
-    html+='</ol>';
+    html+=`<p>digiQC version ${rlEsc(version)} introduces ${features.length} new feature${features.length!==1?'s':''} to help teams work faster.</p>`;
+  }
+  // Roles from JTD
+  const allRoles=new Set();
+  featureData.forEach(fd=>fd.jtd.forEach(j=>{if(j.role)allRoles.add(j.role)}));
+  if(allRoles.size>0){
+    html+=`<p>This release is designed for <strong>${rlEsc([...allRoles].join(', '))}</strong>.</p>`;
+  }
+  // What users can now do (from JTD "they want to")
+  const capabilities=[];
+  featureData.forEach(fd=>fd.jtd.forEach(j=>{if(j.theywantto)capabilities.push(`${rlEsc(j.role||'Users')} can now ${rlEsc(j.theywantto)}`)}));
+  if(capabilities.length>0){
+    html+=`<p>With this release:</p>`;
+    if(capabilities.length===1){html+=`<p>${capabilities[0]}</p>`}
+    else{html+='<ol>';capabilities.slice(0,6).forEach(c=>{html+=`<li>${c}</li>`});html+='</ol>'}
   }
 
-  // Section 3 — Feature-wise Details (SKILL: pull from Release Note Details)
+  // ── Section 2 — Why You Will Love This (from JTD "so they can" + Who Benefits) ──
+  html+=`<h2>2. Why You Will Love This</h2>`;
+  const loveItems=[];
+  // From Who Benefits & How
+  featureData.forEach(fd=>fd.benefits.forEach(b=>loveItems.push(rlEsc(b))));
+  // Fallback to JTD "so they can"
+  if(loveItems.length===0){
+    featureData.forEach(fd=>fd.jtd.forEach(j=>{if(j.sotheycan)loveItems.push(`${rlEsc(j.role||'Users')}: ${rlEsc(j.sotheycan)}`)}));
+  }
+  if(loveItems.length>0){
+    html+='<ol>';loveItems.slice(0,6).forEach(l=>{html+=`<li>${l}</li>`});html+='</ol>';
+  }else{
+    html+='<p>This release brings significant improvements to your daily workflow.</p>';
+  }
+
+  // ── Section 3 — Feature-wise Details (from Release Note Details) ──
   html+=`<h2>3. Feature-wise Details</h2>`;
-  if(features.length>0){
-    features.forEach((f,i)=>{
-      const title=f.title.replace(/^US:\s*/i,'').trim();
-      const rnDetails=rlExtractReleaseNoteDetails(f.body);
-      html+=`<h3>3.${i+1} ${rlEsc(title)}</h3>`;
-      if(rnDetails){
-        html+=rlMarkdownToHtml(rnDetails);
+  if(featureData.length>0){
+    featureData.forEach((fd,i)=>{
+      html+=`<h3>3.${i+1} ${rlEsc(fd.title)}</h3>`;
+      if(fd.releaseNote){
+        html+=rlMarkdownToHtml(fd.releaseNote);
+      }else if(fd.brief){
+        html+=`<p>${rlEsc(fd.brief)}</p>`;
       }else{
-        html+=`<p><em>[No "Release Note Details" section found in issue #${f.number}]</em></p>`;
+        html+=`<p><em>[Add feature details for issue #${fd.number}]</em></p>`;
       }
       // Image placeholder
       html+=`<p style="background:#F5F5F5;padding:40px 20px;text-align:center;border-radius:8px;color:#666"><em>[Insert screenshot here]</em></p>`;
-      html+=`<p style="text-align:center;color:#666;font-style:italic;font-size:10pt">Image ${i+1}: ${rlEsc(title)}</p>`;
-      // How to use (SKILL: only for multi-feature releases)
+      html+=`<p style="text-align:center;color:#666;font-style:italic;font-size:10pt">Image ${i+1}: ${rlEsc(fd.title)}</p>`;
+      // How to use (SKILL: only for multi-feature)
       if(isMulti){
         html+=`<h3>How to use this feature</h3>`;
-        html+=`<p><em>[Follow these steps to use ${rlEsc(title)}:]</em></p>`;
-        html+=`<ol><li><em>Go to [navigation path]</em></li><li><em>Click [action]</em></li><li><em>Configure [settings]</em></li><li><em>Save</em></li></ol>`;
+        html+=`<p>Follow these steps to use ${rlEsc(fd.title)}:</p>`;
+        // Try to extract navigation path from JTD context
+        const ctx=fd.persona[0]?fd.persona[0].contextofuse:'';
+        html+=`<ol><li>Go to ${rlEsc(ctx||'the relevant section in digiQC')}</li><li>Select the items you want to configure</li><li>Apply the desired changes</li><li>Save your changes</li></ol>`;
       }
     });
   }else{
     html+=`<p><em>No features in this milestone.</em></p>`;
   }
 
-  // Section 4 — Overall Impact (generated from feature data)
+  // ── Section 4 — Overall Impact (from Persona Frustration→Success) ──
   html+=`<h2>4. Overall Impact</h2>`;
-  const featureNames=features.map(f=>rlEsc(f.title.replace(/^US:\s*/i,'').trim()));
-  if(featureNames.length>0){
-    html+=`<p>Version ${rlEsc(version)} strengthens digiQC's capabilities with ${featureNames.join(', ')}. These enhancements are designed to reduce manual effort, improve accuracy, and give teams greater control over their quality workflows.</p>`;
-    html+=`<p>For clients, this means faster project setup, more consistent processes across sites, and less time spent on repetitive administrative tasks. Teams can focus on quality outcomes instead of navigating through multiple screens.</p>`;
-    html+=`<p>What earlier required multiple steps and manual configuration can now be accomplished efficiently in fewer clicks — saving time for field teams and administrators alike.</p>`;
+  const featureNames=featureData.map(fd=>rlEsc(fd.title));
+  // Paragraph 1: general
+  html+=`<p>Version ${rlEsc(version)} strengthens digiQC with ${featureNames.join(', ')}. These enhancements reduce manual effort, improve accuracy, and give teams greater control over their quality workflows.</p>`;
+  // Paragraph 2: client value (from persona goals)
+  const goals=[];
+  featureData.forEach(fd=>fd.persona.forEach(p=>{if(p.goal)goals.push(rlEsc(p.goal))}));
+  if(goals.length>0){
+    html+=`<p>For clients, this means: ${goals.slice(0,3).join('; ')}. Teams can focus on quality outcomes instead of repetitive administrative tasks.</p>`;
   }else{
-    html+=`<p>This release includes important improvements to the digiQC platform.</p>`;
+    html+=`<p>For clients, this means faster project setup, more consistent processes, and less time spent on administrative tasks.</p>`;
+  }
+  // Paragraph 3: before→after contrast (from persona frustration→success)
+  const contrasts=[];
+  featureData.forEach(fd=>fd.persona.forEach(p=>{
+    if(p.frustration&&p.success)contrasts.push({before:rlEsc(p.frustration),after:rlEsc(p.success)});
+  }));
+  if(contrasts.length>0){
+    const c=contrasts[0];
+    html+=`<p>What earlier meant "${c.before}" can now be achieved as "${c.after}".</p>`;
+  }else{
+    html+=`<p>What earlier required multiple steps can now be accomplished in fewer clicks — saving time for everyone.</p>`;
   }
 
-  // Section 5 — Bug Fixes (SKILL: numbered, "[Module] — Description")
+  // ── Section 5 — Bug Fixes ──
   if(bugs.length>0){
     html+=`<h2>5. Bug Fixes</h2><ol>`;
     bugs.forEach(b=>{
@@ -3207,55 +3242,87 @@ function rlEsc(text){
   return String(text).replace(/[&<>"']/g,m=>map[m]);
 }
 
-// Extract "## Release Note Details" section from issue body
-function rlExtractReleaseNoteDetails(body){
+// ── Issue body section extractors ──
+function rlDecodeEntities(t){return(t||'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&#39;/g,"'").replace(/&quot;/g,'"')}
+
+function rlExtractSection(body,heading){
   if(!body)return null;
-  const regex=/##\s*(?:\u{1F4E3}\s*)?Release Note Details\s*\n([\s\S]*?)(?=\n##\s|\n---|\n\*\*Interactive Prototype|$)/iu;
-  const match=body.match(regex);
-  if(!match)return null;
-  return match[1].trim();
+  // Match ## heading with optional emoji prefix
+  const esc=heading.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const regex=new RegExp(`##\\s*(?:[\\u{1F000}-\\u{1FFFF}]\\s*)?${esc}\\s*\\n([\\s\\S]*?)(?=\\n##\\s|\\n---\\s*$|\\n\\*\\*Interactive Prototype|$)`,'iu');
+  const m=body.match(regex);
+  return m?rlDecodeEntities(m[1]).trim():null;
 }
 
-// Markdown to HTML — handles bold, italic, bullet lists, numbered lists, sub-headings
+function rlExtractReleaseNoteDetails(body){return rlExtractSection(body,'Release Note Details')}
+
+// Parse markdown table rows → array of objects
+function rlParseTable(text){
+  if(!text)return[];
+  const lines=text.split('\n').filter(l=>l.trim().startsWith('|'));
+  if(lines.length<2)return[];
+  const headers=lines[0].split('|').map(c=>c.trim()).filter(c=>c);
+  const results=[];
+  for(let i=2;i<lines.length;i++){
+    const cells=lines[i].split('|').map(c=>c.trim()).filter(c=>c);
+    if(cells.length<2)continue;
+    const row={};
+    headers.forEach((h,j)=>{row[h.toLowerCase().replace(/[^a-z]/g,'')]=cells[j]||''});
+    results.push(row);
+  }
+  return results;
+}
+
+// Extract JTD table
+function rlExtractJTD(body){
+  const section=rlExtractSection(body,'Jobs to Be Done');
+  return rlParseTable(section);
+}
+
+// Extract User Persona table
+function rlExtractPersona(body){
+  const section=rlExtractSection(body,'User Persona');
+  return rlParseTable(section);
+}
+
+// Extract Brief Description
+function rlExtractBrief(body){return rlExtractSection(body,'Brief Description')}
+
+// Extract User Story
+function rlExtractUserStory(body){
+  const section=rlExtractSection(body,'User Story');
+  if(!section)return null;
+  // Remove > prefix from blockquote
+  return section.replace(/^>\s*/gm,'').trim();
+}
+
+// Extract Who Benefits & How
+function rlExtractWhoBenefits(body){
+  const results=[];
+  const match=(body||'').match(/\*\*Who Benefits\s*&\s*How\*\*\s*\n([\s\S]*?)(?=\n\*\*|\n##|\n---|\n$)/i);
+  if(!match)return results;
+  match[1].split('\n').forEach(l=>{const t=l.trim();if(t.startsWith('- '))results.push(rlDecodeEntities(t.substring(2)))});
+  return results;
+}
+
+// Markdown to HTML
 function rlMarkdownToHtml(md){
   if(!md)return'';
-  // Decode HTML entities first
-  let text=md.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&#39;/g,"'").replace(/&quot;/g,'"');
-  // Bold
+  let text=rlDecodeEntities(md);
   text=text.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
-  // Italic (single *)
   text=text.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g,'<em>$1</em>');
-
   const lines=text.split('\n');
   let result='',inUl=false,inOl=false;
   for(const line of lines){
     const trimmed=line.trim();
-    if(!trimmed){
-      if(inUl){result+='</ul>';inUl=false}
-      if(inOl){result+='</ol>';inOl=false}
-      continue;
-    }
-    // Numbered list: "1. ", "2. " etc
+    if(!trimmed){if(inUl){result+='</ul>';inUl=false}if(inOl){result+='</ol>';inOl=false}continue}
     const olMatch=trimmed.match(/^(\d+)\.\s+(.+)/);
-    // Bullet list: "- " or "* "
     const ulMatch=!olMatch&&(trimmed.startsWith('- ')||trimmed.startsWith('* '));
-
-    if(olMatch){
-      if(inUl){result+='</ul>';inUl=false}
-      if(!inOl){result+='<ol>';inOl=true}
-      result+=`<li>${olMatch[2]}</li>`;
-    }else if(ulMatch){
-      if(inOl){result+='</ol>';inOl=false}
-      if(!inUl){result+='<ul>';inUl=true}
-      result+=`<li>${trimmed.substring(2)}</li>`;
-    }else{
-      if(inUl){result+='</ul>';inUl=false}
-      if(inOl){result+='</ol>';inOl=false}
-      result+=`<p>${trimmed}</p>`;
-    }
+    if(olMatch){if(inUl){result+='</ul>';inUl=false}if(!inOl){result+='<ol>';inOl=true}result+=`<li>${olMatch[2]}</li>`}
+    else if(ulMatch){if(inOl){result+='</ol>';inOl=false}if(!inUl){result+='<ul>';inUl=true}result+=`<li>${trimmed.substring(2)}</li>`}
+    else{if(inUl){result+='</ul>';inUl=false}if(inOl){result+='</ol>';inOl=false}result+=`<p>${trimmed}</p>`}
   }
-  if(inUl)result+='</ul>';
-  if(inOl)result+='</ol>';
+  if(inUl)result+='</ul>';if(inOl)result+='</ol>';
   return result;
 }
 
