@@ -3086,27 +3086,37 @@ function rlBuildDataJson(version,msNumber,msTitle,features,bugs,maintenance){
   // ── Title ──
   html+=`<h1 style="text-align:center;color:#FC5027">Release Note for ${rlEsc(version)}</h1><hr>`;
 
-  // ── Big Win Box (from User Persona → Success + Frustration) ──
+  // ── Big Win Box (grouped by feature — title once, wins as sub-points) ──
   html+=`<blockquote style="background:#FFF3CD;border-left:4px solid #FFD54F;padding:16px 20px">`;
   html+=`<p style="text-align:center"><strong><u>Big win for digiQC users:</u></strong></p>`;
-  const bigWins=[];
-  featureData.forEach(fd=>{
-    fd.persona.forEach(p=>{
-      const frustration=p.frustration||'';
-      const success=p.success||'';
-      if(frustration&&success){
-        bigWins.push(`<strong>${rlEsc(fd.title)}</strong> — ${rlEsc(success)} (previously: ${rlEsc(frustration)})`);
-      }else if(success){
-        bigWins.push(`<strong>${rlEsc(fd.title)}</strong> — ${rlEsc(success)}`);
+  if(featureData.length>0){
+    featureData.forEach((fd,fi)=>{
+      // Collect wins from persona success/frustration
+      const wins=[];
+      fd.persona.forEach(p=>{
+        const success=p.success||'';
+        const frustration=p.frustration||'';
+        if(success&&frustration) wins.push(`${rlEsc(success)} (previously: ${rlEsc(frustration)})`);
+        else if(success) wins.push(rlEsc(success));
+      });
+      if(wins.length===0&&fd.brief) wins.push(rlEsc(fd.brief.substring(0,150)));
+
+      if(featureData.length===1&&wins.length<=1){
+        // Single feature, single win — no nesting
+        html+=`<p><strong>${rlEsc(fd.title)}</strong>${wins[0]?' — '+wins[0]:''}</p>`;
+      }else{
+        // Feature title + numbered sub-points
+        html+=`<p><strong>${fi+1}. ${rlEsc(fd.title)}</strong></p>`;
+        if(wins.length>0){
+          html+='<ol style="margin:4px 0 8px 20px">';
+          wins.forEach(w=>{html+=`<li>${w}</li>`});
+          html+='</ol>';
+        }
       }
     });
-    if(bigWins.length===0&&fd.brief){
-      bigWins.push(`<strong>${rlEsc(fd.title)}</strong> — ${rlEsc(fd.brief.substring(0,150))}`);
-    }
-  });
-  if(bigWins.length===1){html+=`<p>${bigWins[0]}</p>`}
-  else if(bigWins.length>1){html+='<ol>';bigWins.slice(0,5).forEach(w=>{html+=`<li>${w}</li>`});html+='</ol>'}
-  else{html+=`<p><em>[Add measurable before→after wins here]</em></p>`}
+  }else{
+    html+=`<p><em>[Add measurable before→after wins here]</em></p>`;
+  }
   html+=`</blockquote>`;
 
   // ── Section 1 — Introduction (from Brief Description + JTD roles) ──
@@ -3133,17 +3143,22 @@ function rlBuildDataJson(version,msNumber,msTitle,features,bugs,maintenance){
     else{html+='<ol>';capabilities.slice(0,6).forEach(c=>{html+=`<li>${c}</li>`});html+='</ol>'}
   }
 
-  // ── Section 2 — Why You Will Love This (from JTD "so they can" + Who Benefits) ──
+  // ── Section 2 — Why You Will Love This (from Who Benefits + JTD) ──
   html+=`<h2>2. Why You Will Love This</h2>`;
   const loveItems=[];
-  // From Who Benefits & How
-  featureData.forEach(fd=>fd.benefits.forEach(b=>loveItems.push(rlEsc(b))));
-  // Fallback to JTD "so they can"
+  // From Who Benefits & How (already has role: benefit format)
+  featureData.forEach(fd=>fd.benefits.forEach(b=>{if(b)loveItems.push(b)}));
+  // Fallback to JTD "so they can" with role prefix
   if(loveItems.length===0){
-    featureData.forEach(fd=>fd.jtd.forEach(j=>{if(j.sotheycan)loveItems.push(`${rlEsc(j.role||'Users')}: ${rlEsc(j.sotheycan)}`)}));
+    featureData.forEach(fd=>fd.jtd.forEach(j=>{
+      if(j.sotheycan){
+        const role=j.role||'Users';
+        loveItems.push(`<strong>${rlEsc(role)}:</strong> ${rlEsc(j.sotheycan)}`);
+      }
+    }));
   }
   if(loveItems.length>0){
-    html+='<ol>';loveItems.slice(0,6).forEach(l=>{html+=`<li>${l}</li>`});html+='</ol>';
+    html+='<ol>';loveItems.slice(0,8).forEach(l=>{html+=`<li>${l}</li>`});html+='</ol>';
   }else{
     html+='<p>This release brings significant improvements to your daily workflow.</p>';
   }
