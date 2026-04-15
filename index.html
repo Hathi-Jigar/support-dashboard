@@ -3155,30 +3155,41 @@ function rlBuildDataJson(version,msNumber,msTitle,features,bugs,maintenance){
     html+='<p>This release brings significant improvements to your daily workflow.</p>';
   }
 
-  // ── Section 3 — Feature-wise Details (from Release Note Details) ──
+  // ── Section 3 — Feature-wise Details ──
   html+=`<h2>3. Feature-wise Details</h2>`;
   if(featureData.length>0){
-    featureData.forEach((fd,i)=>{
+    // Separate: features with details vs features with title only
+    const withDetails=featureData.filter(fd=>fd.releaseNote||fd.brief);
+    const titleOnly=featureData.filter(fd=>!fd.releaseNote&&!fd.brief);
+
+    // Show detailed features as full sub-sections
+    withDetails.forEach((fd,i)=>{
       html+=`<h3>3.${i+1} ${rlEsc(fd.title)}</h3>`;
       if(fd.releaseNote){
         html+=rlMarkdownToHtml(fd.releaseNote);
-      }else if(fd.brief){
-        html+=`<p>${rlEsc(fd.brief)}</p>`;
       }else{
-        html+=`<p><em>[Add feature details for issue #${fd.number}]</em></p>`;
+        html+=`<p>${rlEsc(fd.brief)}</p>`;
       }
-      // Image placeholder
       html+=`<p style="background:#F5F5F5;padding:40px 20px;text-align:center;border-radius:8px;color:#666"><em>[Insert screenshot here]</em></p>`;
       html+=`<p style="text-align:center;color:#666;font-style:italic;font-size:10pt">Image ${i+1}: ${rlEsc(fd.title)}</p>`;
-      // How to use (SKILL: only for multi-feature)
       if(isMulti){
         html+=`<h3>How to use this feature</h3>`;
         html+=`<p>Follow these steps to use ${rlEsc(fd.title)}:</p>`;
-        // Try to extract navigation path from JTD context
         const ctx=fd.persona[0]?fd.persona[0].contextofuse:'';
         html+=`<ol><li>Go to ${rlEsc(ctx||'the relevant section in digiQC')}</li><li>Select the items you want to configure</li><li>Apply the desired changes</li><li>Save your changes</li></ol>`;
       }
     });
+
+    // Show title-only features as a simple list
+    if(titleOnly.length>0){
+      const startNum=withDetails.length+1;
+      if(withDetails.length>0)html+=`<h3>Other Features</h3>`;
+      html+='<ol>';
+      titleOnly.forEach(fd=>{
+        html+=`<li><strong>${rlEsc(fd.title)}</strong> (<a href="${rlEsc(fd.htmlUrl||'')}" target="_blank">#${fd.number}</a>)</li>`;
+      });
+      html+='</ol>';
+    }
   }else{
     html+=`<p><em>No features in this milestone.</em></p>`;
   }
