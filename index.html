@@ -2849,7 +2849,6 @@ function rlRenderTable(){
       actions+=`<button class="rl-btn rl-btn-generate" onclick="rlStartGenerate(${ms.number},'${ms.title.replace(/'/g,"\\'")}')">Generate</button>`;
     }else{
       actions+=`<a class="rl-btn rl-btn-view" href="${RL_DETAIL_BASE}${encodeURIComponent(version)}/" target="_blank">Open</a>`;
-      actions+=`<button class="rl-btn rl-btn-regen" onclick="rlStartGenerate(${ms.number},'${ms.title.replace(/'/g,"\\'")}')">Regenerate</button>`;
     }
     actions+='</div>';
 
