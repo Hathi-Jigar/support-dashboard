@@ -3108,11 +3108,26 @@ function rlBuildDataJson(version,msNumber,msTitle,features,bugs,maintenance){
     html+=`</ol>`;
   }
 
-  // Section 2 — Why you will love this (SKILL: 4-6 numbered benefit statements)
+  // Section 2 — Why you will love this (extract from Who Benefits & How)
   html+=`<h2>2. Why You Will Love This</h2>`;
-  html+=`<p><em>[Edit: Add 4-6 numbered benefit statements from the user's perspective. Focus on time saved, clicks reduced, consistency.]</em></p>`;
-  html+=`<ol><li><em>Example: Bulk operations save hours of repetitive one-by-one setup</em></li>`;
-  html+=`<li><em>Example: Consistent configuration across all checklists in a single action</em></li></ol>`;
+  const allBenefits=[];
+  features.forEach(f=>{
+    const benefits=rlExtractWhoBenefits(f.body||'');
+    benefits.forEach(b=>allBenefits.push(b));
+  });
+  if(allBenefits.length>0){
+    html+='<ol>';
+    allBenefits.slice(0,6).forEach(b=>{html+=`<li>${rlEsc(b)}</li>`});
+    html+='</ol>';
+  }else{
+    // Fallback: generate from feature titles
+    html+='<ol>';
+    features.forEach(f=>{
+      const title=f.title.replace(/^US:\s*/i,'').trim();
+      html+=`<li>${rlEsc(title)} — making your workflow faster and more efficient</li>`;
+    });
+    html+='</ol>';
+  }
 
   // Section 3 — Feature-wise Details (SKILL: pull from Release Note Details)
   html+=`<h2>3. Feature-wise Details</h2>`;
@@ -3140,11 +3155,16 @@ function rlBuildDataJson(version,msNumber,msTitle,features,bugs,maintenance){
     html+=`<p><em>No features in this milestone.</em></p>`;
   }
 
-  // Section 4 — Overall Impact (SKILL: 3 short paragraphs)
+  // Section 4 — Overall Impact (generated from feature data)
   html+=`<h2>4. Overall Impact</h2>`;
-  html+=`<p><em>[Paragraph 1: General statement about what this release achieves for the platform]</em></p>`;
-  html+=`<p><em>[Paragraph 2: What it means for clients — onboarding, standardisation, admin time]</em></p>`;
-  html+=`<p><em>[Paragraph 3: Closing contrast — "What earlier required X can now be done in Y"]</em></p>`;
+  const featureNames=features.map(f=>rlEsc(f.title.replace(/^US:\s*/i,'').trim()));
+  if(featureNames.length>0){
+    html+=`<p>Version ${rlEsc(version)} strengthens digiQC's capabilities with ${featureNames.join(', ')}. These enhancements are designed to reduce manual effort, improve accuracy, and give teams greater control over their quality workflows.</p>`;
+    html+=`<p>For clients, this means faster project setup, more consistent processes across sites, and less time spent on repetitive administrative tasks. Teams can focus on quality outcomes instead of navigating through multiple screens.</p>`;
+    html+=`<p>What earlier required multiple steps and manual configuration can now be accomplished efficiently in fewer clicks — saving time for field teams and administrators alike.</p>`;
+  }else{
+    html+=`<p>This release includes important improvements to the digiQC platform.</p>`;
+  }
 
   // Section 5 — Bug Fixes (SKILL: numbered, "[Module] — Description")
   if(bugs.length>0){
