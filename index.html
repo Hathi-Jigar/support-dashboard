@@ -2848,8 +2848,7 @@ function rlRenderTable(){
     if(status==='none'){
       actions+=`<button class="rl-btn rl-btn-generate" onclick="rlStartGenerate(${ms.number},'${ms.title.replace(/'/g,"\\'")}')">Generate</button>`;
     }else{
-      actions+=`<a class="rl-btn rl-btn-view" href="${RL_DETAIL_BASE}${encodeURIComponent(version)}/" target="_blank">View</a>`;
-      actions+=`<a class="rl-btn rl-btn-edit" href="${RL_DETAIL_BASE}${encodeURIComponent(version)}/?edit=1" target="_blank">Edit</a>`;
+      actions+=`<a class="rl-btn rl-btn-view" href="${RL_DETAIL_BASE}${encodeURIComponent(version)}/" target="_blank">Open</a>`;
       actions+=`<button class="rl-btn rl-btn-regen" onclick="rlStartGenerate(${ms.number},'${ms.title.replace(/'/g,"\\'")}')">Regenerate</button>`;
     }
     actions+='</div>';
@@ -3035,7 +3034,7 @@ async function confirmGenerate(){
       </div>
       <div style="display:flex;gap:10px;justify-content:center">
         <button class="rl-btn" style="background:var(--white);color:var(--text);border:1px solid var(--border)" onclick="rlGenerating=false;closeGenerateModal()">Close</button>
-        <a class="rl-btn rl-btn-generate" href="${pageUrl}?edit=1" target="_blank" style="text-decoration:none;text-align:center" onclick="setTimeout(()=>{rlGenerating=false;closeGenerateModal()},100)">Open Release Note</a>
+        <a class="rl-btn rl-btn-generate" href="${pageUrl}" target="_blank" style="text-decoration:none;text-align:center" onclick="setTimeout(()=>{rlGenerating=false;closeGenerateModal()},100)">Open Release Note</a>
       </div>`;
     rlRenderTable();
 
