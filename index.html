@@ -612,6 +612,14 @@ th {
   <div class="stat-card open"><div class="stat-value" id="rlStatDraft">&mdash;</div><div class="stat-label">Draft</div></div>
   <div class="stat-card closed"><div class="stat-value" id="rlStatPublished">&mdash;</div><div class="stat-label">Published</div></div>
   <div class="stat-card"><div class="stat-value" id="rlStatPending">&mdash;</div><div class="stat-label">Not Generated</div></div>
+  <div class="stat-card" style="display:flex;flex-direction:column;justify-content:center;gap:6px;min-width:220px">
+    <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Groq AI Key</div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <input type="password" id="groqKeyInput" placeholder="gsk_..." value="" style="flex:1;padding:5px 8px;font-size:12px;font-family:inherit;border:1.5px solid var(--border);border-radius:6px;outline:none;min-width:0">
+      <button onclick="saveGroqKey()" style="padding:5px 10px;font-size:11px;font-weight:600;background:var(--brand);color:white;border:none;border-radius:6px;cursor:pointer;white-space:nowrap">Save</button>
+    </div>
+    <div id="groqKeyStatus" style="font-size:10px;color:var(--muted)"></div>
+  </div>
 </div>
 
 <div class="table-wrap">
@@ -818,8 +826,9 @@ function switchMainTab(tab,el){
   if(tab==='tasks'&&taskItems.length===0&&getToken()){
     loadTaskData();
   }
-  if(tab==='releases'&&rlMilestones.length===0&&getToken()){
-    loadReleaseData();
+  if(tab==='releases'){
+    loadGroqKeyUI();
+    if(rlMilestones.length===0&&getToken()) loadReleaseData();
   }
 }
 
@@ -2624,6 +2633,24 @@ let rlPendingMilestone=null;
 const RL_DASHBOARD_PATH='docs/release-notes/dashboard.json';
 const RL_TEMPLATE_PATH='docs/release-notes/template/index.html';
 const RL_DETAIL_BASE='https://digiqc-hq.github.io/product-management/release-notes/';
+
+// Groq API key management
+function saveGroqKey(){
+  const input=document.getElementById('groqKeyInput');
+  const key=input.value.trim();
+  const status=document.getElementById('groqKeyStatus');
+  if(!key){localStorage.removeItem('groq_api_key');status.textContent='Key removed';status.style.color='var(--muted)';return}
+  if(!key.startsWith('gsk_')){status.textContent='Key must start with gsk_';status.style.color='#991B1B';return}
+  localStorage.setItem('groq_api_key',key);
+  input.type='password';
+  status.textContent='\u2705 Key saved — applies to all release note pages';status.style.color='#166534';
+}
+function loadGroqKeyUI(){
+  const existing=localStorage.getItem('groq_api_key');
+  const input=document.getElementById('groqKeyInput');
+  const status=document.getElementById('groqKeyStatus');
+  if(existing&&input){input.value=existing;status.textContent='\u2705 Key configured';status.style.color='#166534'}
+}
 
 function rlExtractVersion(title){
   const m=title.match(/(?:Release[- ]?|v)([\d.]+)/i);
