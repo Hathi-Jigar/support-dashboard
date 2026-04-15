@@ -2696,7 +2696,7 @@ async function showBenefitModal(msNumber,msTitle){
           html+=`<div style="font-size:11px;font-weight:600;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Jobs to Be Done</div>`;
           html+=`<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:10px">`;
           html+=`<tr style="background:#F9FAFB"><th style="padding:6px 8px;border:1px solid var(--border);font-weight:600;text-align:left">Role</th><th style="padding:6px 8px;border:1px solid var(--border);font-weight:600;text-align:left">Want to</th><th style="padding:6px 8px;border:1px solid var(--border);font-weight:600;text-align:left">So they can</th></tr>`;
-          jtd.forEach(r=>{html+=`<tr><td style="padding:6px 8px;border:1px solid var(--border)">${rlEsc(r.role)}</td><td style="padding:6px 8px;border:1px solid var(--border)">${rlEsc(r.wantTo)}</td><td style="padding:6px 8px;border:1px solid var(--border)">${rlEsc(r.soThey)}</td></tr>`});
+          jtd.forEach(r=>{html+=`<tr><td style="padding:6px 8px;border:1px solid var(--border)">${rlEsc(r.role||'')}</td><td style="padding:6px 8px;border:1px solid var(--border)">${rlEsc(r.theywantto||r.wantto||'')}</td><td style="padding:6px 8px;border:1px solid var(--border)">${rlEsc(r.sotheycan||'')}</td></tr>`});
           html+=`</table>`;
         }
 
@@ -2722,40 +2722,7 @@ async function showBenefitModal(msNumber,msTitle){
   }
 }
 
-// Parse JTD table: | Role | When… | They want to… | So they can… |
-function rlExtractJTD(body){
-  const results=[];
-  const lines=body.split('\n');
-  let inTable=false,headerParsed=false,colMap={};
-  for(const line of lines){
-    const trimmed=line.trim();
-    if(trimmed.includes('Jobs to Be Done')||trimmed.includes('JTD')){inTable=true;headerParsed=false;continue}
-    if(inTable&&trimmed.startsWith('|')){
-      const cells=trimmed.split('|').map(c=>c.trim()).filter(c=>c);
-      if(!headerParsed){
-        // Parse header to find column indices
-        cells.forEach((c,i)=>{
-          const cl=c.toLowerCase();
-          if(cl.includes('role'))colMap.role=i;
-          if(cl.includes('want'))colMap.wantTo=i;
-          if(cl.includes('so they')||cl.includes('can'))colMap.soThey=i;
-        });
-        headerParsed=true;continue;
-      }
-      if(trimmed.includes('---'))continue; // separator row
-      if(cells.length>=3){
-        results.push({
-          role:cells[colMap.role||0]||'',
-          wantTo:cells[colMap.wantTo||2]||'',
-          soThey:cells[colMap.soThey||3]||''
-        });
-      }
-    }else if(inTable&&headerParsed&&!trimmed.startsWith('|')){
-      inTable=false; // end of table
-    }
-  }
-  return results;
-}
+// Old rlExtractJTD removed — using the one defined in extraction section below
 
 // Extract "Who Benefits & How" bullet list
 function rlExtractWhoBenefits(body){
@@ -3289,9 +3256,9 @@ function rlDecodeEntities(t){return(t||'').replace(/&amp;/g,'&').replace(/&lt;/g
 
 function rlExtractSection(body,heading){
   if(!body)return null;
-  // Match ## heading with optional emoji prefix
+  // Match ## heading with optional emoji prefix and optional suffix like (JTD), (HMW) etc
   const esc=heading.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-  const regex=new RegExp(`##\\s*(?:[\\u{1F000}-\\u{1FFFF}]\\s*)?${esc}\\s*\\n([\\s\\S]*?)(?=\\n##\\s|\\n---\\s*$|\\n\\*\\*Interactive Prototype|$)`,'iu');
+  const regex=new RegExp(`##\\s*(?:[^\\n]*?)?${esc}[^\\n]*\\n([\\s\\S]*?)(?=\\n##\\s|\\n---\\s*$|\\n\\*\\*Interactive Prototype|$)`,'iu');
   const m=body.match(regex);
   return m?rlDecodeEntities(m[1]).trim():null;
 }
