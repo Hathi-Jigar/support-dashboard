@@ -280,7 +280,13 @@
       "liveSetup": "",
       "dashboardSetup": "",
       "payment": "Full payment received",
-      "actionItems": [],
+      "actionItems": [
+        {
+          "week": "13 Apr 2026",
+          "items": "No need to do the commitment for Report changes.",
+          "addedBy": "Hardik Goyal"
+        }
+      ],
       "notes": "I have talk with Mitul sir and request them to at least start the training of the user ",
       "usage": {
         "inspection": false,
