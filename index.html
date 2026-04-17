@@ -3139,7 +3139,7 @@ async function confirmGenerate(){
       const title=issue.title;
       if(labels.some(l=>l.includes('bug'))) bugs.push(issue);
       else if(labels.includes('maintenance')) maintenance.push(issue);
-      else if(title.startsWith('US:')) features.push(issue);
+      else features.push(issue);
     }
 
     // Step 3: Build data.json
