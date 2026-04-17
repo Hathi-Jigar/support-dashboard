@@ -164,10 +164,10 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .dp-screenshots{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
 .dp-screenshot{max-width:180px;max-height:140px;object-fit:cover;border-radius:8px;border:1px solid var(--border);cursor:pointer}
 .dp-screenshot:hover{opacity:.9;box-shadow:0 2px 8px rgba(0,0,0,0.12)}
-.add-screenshot-row{display:flex;gap:6px;margin-top:8px;width:100%}
-.add-screenshot-row input{flex:1;padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;outline:none}
-.add-screenshot-row input:focus{border-color:var(--brand)}
-.add-screenshot-row button{background:var(--brand);color:white;border:none;padding:7px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+.add-screenshot-row{display:flex;gap:6px;margin-top:8px;width:100%;align-items:center}
+.add-screenshot-btn{background:var(--brand);color:white;border:none;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+.add-screenshot-btn:disabled{background:var(--muted);cursor:not-allowed}
+.add-screenshot-name{font-size:11px;color:var(--sub);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* TAT display */
 .dp-tat{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:12px}
@@ -711,8 +711,9 @@ th {
           <div class="dp-label">Screenshots</div>
           <div class="dp-screenshots" id="dpScreenshots"></div>
           <div class="add-screenshot-row">
-            <input type="text" id="addScreenshotUrl" placeholder="Paste image URL...">
-            <button onclick="addScreenshot()">Add</button>
+            <input type="file" id="addScreenshotFile" accept="image/*" style="display:none" onchange="handleScreenshotFile(this)">
+            <button class="add-screenshot-btn" id="addScreenshotBtn" onclick="document.getElementById('addScreenshotFile').click()">Upload</button>
+            <span class="add-screenshot-name" id="addScreenshotStatus"></span>
           </div>
         </div>
       </div>
@@ -1392,7 +1393,8 @@ function renderDetail(bug){
   }else{
     container.innerHTML='<span style="font-size:12px;color:var(--muted)">No screenshots</span>';
   }
-  document.getElementById('addScreenshotUrl').value='';
+  document.getElementById('addScreenshotFile').value='';
+  document.getElementById('addScreenshotStatus').textContent='';
 
   populateOrgDropdown(bug.org);
   document.getElementById('dpUserName').value=bug.userName||bug.reportedBy||'';
@@ -1418,19 +1420,52 @@ function renderDetail(bug){
   document.querySelector('.btn-save').style.display='';
 }
 
-function addScreenshot(){
-  if(!currentBug)return;
-  const input=document.getElementById('addScreenshotUrl');
-  const url=input.value.trim();
-  if(!url){showToast('Please paste an image URL','error');return}
-  if(!url.match(/^https?:\/\/.+/)){showToast('Please enter a valid URL','error');return}
-  if(!currentBug.extraScreenshots)currentBug.extraScreenshots=[];
-  currentBug.extraScreenshots.push(url);
-  currentBug.screenshots=[...extractScreenshots(currentBug.body),...currentBug.extraScreenshots];
-  const container=document.getElementById('dpScreenshots');
-  container.innerHTML=currentBug.screenshots.map(u=>`<img class="dp-screenshot" src="${u}" onclick="window.open(this.src,'_blank')">`).join('');
-  input.value='';
-  saveMeta();
+async function handleScreenshotFile(input){
+  if(!currentBug||!input.files||!input.files[0])return;
+  const file=input.files[0];
+  if(!file.type.startsWith('image/')){showToast('Please select an image file','error');input.value='';return}
+  if(file.size>5*1024*1024){showToast('Image must be under 5MB','error');input.value='';return}
+
+  const btn=document.getElementById('addScreenshotBtn');
+  const status=document.getElementById('addScreenshotStatus');
+  btn.disabled=true;btn.textContent='Uploading...';
+  status.textContent=file.name;
+
+  try{
+    const base64=await new Promise((resolve,reject)=>{
+      const reader=new FileReader();
+      reader.onload=()=>resolve(reader.result.split(',')[1]);
+      reader.onerror=reject;
+      reader.readAsDataURL(file);
+    });
+
+    const ext=file.name.split('.').pop()||'png';
+    const ts=Date.now();
+    const path=`screenshots/bug-${currentBug.number}/${ts}.${ext}`;
+    const token=getToken();
+    const res=await fetch(`https://api.github.com/repos/${DASH_OWNER}/${DASH_REPO}/contents/${path}`,{
+      method:'PUT',
+      headers:{'Authorization':`token ${token}`,'Content-Type':'application/json'},
+      body:JSON.stringify({message:`Add screenshot for bug #${currentBug.number}`,content:base64})
+    });
+    if(!res.ok) throw new Error(`Upload failed (${res.status})`);
+    const result=await res.json();
+    const url=result.content.download_url;
+
+    if(!currentBug.extraScreenshots)currentBug.extraScreenshots=[];
+    currentBug.extraScreenshots.push(url);
+    currentBug.screenshots=[...extractScreenshots(currentBug.body),...currentBug.extraScreenshots];
+    const container=document.getElementById('dpScreenshots');
+    container.innerHTML=currentBug.screenshots.map(u=>`<img class="dp-screenshot" src="${u}" onclick="window.open(this.src,'_blank')">`).join('');
+    await saveMeta();
+    showToast('Screenshot uploaded','success');
+  }catch(e){
+    showToast('Upload failed: '+e.message,'error');
+  }finally{
+    btn.disabled=false;btn.textContent='Upload';
+    status.textContent='';
+    input.value='';
+  }
 }
 
 function closeDetail(){
