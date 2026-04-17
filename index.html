@@ -164,6 +164,10 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .dp-screenshots{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
 .dp-screenshot{max-width:180px;max-height:140px;object-fit:cover;border-radius:8px;border:1px solid var(--border);cursor:pointer}
 .dp-screenshot:hover{opacity:.9;box-shadow:0 2px 8px rgba(0,0,0,0.12)}
+.add-screenshot-row{display:flex;gap:6px;margin-top:8px;width:100%}
+.add-screenshot-row input{flex:1;padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;outline:none}
+.add-screenshot-row input:focus{border-color:var(--brand)}
+.add-screenshot-row button{background:var(--brand);color:white;border:none;padding:7px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
 
 /* TAT display */
 .dp-tat{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:12px}
@@ -703,9 +707,13 @@ th {
           <div class="dp-label">Description</div>
           <div class="dp-value" id="dpDescription" style="white-space:pre-wrap;max-height:200px;overflow-y:auto"></div>
         </div>
-        <div class="dp-field" id="dpScreenshotField" style="display:none">
+        <div class="dp-field" id="dpScreenshotField">
           <div class="dp-label">Screenshots</div>
           <div class="dp-screenshots" id="dpScreenshots"></div>
+          <div class="add-screenshot-row">
+            <input type="text" id="addScreenshotUrl" placeholder="Paste image URL...">
+            <button onclick="addScreenshot()">Add</button>
+          </div>
         </div>
       </div>
 
@@ -1017,7 +1025,9 @@ async function loadIssues(){
 
     allBugs=await Promise.all(all.map(async issue=>{
       const meta=await loadMeta(issue.number);
-      const screenshots=extractScreenshots(issue.body||'');
+      const gleapScreenshots=extractScreenshots(issue.body||'');
+      const extraScreenshots=meta.extraScreenshots?meta.extraScreenshots.split(',').map(s=>s.trim()).filter(Boolean):[];
+      const screenshots=[...gleapScreenshots,...extraScreenshots];
       const description=cleanDescription(issue.body||'');
       const gleap=extractGleapFields(issue.body||'');
       return{
@@ -1030,6 +1040,7 @@ async function loadIssues(){
         html_url:issue.html_url,
         body:issue.body||'',
         screenshots,
+        extraScreenshots:extraScreenshots,
         description,
         reportedBy:gleap.reportedBy,
         email:gleap.email,
@@ -1097,7 +1108,7 @@ function extractGleapFields(body){
 }
 
 async function loadMeta(issueNumber){
-  const defaults={org:'',userName:'',phone:'',platform:'',version:'',solution:'',handledBy:''};
+  const defaults={org:'',userName:'',phone:'',platform:'',version:'',solution:'',handledBy:'',extraScreenshots:''};
   try{
     const res=await ghGet(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues/${issueNumber}/comments?per_page=100`);
     if(!res.ok)return defaults;
@@ -1125,6 +1136,7 @@ async function loadMeta(issueNumber){
       if(key.trim()==='Solution')meta.solution=val;
       if(key.trim()==='Tag')meta.tag=val;
       if(key.trim()==='Handled By')meta.handledBy=val;
+      if(key.trim()==='Screenshots')meta.extraScreenshots=val;
     });
     if(!meta.phone)meta.phone=defaults.phone;
     return meta;
@@ -1143,6 +1155,7 @@ async function saveMeta(){
   const tag=document.getElementById('dpTag').value;
   const handledBy=getName();
 
+  const extraScreenshots=(currentBug.extraScreenshots||[]).join(',');
   const body=`${META_TAG}
 Organisation: ${org}
 User: ${userName}
@@ -1151,7 +1164,8 @@ Platform: ${platform}
 Version: ${version}
 Tag: ${tag}
 Solution: ${solution}
-Handled By: ${handledBy}`;
+Handled By: ${handledBy}
+Screenshots: ${extraScreenshots}`;
 
   try{
     if(currentBug.commentId){
@@ -1372,14 +1386,13 @@ function renderDetail(bug){
 
   document.getElementById('dpDescription').textContent=bug.description||'No description';
 
+  const container=document.getElementById('dpScreenshots');
   if(bug.screenshots&&bug.screenshots.length>0){
-    document.getElementById('dpScreenshotField').style.display='';
-    const container=document.getElementById('dpScreenshots');
     container.innerHTML=bug.screenshots.map(url=>`<img class="dp-screenshot" src="${url}" onclick="window.open(this.src,'_blank')">`).join('');
   }else{
-    document.getElementById('dpScreenshotField').style.display='none';
-    document.getElementById('dpScreenshots').innerHTML='';
+    container.innerHTML='<span style="font-size:12px;color:var(--muted)">No screenshots</span>';
   }
+  document.getElementById('addScreenshotUrl').value='';
 
   populateOrgDropdown(bug.org);
   document.getElementById('dpUserName').value=bug.userName||bug.reportedBy||'';
@@ -1403,6 +1416,21 @@ function renderDetail(bug){
   document.getElementById('dpSolution').disabled=false;
   document.getElementById('dpTag').disabled=false;
   document.querySelector('.btn-save').style.display='';
+}
+
+function addScreenshot(){
+  if(!currentBug)return;
+  const input=document.getElementById('addScreenshotUrl');
+  const url=input.value.trim();
+  if(!url){showToast('Please paste an image URL','error');return}
+  if(!url.match(/^https?:\/\/.+/)){showToast('Please enter a valid URL','error');return}
+  if(!currentBug.extraScreenshots)currentBug.extraScreenshots=[];
+  currentBug.extraScreenshots.push(url);
+  currentBug.screenshots=[...extractScreenshots(currentBug.body),...currentBug.extraScreenshots];
+  const container=document.getElementById('dpScreenshots');
+  container.innerHTML=currentBug.screenshots.map(u=>`<img class="dp-screenshot" src="${u}" onclick="window.open(this.src,'_blank')">`).join('');
+  input.value='';
+  saveMeta();
 }
 
 function closeDetail(){
@@ -1576,6 +1604,7 @@ async function inlineSave(number,field,value){
   const solution=bug.solution||'';
   const handledBy=getName();
 
+  const extraScreenshots=(bug.extraScreenshots||[]).join(',');
   const body=`${META_TAG}
 Organisation: ${org}
 User: ${userName}
@@ -1583,7 +1612,8 @@ Phone: ${phone}
 Platform: ${platform}
 Version: ${version}
 Solution: ${solution}
-Handled By: ${handledBy}`;
+Handled By: ${handledBy}
+Screenshots: ${extraScreenshots}`;
 
   try{
     if(bug.commentId){
@@ -2839,16 +2869,20 @@ function rlRenderTable(){
     else if(status==='draft') badge='<span class="rl-badge rl-badge-draft">Draft</span>';
     else badge='<span class="rl-badge rl-badge-none">Not Created</span>';
 
-    // Derive state: Planned → In Progress → QA → Live
+    // Derive state from milestone (mirrors product dashboard kanban logic)
+    const total=ms.open_issues+(ms.closed_issues||0);
     let derivedState='Planned';
     if(ms.state==='closed'){
       derivedState='Live';
-    }else if(env==='PRODUCTION'||env==='PROD'){
+    }else if(total>0&&ms.open_issues===0){
       derivedState='Live';
-    }else if(env==='QA'||env==='STAGING'){
-      derivedState='QA';
-    }else if(env==='DEV'){
-      derivedState='In Progress';
+    }else if(total===0){
+      derivedState='Planned';
+    }else{
+      const progress=ms.closed_issues/total;
+      if(progress>=0.5) derivedState='QA';
+      else if(ms.closed_issues>0) derivedState='In Progress';
+      else derivedState='Planned';
     }
     const stateClass={'Planned':'planned','In Progress':'inprogress','QA':'qa','Live':'live'}[derivedState];
     const stateHtml=`<span class="rl-state rl-state-${stateClass}">${derivedState}</span>`;
