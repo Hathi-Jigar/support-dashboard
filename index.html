@@ -2804,7 +2804,7 @@ async function showBenefitModal(msNumber,msTitle){
         html+=`<div style="font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:flex;align-items:center;gap:6px"><span style="color:var(--brand)">&#9632;</span> Jobs to Be Done</div>`;
         html+=`<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px">`;
         html+=`<tr style="background:#F9FAFB"><th style="padding:7px 10px;border:1px solid var(--border);font-weight:600;text-align:left;color:var(--sub)">Role</th><th style="padding:7px 10px;border:1px solid var(--border);font-weight:600;text-align:left;color:var(--sub)">Want to</th><th style="padding:7px 10px;border:1px solid var(--border);font-weight:600;text-align:left;color:var(--sub)">So they can</th></tr>`;
-        jtd.forEach(r=>{html+=`<tr><td style="padding:7px 10px;border:1px solid var(--border);font-weight:600">${rlEsc(r.role||'')}</td><td style="padding:7px 10px;border:1px solid var(--border)">${rlEsc(r.theywantto||r.wantto||r.iwantto||'')}</td><td style="padding:7px 10px;border:1px solid var(--border)">${rlEsc(r.sotheycan||'')}</td></tr>`});
+        jtd.forEach(r=>{html+=`<tr><td style="padding:7px 10px;border:1px solid var(--border);font-weight:600">${rlEsc(r.role||'')}</td><td style="padding:7px 10px;border:1px solid var(--border)">${rlEsc(r.theywantto||r.wantto||r.iwantto||'')}</td><td style="padding:7px 10px;border:1px solid var(--border)">${rlEsc(r.sotheycan||r.soican||'')}</td></tr>`});
         html+=`</table>`;
       }
 
@@ -3296,7 +3296,7 @@ function rlBuildDataJson(version,msNumber,msTitle,features,bugs,maintenance){
   }
   // What users can now do (from JTD "they want to")
   const capabilities=[];
-  featureData.forEach(fd=>fd.jtd.forEach(j=>{if(j.theywantto)capabilities.push(`${rlEsc(j.role||'Users')} can now ${rlEsc(j.theywantto)}`)}));
+  featureData.forEach(fd=>fd.jtd.forEach(j=>{const wt=j.theywantto||j.wantto||j.iwantto;if(wt)capabilities.push(`${rlEsc(j.role||'Users')} can now ${rlEsc(wt)}`)}));
   if(capabilities.length>0){
     html+=`<p>With this release:</p>`;
     if(capabilities.length===1){html+=`<p>${capabilities[0]}</p>`}
@@ -3311,9 +3311,10 @@ function rlBuildDataJson(version,msNumber,msTitle,features,bugs,maintenance){
   // Fallback to JTD "so they can" with role prefix
   if(loveItems.length===0){
     featureData.forEach(fd=>fd.jtd.forEach(j=>{
-      if(j.sotheycan){
+      const stc=j.sotheycan||j.soican;
+      if(stc){
         const role=j.role||'Users';
-        loveItems.push(`<strong>${rlEsc(role)}:</strong> ${rlEsc(j.sotheycan)}`);
+        loveItems.push(`<strong>${rlEsc(role)}:</strong> ${rlEsc(stc)}`);
       }
     }));
   }
