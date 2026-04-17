@@ -3117,6 +3117,7 @@ function rlBuildDataJson(version,msNumber,msTitle,features,bugs,maintenance){
   // Parse all rich data from each feature issue
   const featureData=features.map(f=>{
     const body=f.body||'';
+    const rnSection=rlExtractReleaseNoteDetails(body)||'';
     return{
       title:f.title.replace(/^US:\s*/i,'').trim(),
       number:f.number,
@@ -3124,7 +3125,11 @@ function rlBuildDataJson(version,msNumber,msTitle,features,bugs,maintenance){
       jtd:rlExtractJTD(body),
       persona:rlExtractPersona(body),
       userStory:rlExtractUserStory(body),
-      releaseNote:rlExtractReleaseNoteDetails(body),
+      releaseNote:rnSection,
+      rnOverview:rlExtractRNSub(rnSection,'Overview'),
+      rnBenefits:rlExtractRNSub(rnSection,'Who Benefits & How')||rlExtractRNSub(rnSection,'Who Benefits'),
+      rnWhatsNew:rlExtractRNSub(rnSection,'What\'s New'),
+      rnHowItWorks:rlExtractRNSub(rnSection,'How It Works'),
       benefits:rlExtractWhoBenefits(body),
       htmlUrl:f.html_url
     };
@@ -3220,14 +3225,44 @@ function rlBuildDataJson(version,msNumber,msTitle,features,bugs,maintenance){
     // Show detailed features as full sub-sections
     withDetails.forEach((fd,i)=>{
       html+=`<h3>3.${i+1} ${rlEsc(fd.title)}</h3>`;
-      if(fd.releaseNote){
-        html+=rlMarkdownToHtml(fd.releaseNote);
-      }else{
+
+      // Overview
+      if(fd.rnOverview){
+        html+=`<p>${rlEsc(fd.rnOverview)}</p>`;
+      }else if(fd.brief){
         html+=`<p>${rlEsc(fd.brief)}</p>`;
       }
+
+      // Who Benefits & How
+      const benefitItems=fd.rnBenefits?fd.rnBenefits.split('\n').filter(l=>l.trim().startsWith('- ')).map(l=>l.trim().substring(2)):fd.benefits;
+      if(benefitItems&&benefitItems.length>0){
+        html+=`<h3>Who Benefits &amp; How</h3><ul>`;
+        benefitItems.forEach(b=>{html+=`<li>${rlEsc(b)}</li>`});
+        html+=`</ul>`;
+      }
+
+      // What's New
+      if(fd.rnWhatsNew){
+        const newItems=fd.rnWhatsNew.split('\n').filter(l=>l.trim().startsWith('- ')).map(l=>l.trim().substring(2));
+        if(newItems.length>0){
+          html+=`<h3>What's New</h3><ol>`;
+          newItems.forEach(n=>{html+=`<li>${rlEsc(n)}</li>`});
+          html+=`</ol>`;
+        }else{
+          html+=`<h3>What's New</h3>`;
+          html+=rlMarkdownToHtml(fd.rnWhatsNew);
+        }
+      }
+
+      // Screenshot placeholder
       html+=`<p style="background:#F5F5F5;padding:40px 20px;text-align:center;border-radius:8px;color:#666"><em>[Insert screenshot here]</em></p>`;
       html+=`<p style="text-align:center;color:#666;font-style:italic;font-size:10pt">Image ${i+1}: ${rlEsc(fd.title)}</p>`;
-      if(isMulti){
+
+      // How It Works
+      if(fd.rnHowItWorks){
+        html+=`<h3>How It Works</h3>`;
+        html+=rlMarkdownToHtml(fd.rnHowItWorks);
+      }else if(isMulti){
         html+=`<h3>How to use this feature</h3>`;
         html+=`<p>Follow these steps to use ${rlEsc(fd.title)}:</p>`;
         const ctx=fd.persona[0]?fd.persona[0].contextofuse:'';
@@ -3328,6 +3363,15 @@ function rlExtractSection(body,heading){
 }
 
 function rlExtractReleaseNoteDetails(body){return rlExtractSection(body,'Release Note Details')}
+
+// Extract a bold sub-section from Release Note Details (e.g. **Overview**, **Who Benefits & How**)
+function rlExtractRNSub(rnSection,heading){
+  if(!rnSection)return null;
+  const esc=heading.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const regex=new RegExp(`\\*\\*${esc}\\*\\*\\s*\\n([\\s\\S]*?)(?=\\n\\*\\*[A-Z]|$)`,'i');
+  const m=rnSection.match(regex);
+  return m?m[1].trim():null;
+}
 
 // Parse markdown table rows → array of objects
 function rlParseTable(text){
