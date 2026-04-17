@@ -637,7 +637,7 @@ th {
         <th>Version</th>
         <th>Due Date</th>
         <th>Environment</th>
-        <th>State</th>
+        <th>Status</th>
         <th>Issues</th>
         <th>Benefits</th>
         <th>Release Note</th>
@@ -2854,6 +2854,21 @@ async function rlGhPutFile(filePath,base64Content,sha,message){
   return result.content.sha;
 }
 
+// Derive release status from issue labels — matches product dashboard kanban exactly
+const RL_LIVE_LABELS=['🚀 Complete','🔒 Closed from Support','🔒 Closed through Gleap','🚫 Blocked'];
+const RL_QA_LABELS=['🔍 For QA','❌ QA Fail','✅ QA Pass'];
+const RL_INPROGRESS_LABELS=['🟡 In Progress','🔨 Dev Done'];
+function deriveReleaseStatus(labels,milestoneState){
+  if(milestoneState==='closed')return'Live';
+  if(labels.length===0)return'Planned';
+  if(labels.every(l=>RL_LIVE_LABELS.includes(l)))return'Live';
+  if(labels.some(l=>RL_QA_LABELS.includes(l)))return'QA';
+  if(labels.some(l=>RL_INPROGRESS_LABELS.includes(l)))return'In Progress';
+  return'Planned';
+}
+
+let rlMilestoneStatuses={};
+
 async function loadReleaseData(){
   const token=getToken();
   if(!token)return;
@@ -2870,6 +2885,25 @@ async function loadReleaseData(){
     if(dashResult){
       rlDashboard=dashResult.content;
       rlDashboardSha=dashResult.sha;
+    }
+    rlRenderTable();
+
+    // Fetch issue labels for open milestones to derive status (async, updates table when done)
+    const openMs=rlMilestones.filter(m=>m.state==='open');
+    for(const ms of openMs){
+      try{
+        const res=await fetch(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues?milestone=${ms.number}&state=all&per_page=100`,{
+          headers:{'Authorization':`token ${token}`,'Accept':'application/vnd.github.v3+json'}
+        });
+        if(res.ok){
+          const issues=await res.json();
+          const statusLabels=issues.filter(i=>!i.pull_request).map(i=>{
+            const sl=i.labels.find(l=>['🔵 Open','📋 Ready for DEV','🟡 In Progress','🔨 Dev Done','🔍 For QA','❌ QA Fail','✅ QA Pass','🚀 Complete','🔒 Closed from Support','🔒 Closed through Gleap','🚫 Blocked'].includes(l.name));
+            return sl?sl.name:'🔵 Open';
+          });
+          rlMilestoneStatuses[ms.number]=deriveReleaseStatus(statusLabels,ms.state);
+        }
+      }catch(e){console.warn('Failed to fetch issues for milestone',ms.number,e)}
     }
     rlRenderTable();
   }catch(e){
@@ -2904,21 +2938,8 @@ function rlRenderTable(){
     else if(status==='draft') badge='<span class="rl-badge rl-badge-draft">Draft</span>';
     else badge='<span class="rl-badge rl-badge-none">Not Created</span>';
 
-    // Derive state from milestone (mirrors product dashboard kanban logic)
-    const total=ms.open_issues+(ms.closed_issues||0);
-    let derivedState='Planned';
-    if(ms.state==='closed'){
-      derivedState='Live';
-    }else if(total>0&&ms.open_issues===0){
-      derivedState='Live';
-    }else if(total===0){
-      derivedState='Planned';
-    }else{
-      const progress=ms.closed_issues/total;
-      if(progress>=0.5) derivedState='QA';
-      else if(ms.closed_issues>0) derivedState='In Progress';
-      else derivedState='Planned';
-    }
+    // Derive status from issue labels (matches product dashboard kanban exactly)
+    let derivedState=ms.state==='closed'?'Live':(rlMilestoneStatuses[ms.number]||'Planned');
     const stateClass={'Planned':'planned','In Progress':'inprogress','QA':'qa','Live':'live'}[derivedState];
     const stateHtml=`<span class="rl-state rl-state-${stateClass}">${derivedState}</span>`;
 
