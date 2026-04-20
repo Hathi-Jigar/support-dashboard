@@ -3246,16 +3246,15 @@ function rlBuildDataJson(version,msNumber,msTitle,features,bugs,maintenance){
   // ── Title ──
   html+=`<h1 style="text-align:center;color:#FC5027">Release Note for ${rlEsc(version)}</h1><hr>`;
 
-  // ── Big Win Box (grouped by feature — title once, wins as sub-points) ──
-  html+=`<div style="padding:12px 0">`;
+  // ── Big Win (no wrapper div — Quill strips it; heading + content are self-contained) ──
   html+=`<p style="text-align:center"><strong><u>Big win for digiQC users:</u></strong></p>`;
   if(featureData.length>0){
     featureData.forEach((fd,fi)=>{
-      // Collect wins from persona success/frustration
+      // Collect wins from persona — accept synonym column names
       const wins=[];
       fd.persona.forEach(p=>{
-        const success=p.success||'';
-        const frustration=p.frustration||'';
+        const success=p.success||p.gain||p.now||p.outcome||'';
+        const frustration=p.frustration||p.pain||p.earlier||p.problem||'';
         if(success&&frustration) wins.push(`${rlEsc(success)} (previously: ${rlEsc(frustration)})`);
         else if(success) wins.push(rlEsc(success));
       });
@@ -3277,7 +3276,6 @@ function rlBuildDataJson(version,msNumber,msTitle,features,bugs,maintenance){
   }else{
     html+=`<p><em>[Add measurable before→after wins here]</em></p>`;
   }
-  html+=`</div>`;
 
   // ── Section 1 — Introduction (from Brief Description + JTD roles) ──
   html+=`<h2>1. Introduction</h2>`;
