@@ -2933,7 +2933,8 @@ async function loadReleaseData(){
       rlGhGetJSON(RL_DASHBOARD_PATH)
     ]);
     if(!msRes.ok) throw new Error(`Milestones: ${msRes.status}`);
-    rlMilestones=await msRes.json();
+    // Hide milestones prefixed with "~" — used internally for draft/archived releases
+    rlMilestones=(await msRes.json()).filter(m=>!(m.title||'').trim().startsWith('~'));
     if(dashResult){
       rlDashboard=dashResult.content;
       rlDashboardSha=dashResult.sha;
