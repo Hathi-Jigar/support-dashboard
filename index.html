@@ -164,6 +164,8 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .dp-screenshots{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
 .dp-screenshot{max-width:180px;max-height:140px;object-fit:cover;border-radius:8px;border:1px solid var(--border);cursor:pointer}
 .dp-screenshot:hover{opacity:.9;box-shadow:0 2px 8px rgba(0,0,0,0.12)}
+.dp-attachment{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:var(--bg-soft,#F4F5F7);border:1px solid var(--border);border-radius:6px;color:var(--text);text-decoration:none;font-size:12px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dp-attachment:hover{background:#EAEBED;border-color:var(--brand)}
 .add-screenshot-row{display:flex;gap:6px;margin-top:8px;width:100%;align-items:center}
 .add-screenshot-btn{background:var(--brand);color:white;border:none;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
 .add-screenshot-btn:disabled{background:var(--muted);cursor:not-allowed}
@@ -708,10 +710,10 @@ th {
           <div class="dp-value" id="dpDescription" style="white-space:pre-wrap;max-height:200px;overflow-y:auto"></div>
         </div>
         <div class="dp-field" id="dpScreenshotField">
-          <div class="dp-label">Screenshots</div>
+          <div class="dp-label">Attachments</div>
           <div class="dp-screenshots" id="dpScreenshots"></div>
           <div class="add-screenshot-row">
-            <input type="file" id="addScreenshotFile" accept="image/*" style="display:none" onchange="handleScreenshotFile(this)">
+            <input type="file" id="addScreenshotFile" style="display:none" onchange="handleScreenshotFile(this)">
             <button class="add-screenshot-btn" id="addScreenshotBtn" onclick="document.getElementById('addScreenshotFile').click()">Upload</button>
             <span class="add-screenshot-name" id="addScreenshotStatus"></span>
           </div>
@@ -1081,6 +1083,28 @@ function extractScreenshots(body){
   return [...urls];
 }
 
+function isImageUrl(u){return /\.(png|jpe?g|gif|webp|svg|bmp|heic|heif)(\?|#|$)/i.test(u)}
+function fileNameFromUrl(u){try{return decodeURIComponent(u.split('?')[0].split('#')[0].split('/').pop())||'file'}catch(e){return 'file'}}
+function fileIcon(name){
+  const ext=(name.split('.').pop()||'').toLowerCase();
+  if(['pdf'].includes(ext))return '\ud83d\udcc4';
+  if(['doc','docx'].includes(ext))return '\ud83d\udcdd';
+  if(['xls','xlsx','csv'].includes(ext))return '\ud83d\udcca';
+  if(['ppt','pptx'].includes(ext))return '\ud83d\udcc8';
+  if(['zip','rar','7z','tar','gz'].includes(ext))return '\ud83d\udce6';
+  if(['mp4','mov','avi','webm'].includes(ext))return '\ud83c\udfac';
+  if(['mp3','wav','m4a'].includes(ext))return '\ud83c\udfb5';
+  return '\ud83d\udcce';
+}
+function renderAttachmentsHTML(urls){
+  if(!urls||!urls.length)return '<span style="font-size:12px;color:var(--muted)">No attachments</span>';
+  return urls.map(u=>{
+    if(isImageUrl(u))return `<img class="dp-screenshot" src="${u}" onclick="window.open(this.src,'_blank')">`;
+    const name=fileNameFromUrl(u);
+    return `<a class="dp-attachment" href="${u}" target="_blank" rel="noopener" title="${name}">${fileIcon(name)} ${name}</a>`;
+  }).join('');
+}
+
 function cleanDescription(body){
   const descMatch=body.match(/\*\*Description:\*\*\s*([\s\S]*?)(?=##|$)/);
   if(descMatch)return descMatch[1].trim();
@@ -1388,11 +1412,7 @@ function renderDetail(bug){
   document.getElementById('dpDescription').textContent=bug.description||'No description';
 
   const container=document.getElementById('dpScreenshots');
-  if(bug.screenshots&&bug.screenshots.length>0){
-    container.innerHTML=bug.screenshots.map(url=>`<img class="dp-screenshot" src="${url}" onclick="window.open(this.src,'_blank')">`).join('');
-  }else{
-    container.innerHTML='<span style="font-size:12px;color:var(--muted)">No screenshots</span>';
-  }
+  container.innerHTML=renderAttachmentsHTML(bug.screenshots||[]);
   document.getElementById('addScreenshotFile').value='';
   document.getElementById('addScreenshotStatus').textContent='';
 
@@ -1423,8 +1443,9 @@ function renderDetail(bug){
 async function handleScreenshotFile(input){
   if(!currentBug||!input.files||!input.files[0])return;
   const file=input.files[0];
-  if(!file.type.startsWith('image/')){showToast('Please select an image file','error');input.value='';return}
-  if(file.size>5*1024*1024){showToast('Image must be under 5MB','error');input.value='';return}
+  // 25MB cap — well within GitHub's contents-API PUT limit (~50MB practical) and big enough
+  // for typical screenshots, PDFs, and reports.
+  if(file.size>25*1024*1024){showToast('File must be under 25MB','error');input.value='';return}
 
   const btn=document.getElementById('addScreenshotBtn');
   const status=document.getElementById('addScreenshotStatus');
@@ -1439,14 +1460,15 @@ async function handleScreenshotFile(input){
       reader.readAsDataURL(file);
     });
 
-    const ext=file.name.split('.').pop()||'png';
+    // Sanitise filename — keep ext, strip path-unsafe chars, prefix with timestamp to dedupe.
+    const safeName=(file.name||'file').replace(/[^a-zA-Z0-9._-]/g,'_').slice(0,80);
     const ts=Date.now();
-    const path=`screenshots/bug-${currentBug.number}/${ts}.${ext}`;
+    const path=`attachments/bug-${currentBug.number}/${ts}-${safeName}`;
     const token=getToken();
     const res=await fetch(`https://api.github.com/repos/${DASH_OWNER}/${DASH_REPO}/contents/${path}`,{
       method:'PUT',
       headers:{'Authorization':`token ${token}`,'Content-Type':'application/json'},
-      body:JSON.stringify({message:`Add screenshot for bug #${currentBug.number}`,content:base64})
+      body:JSON.stringify({message:`Add attachment for bug #${currentBug.number}`,content:base64})
     });
     if(!res.ok) throw new Error(`Upload failed (${res.status})`);
     const result=await res.json();
@@ -1455,10 +1477,25 @@ async function handleScreenshotFile(input){
     if(!currentBug.extraScreenshots)currentBug.extraScreenshots=[];
     currentBug.extraScreenshots.push(url);
     currentBug.screenshots=[...extractScreenshots(currentBug.body),...currentBug.extraScreenshots];
-    const container=document.getElementById('dpScreenshots');
-    container.innerHTML=currentBug.screenshots.map(u=>`<img class="dp-screenshot" src="${u}" onclick="window.open(this.src,'_blank')">`).join('');
+    document.getElementById('dpScreenshots').innerHTML=renderAttachmentsHTML(currentBug.screenshots);
     await saveMeta();
-    showToast('Screenshot uploaded','success');
+
+    // Post a comment on the GitHub issue so the file shows up in the issue thread.
+    // Images render inline via markdown image syntax; other types render as a download link.
+    const isImg=(file.type||'').startsWith('image/')||isImageUrl(url);
+    const who=getName()||'Support';
+    const body=isImg
+      ?`\ud83d\udcce Attachment added by ${who}: **${file.name}**\n\n![${file.name}](${url})`
+      :`\ud83d\udcce Attachment added by ${who}: [${file.name}](${url})`;
+    try{
+      await fetch(`https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/issues/${currentBug.number}/comments`,{
+        method:'POST',
+        headers:{'Authorization':`token ${token}`,'Content-Type':'application/json'},
+        body:JSON.stringify({body})
+      });
+    }catch(_){/* upload itself succeeded — comment failure shouldn't block */}
+
+    showToast('Attachment uploaded and added to issue','success');
   }catch(e){
     showToast('Upload failed: '+e.message,'error');
   }finally{
