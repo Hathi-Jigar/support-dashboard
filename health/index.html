@@ -248,10 +248,9 @@ let manualContacts = {}; // in-memory only: { clientName: [{name, phone}] } for 
 
     document.getElementById('lastUpdated').textContent = 'Updated: ' + new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
 
-    // Select all contacts by default
+    // Nothing selected on first load — support picks who to send to.
     Object.keys(allData).forEach(name => {
-      const phones = allData[name].phones ? allData[name].phones.split(',').map(p => p.trim()).filter(Boolean) : [];
-      selectedContacts[name] = new Set(phones);
+      selectedContacts[name] = new Set();
     });
 
     if (clientParam && allData[clientParam]) {
@@ -373,15 +372,17 @@ function showAllClientsView() {
   html += '<button class="filter-chip" data-filter="critical" onclick="setFilter(\'critical\',this)">Critical (' + healthCounts.critical + ')</button>';
   html += '</div>';
 
-  // Action bar — select all + send
+  // Action bar — select all + send. Selection state persists across navigation
+  // (e.g. going into a client's detail view and coming back) because
+  // selectedClients / selectedContacts live at module scope and are never
+  // reset on re-render of this view.
+  const allSelected = clientNames.length > 0 && clientNames.every(n => selectedClients.has(n));
+  const totalContacts = Object.values(selectedContacts).reduce((sum, s) => sum + s.size, 0);
   html += '<div class="action-bar">';
-  html += '<div class="select-all-wrap"><input type="checkbox" id="selectAll" checked onchange="toggleSelectAll(this.checked)"><label for="selectAll">Select All</label></div>';
-  html += '<span class="selected-count" id="selectedCount">' + clientNames.length + ' selected</span>';
-  html += '<button class="send-whatsapp-btn" id="sendBtn" onclick="openSendModal()"><svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 00.612.638l4.7-1.354A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-2.239 0-4.308-.724-5.992-1.95l-.418-.305-2.79.803.87-2.674-.336-.434A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>Send WhatsApp Alerts</button>';
+  html += '<div class="select-all-wrap"><input type="checkbox" id="selectAll" ' + (allSelected ? 'checked' : '') + ' onchange="toggleSelectAll(this.checked)"><label for="selectAll">Select All</label></div>';
+  html += '<span class="selected-count" id="selectedCount">' + selectedClients.size + ' clients, ' + totalContacts + ' contacts selected</span>';
+  html += '<button class="send-whatsapp-btn" id="sendBtn" ' + (selectedClients.size === 0 ? 'disabled' : '') + ' onclick="openSendModal()"><svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 00.612.638l4.7-1.354A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-2.239 0-4.308-.724-5.992-1.95l-.418-.305-2.79.803.87-2.674-.336-.434A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>Send WhatsApp Alerts</button>';
   html += '</div>';
-
-  // Select all clients by default
-  selectedClients = new Set(clientNames);
 
   // Client cards grid
   html += '<div class="clients-grid" id="clientsGrid">';
