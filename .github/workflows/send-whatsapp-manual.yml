@@ -17,8 +17,11 @@ jobs:
           MSG91_AUTHKEY: ${{ secrets.MSG91_AUTHKEY }}
           MSG91_INTEGRATED_NUMBER: ${{ secrets.MSG91_INTEGRATED_NUMBER }}
           MSG91_NAMESPACE: ${{ secrets.MSG91_NAMESPACE }}
-          TEMPLATE_GOOD: client_health_good
-          TEMPLATE_ALERT: client_health_alert
+          # Both point to the single consolidated Utility template. If you ever
+          # split back into separate good/alert templates, change these two values
+          # — the select_template() logic already branches based on health status.
+          TEMPLATE_GOOD: client_health_summary
+          TEMPLATE_ALERT: client_health_summary
           METABASE_REPORT_BASE_URL: https://metabase-v2.digiqc.com/public/question/bc60fa57-69fd-407f-9d77-1193c513a05f
           CLIENTS_JSON: ${{ github.event.inputs.clients_json }}
         run: |
