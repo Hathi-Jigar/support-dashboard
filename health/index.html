@@ -22,7 +22,12 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .logo{font-size:16px;font-weight:800;color:var(--brand)}
 .header-sep{color:var(--border)}
 .header-title{font-size:15px;font-weight:600}
-.header-right{font-size:12px;color:var(--sub)}
+.header-right{font-size:12px;color:var(--sub);display:flex;align-items:center;gap:12px}
+.refresh-btn{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:inherit;transition:all .15s}
+.refresh-btn:hover:not(:disabled){border-color:var(--brand);color:var(--brand)}
+.refresh-btn:disabled{opacity:0.7;cursor:not-allowed}
+.refresh-btn svg{width:13px;height:13px;fill:currentColor}
+.refresh-btn.spinning svg{animation:spin 1s linear infinite}
 
 /* Loading */
 .loading{text-align:center;padding:80px 20px;color:var(--sub);font-size:14px}
@@ -176,7 +181,10 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
     <span class="header-sep">|</span>
     <span class="header-title">Client Health Dashboard</span>
   </div>
-  <div class="header-right" id="lastUpdated"></div>
+  <div class="header-right">
+    <span id="lastUpdated"></span>
+    <button class="refresh-btn" id="refreshBtn" onclick="refreshData()" title="Pull latest data from Metabase"><svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0012 4a8 8 0 108 8h-2a6 6 0 11-1.76-4.24L13 11h7V4l-2.35 2.35z"/></svg><span>Refresh Data</span></button>
+  </div>
 </div>
 
 <div id="app">
@@ -204,6 +212,7 @@ const MODULE_BENEFITS = {
 // ─── GITHUB CONFIG ───
 const GH_REPO = 'Hathi-Jigar/support-dashboard';
 const GH_WORKFLOW = 'send-whatsapp-manual.yml';
+const GH_REFRESH_WORKFLOW = 'fetch-health-data.yml';
 let GH_TOKEN = localStorage.getItem('gh_token') || '';
 
 // ─── STATE ───
@@ -560,6 +569,72 @@ function openSendModal() {
 function closeSendModal() {
   const m = document.getElementById('sendModal');
   if (m) m.remove();
+}
+
+// ─── REFRESH DATA ───
+// Triggers the fetch-health-data workflow on GitHub, waits for it to finish,
+// then reloads the page once the new data.json has been committed and served.
+async function refreshData() {
+  if (!GH_TOKEN) {
+    GH_TOKEN = prompt('Enter your GitHub Personal Access Token (needs repo + actions scope):');
+    if (!GH_TOKEN) return;
+    localStorage.setItem('gh_token', GH_TOKEN);
+  }
+
+  const btn = document.getElementById('refreshBtn');
+  const label = btn.querySelector('span');
+  btn.disabled = true;
+  btn.classList.add('spinning');
+  label.textContent = 'Starting...';
+
+  try {
+    const resp = await fetch('https://api.github.com/repos/' + GH_REPO + '/actions/workflows/' + GH_REFRESH_WORKFLOW + '/dispatches', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/vnd.github.v3+json',
+        'Authorization': 'token ' + GH_TOKEN,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ ref: 'main' })
+    });
+
+    if (resp.status === 401 || resp.status === 403) {
+      localStorage.removeItem('gh_token');
+      GH_TOKEN = '';
+      alert('Invalid GitHub token. Click Refresh again to re-enter.');
+      btn.disabled = false;
+      btn.classList.remove('spinning');
+      label.textContent = 'Refresh Data';
+      return;
+    }
+    if (resp.status !== 204) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.message || ('HTTP ' + resp.status));
+    }
+
+    // Workflow runs ~15-20s, then GitHub Pages redeploys ~30-45s. 60s total is usually enough.
+    let secondsLeft = 60;
+    label.textContent = 'Refreshing... ' + secondsLeft + 's';
+    await new Promise(resolve => {
+      const timer = setInterval(() => {
+        secondsLeft--;
+        if (secondsLeft <= 0) {
+          clearInterval(timer);
+          resolve();
+        } else {
+          label.textContent = 'Refreshing... ' + secondsLeft + 's';
+        }
+      }, 1000);
+    });
+
+    label.textContent = 'Reloading...';
+    window.location.reload();
+  } catch (err) {
+    alert('Failed to trigger refresh: ' + err.message);
+    btn.disabled = false;
+    btn.classList.remove('spinning');
+    label.textContent = 'Refresh Data';
+  }
 }
 
 async function confirmSend() {
