@@ -26,6 +26,7 @@ jobs:
           import json
           import os
           import re
+          import urllib.error
           import urllib.parse
           import urllib.request
 
@@ -107,8 +108,16 @@ jobs:
                           sent_good += 1
                       else:
                           sent_alert += 1
+              except urllib.error.HTTPError as e:
+                  body = e.read().decode('utf-8', errors='replace')
+                  print(f"FAILED {name}: HTTP {e.code} {e.reason}")
+                  print(f"  Request URL: {API_URL}")
+                  print(f"  Template: {template_name}")
+                  print(f"  Report URL: {full_report_url}")
+                  print(f"  Response body: {body}")
+                  failed += 1
               except Exception as e:
-                  print(f"FAILED {name}: {e}")
+                  print(f"FAILED {name}: {type(e).__name__}: {e}")
                   failed += 1
 
           print(f"\n--- Summary ---")
