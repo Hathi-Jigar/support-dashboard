@@ -513,24 +513,32 @@ function openSendModal() {
     const contactPhones = selectedContacts[name] ? Array.from(selectedContacts[name]) : [];
     const allNames = client.names ? client.names.split(',').map(n => n.trim()).filter(Boolean) : [];
     const allPhones = client.phones ? client.phones.split(',').map(p => p.trim()).filter(Boolean) : [];
-    // Map selected phones to names
     const contacts = contactPhones.map(phone => {
       const idx = allPhones.indexOf(phone);
       return { name: allNames[idx] || 'Contact', phone };
     });
-    return { name, contacts };
-  });
+    return { name, contacts, template: getWillSendTemplate(client) };
+  }).filter(c => c.contacts.length > 0);
 
   const totalContacts = clients.reduce((sum, c) => sum + c.contacts.length, 0);
+  const goodCount = clients.filter(c => c.template === 'good').length;
+  const alertCount = clients.filter(c => c.template === 'alert').length;
 
   let html = '<div class="modal-overlay" id="sendModal" onclick="if(event.target===this)closeSendModal()">';
   html += '<div class="modal">';
   html += '<div class="modal-title">Send WhatsApp Alerts</div>';
-  html += '<div style="font-size:13px;color:var(--sub);margin-bottom:12px">Sending to <strong>' + totalContacts + ' contacts</strong> across <strong>' + clients.length + ' clients</strong></div>';
+  html += '<div style="font-size:13px;color:var(--sub);margin-bottom:8px">Sending to <strong>' + totalContacts + ' contacts</strong> across <strong>' + clients.length + ' organisations</strong></div>';
+  html += '<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">';
+  html += '<span class="template-badge good">' + goodCount + ' will get: Good</span>';
+  html += '<span class="template-badge alert">' + alertCount + ' will get: Alert</span>';
+  html += '</div>';
 
   html += '<div class="modal-list">';
   clients.forEach(c => {
-    html += '<div class="modal-list-item" style="flex-direction:column;gap:4px"><span class="name">' + escHtml(c.name) + '</span>';
+    html += '<div class="modal-list-item" style="flex-direction:column;gap:4px;align-items:flex-start">';
+    html += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="name">' + escHtml(c.name) + '</span>';
+    html += '<span class="template-badge ' + c.template + '">' + (c.template === 'good' ? 'Good' : 'Alert') + '</span>';
+    html += '<span style="font-size:11px;color:var(--muted)">' + c.contacts.length + ' contact' + (c.contacts.length === 1 ? '' : 's') + '</span></div>';
     c.contacts.forEach(contact => {
       html += '<div style="font-size:12px;color:var(--sub);padding-left:8px">' + escHtml(contact.name) + ' — ' + escHtml(contact.phone) + '</div>';
     });
