@@ -85,7 +85,10 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .clients-grid{padding:20px 28px;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
 .client-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:20px;cursor:pointer;transition:all .15s}
 .client-card:hover{box-shadow:var(--shadow);border-color:var(--brand)}
-.client-card-name{font-size:15px;font-weight:700;margin-bottom:12px}
+.client-card-name{font-size:15px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.template-badge{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:3px 8px;border-radius:10px;line-height:1.3}
+.template-badge.good{background:var(--green-bg);color:var(--green)}
+.template-badge.alert{background:var(--red-bg);color:var(--red)}
 .client-card-modules{display:flex;gap:10px}
 .client-card-mod{flex:1;text-align:center;padding:8px;border-radius:8px;background:var(--bg)}
 .client-card-mod-name{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
@@ -185,8 +188,9 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 
 <script>
 // ─── CONFIG ───
-const DATA_JSON_URL = 'data.json';  // Local file updated by GitHub Actions
-const METABASE_URL = 'https://metabase-v2.digiqc.com/api/public/card/bc60fa57-69fd-407f-9d77-1193c513a05f/query/json';
+// "All Organisation Health (Github)" public question — returns every active org as a column.
+// Real org names live in the "Organisation Name" row (columns are generic "Org 1", "Org 2", ...).
+const METABASE_URL = 'https://metabase-v2.digiqc.com/public/question/b4036adb-7d2e-4878-a501-0294b8f3606c.json';
 const MODULES = ['Instruction', 'Inspection', 'Register'];
 
 const MODULE_BENEFITS = {
@@ -214,16 +218,9 @@ let selectedContacts = {}; // { clientName: Set of phone numbers }
   const clientParam = params.get('client');
 
   try {
-    let raw;
-    try {
-      const resp = await fetch(DATA_JSON_URL);
-      if (resp.ok) raw = await resp.json();
-      else throw new Error('data.json not found');
-    } catch {
-      const resp = await fetch(METABASE_URL);
-      if (!resp.ok) throw new Error('Failed to fetch from both data.json and Metabase');
-      raw = await resp.json();
-    }
+    const resp = await fetch(METABASE_URL);
+    if (!resp.ok) throw new Error('Metabase fetch failed: HTTP ' + resp.status);
+    const raw = await resp.json();
     allData = parseMetabaseData(raw);
 
     document.getElementById('lastUpdated').textContent = 'Updated: ' + new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
@@ -245,24 +242,35 @@ let selectedContacts = {}; // { clientName: Set of phone numbers }
 })();
 
 // ─── PARSE ───
+// Input shape: one row per Module ("Organisation Name", "Instruction", "Inspection",
+// "Register", "Name", "Phone"), columns keyed as "Org 1", "Org 2", ... with values
+// per organisation. Real org name comes from the "Organisation Name" row.
 function parseMetabaseData(raw) {
   const clients = {};
-  const keys = Object.keys(raw[0] || {}).filter(k => k !== 'Module');
+  const columnKeys = Object.keys(raw[0] || {}).filter(k => k !== 'Module');
 
-  keys.forEach(clientName => {
-    clients[clientName] = { modules: {}, names: '', phones: '' };
+  const nameRow = raw.find(r => r.Module === 'Organisation Name' || r.Module === 'Organization Name') || {};
+  const colToOrg = {};
+  columnKeys.forEach(col => {
+    const orgName = String(nameRow[col] || '').trim();
+    if (orgName && orgName !== '.' && orgName.length >= 2) {
+      colToOrg[col] = orgName;
+      clients[orgName] = { modules: {}, names: '', phones: '' };
+    }
   });
 
   raw.forEach(row => {
     const mod = row.Module;
-    keys.forEach(clientName => {
-      const val = row[clientName] || '';
+    columnKeys.forEach(col => {
+      const orgName = colToOrg[col];
+      if (!orgName) return;
+      const val = row[col] || '';
       if (mod === 'Name') {
-        clients[clientName].names = val;
+        clients[orgName].names = val;
       } else if (mod === 'Phone') {
-        clients[clientName].phones = val;
+        clients[orgName].phones = val;
       } else if (MODULES.includes(mod)) {
-        clients[clientName].modules[mod] = parsePercentage(val);
+        clients[orgName].modules[mod] = parsePercentage(val);
       }
     });
   });
@@ -294,6 +302,17 @@ function getClientHealth(client) {
   if (downCount >= 3) return 'critical';
   if (downCount >= 1) return 'at-risk';
   return 'healthy';
+}
+
+// Mirrors the workflow's select_template() rule so the badge matches what
+// actually gets sent. Alert if any module is down or zero; good otherwise.
+function getWillSendTemplate(client) {
+  const mods = client.modules;
+  for (const m of MODULES) {
+    const d = mods[m];
+    if (!d || d.status === 'down' || d.status === 'zero') return 'alert';
+  }
+  return 'good';
 }
 
 // ─── ALL CLIENTS VIEW ───
@@ -354,8 +373,12 @@ function buildClientCard(name, client) {
   const isSelected = selectedClients.has(name);
   let html = '<div class="client-card client-card-check" data-client="' + escHtml(name) + '" data-health="' + health + '">';
   html += '<input type="checkbox" ' + (isSelected ? 'checked' : '') + ' onclick="event.stopPropagation();toggleClient(\'' + escJs(name) + '\',this.checked)" title="Select for WhatsApp">';
+  const willSend = getWillSendTemplate(client);
+  const badgeLabel = willSend === 'good' ? 'Will send: Good' : 'Will send: Alert';
   html += '<div onclick="showClientView(\'' + escJs(name) + '\')" style="cursor:pointer">';
-  html += '<div class="client-card-name">' + escHtml(name) + '</div>';
+  html += '<div class="client-card-name">' + escHtml(name);
+  html += '<span class="template-badge ' + willSend + '" title="Template that will be used if this client is sent">' + badgeLabel + '</span>';
+  html += '</div>';
   html += '<div class="client-card-modules">';
   MODULES.forEach(mod => {
     const data = client.modules[mod] || { value: 0, status: 'zero' };

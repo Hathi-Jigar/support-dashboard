@@ -17,39 +17,53 @@ jobs:
           MSG91_AUTHKEY: ${{ secrets.MSG91_AUTHKEY }}
           MSG91_INTEGRATED_NUMBER: ${{ secrets.MSG91_INTEGRATED_NUMBER }}
           MSG91_NAMESPACE: ${{ secrets.MSG91_NAMESPACE }}
-          TEMPLATE_NAME: client_health
+          TEMPLATE_GOOD: client_health_good
+          TEMPLATE_ALERT: client_health_alert
+          METABASE_REPORT_BASE_URL: https://metabase-v2.digiqc.com/public/question/bc60fa57-69fd-407f-9d77-1193c513a05f
           CLIENTS_JSON: ${{ github.event.inputs.clients_json }}
         run: |
           cat << 'SCRIPT' > send.py
           import json
           import os
           import re
+          import urllib.parse
           import urllib.request
 
           AUTHKEY = os.environ['MSG91_AUTHKEY']
           INTEGRATED_NUMBER = os.environ['MSG91_INTEGRATED_NUMBER']
           NAMESPACE = os.environ.get('MSG91_NAMESPACE', 'f4925634_5c8d_4e26_8b04_caa7318aa6e2')
-          TEMPLATE_NAME = os.environ['TEMPLATE_NAME']
+          TEMPLATE_GOOD = os.environ['TEMPLATE_GOOD']
+          TEMPLATE_ALERT = os.environ['TEMPLATE_ALERT']
+          METABASE_BASE = os.environ['METABASE_REPORT_BASE_URL']
           API_URL = 'https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/bulk/'
 
           clients = json.loads(os.environ['CLIENTS_JSON'])
 
-          sent = 0
-          failed = 0
-          skipped = 0
+          def select_template(modules):
+              for mod in ('Inspection', 'Instruction', 'Register'):
+                  val = str(modules.get(mod, '')).lower()
+                  if 'dropped' in val or 'no usage' in val or 'no data' in val:
+                      return TEMPLATE_ALERT
+              return TEMPLATE_GOOD
+
+          sent_good = sent_alert = failed = skipped = 0
 
           for client in clients:
               name = client['name']
               phones = client['phones']
-              modules = client['modules']  # {Inspection: "+151% (up)", Instruction: "+158% (up)", Register: "-100% (dropped)"}
+              modules = client['modules']
 
               clean_phones = [re.sub(r'[^0-9]', '', p) for p in phones]
               clean_phones = [p for p in clean_phones if len(p) >= 10]
 
               if not clean_phones:
-                  print(f"SKIP {name} — no valid phones")
+                  print(f"SKIP {name} - no valid phones")
                   skipped += 1
                   continue
+
+              template_name = select_template(modules)
+              encoded_org = urllib.parse.quote(name, safe='')
+              full_report_url = f"{METABASE_BASE}?organization={encoded_org}"
 
               payload = {
                   "integrated_number": INTEGRATED_NUMBER,
@@ -58,7 +72,7 @@ jobs:
                       "messaging_product": "whatsapp",
                       "type": "template",
                       "template": {
-                          "name": TEMPLATE_NAME,
+                          "name": template_name,
                           "language": {"code": "en", "policy": "deterministic"},
                           "namespace": NAMESPACE,
                           "to_and_components": [{
@@ -67,7 +81,8 @@ jobs:
                                   "body_var_1": {"type": "text", "value": name, "parameter_name": "var_1"},
                                   "body_var_2": {"type": "text", "value": modules.get('Inspection', 'N/A'), "parameter_name": "var_2"},
                                   "body_var_3": {"type": "text", "value": modules.get('Instruction', 'N/A'), "parameter_name": "var_3"},
-                                  "body_var_4": {"type": "text", "value": modules.get('Register', 'N/A'), "parameter_name": "var_4"}
+                                  "body_var_4": {"type": "text", "value": modules.get('Register', 'N/A'), "parameter_name": "var_4"},
+                                  "button_1": {"subtype": "url", "type": "text", "value": encoded_org}
                               }
                           }]
                       }
@@ -85,14 +100,22 @@ jobs:
               try:
                   with urllib.request.urlopen(req) as resp:
                       result = resp.read().decode('utf-8')
-                      print(f"SENT {name} -> {clean_phones}: {result}")
-                      sent += 1
+                      print(f"SENT [{template_name}] {name} -> {clean_phones}")
+                      print(f"  Report URL: {full_report_url}")
+                      print(f"  API response: {result}")
+                      if template_name == TEMPLATE_GOOD:
+                          sent_good += 1
+                      else:
+                          sent_alert += 1
               except Exception as e:
                   print(f"FAILED {name}: {e}")
                   failed += 1
 
           print(f"\n--- Summary ---")
-          print(f"Sent: {sent}, Failed: {failed}, Skipped: {skipped}")
+          print(f"Good template sent: {sent_good}")
+          print(f"Alert template sent: {sent_alert}")
+          print(f"Failed: {failed}")
+          print(f"Skipped: {skipped}")
           SCRIPT
 
           python3 send.py

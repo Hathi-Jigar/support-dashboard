@@ -1,9 +1,13 @@
 name: Fetch Health Data from Metabase
 
+# Auto cron is PAUSED during manual-testing phase.
+# Also: the underlying Metabase question now requires an `organization` filter,
+# so this workflow will need an update before it can run (pass the param or
+# switch to a different API) — see `send-whatsapp-manual.yml` for the new pattern.
 on:
-  schedule:
-    - cron: '0 3 * * 1'  # Every Monday 8:30 AM IST (3:00 AM UTC)
-  workflow_dispatch: # Manual trigger
+  # schedule:
+  #   - cron: '0 3 * * 1'  # Every Monday 8:30 AM IST (3:00 AM UTC)
+  workflow_dispatch: # Manual trigger only
 
 jobs:
   fetch-data:
