@@ -94,6 +94,9 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .template-badge{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:3px 8px;border-radius:10px;line-height:1.3}
 .template-badge.good{background:var(--green-bg);color:var(--green)}
 .template-badge.alert{background:var(--red-bg);color:var(--red)}
+.add-contact-btn{margin-top:6px;background:transparent;border:1px dashed var(--border);color:var(--sub);padding:6px 10px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:4px;width:100%;transition:all .15s}
+.add-contact-btn:hover{border-color:var(--brand);color:var(--brand);border-style:solid}
+.contact-row.manual .contact-row-name::after{content:' • added';font-size:10px;color:var(--muted);font-weight:400;margin-left:4px}
 .client-card-modules{display:flex;gap:10px}
 .client-card-mod{flex:1;text-align:center;padding:8px;border-radius:8px;background:var(--bg)}
 .client-card-mod-name{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
@@ -222,6 +225,7 @@ let currentClient = null;
 let currentFilter = 'all'; // 'all', 'healthy', 'at-risk', 'critical'
 let selectedClients = new Set();
 let selectedContacts = {}; // { clientName: Set of phone numbers }
+let manualContacts = {}; // in-memory only: { clientName: [{name, phone}] } for numbers not from Metabase
 
 // ─── INIT ───
 (async function init() {
@@ -412,23 +416,26 @@ function buildClientCard(name, client) {
   });
   html += '</div>';
 
-  // Contacts with individual checkboxes
+  // Contacts = Metabase contacts + manually added contacts (in-memory only).
   const names = client.names ? client.names.split(',').map(n => n.trim()).filter(Boolean) : [];
   const phones = client.phones ? client.phones.split(',').map(p => p.trim()).filter(Boolean) : [];
-  if (phones.length > 0) {
-    html += '<div class="contact-list-inline">';
-    phones.forEach((phone, i) => {
-      const displayName = names[i] || 'Contact ' + (i + 1);
-      const isChecked = selectedContacts[name] && selectedContacts[name].has(phone);
-      const cleanPhone = phone.replace(/[^0-9]/g, '');
-      html += '<div class="contact-row" onclick="event.stopPropagation()">';
-      html += '<input type="checkbox" id="cb_' + cleanPhone + '" ' + (isChecked ? 'checked' : '') + ' onchange="toggleContact(\'' + escJs(name) + '\',\'' + escJs(phone) + '\',this.checked)">';
-      html += '<label for="cb_' + cleanPhone + '" class="contact-row-name">' + escHtml(displayName) + '</label>';
-      html += '<span class="contact-row-phone">' + escHtml(phone) + '</span>';
-      html += '</div>';
-    });
+  const metabaseContacts = phones.map((phone, i) => ({ phone, name: names[i] || 'Contact ' + (i + 1), manual: false }));
+  const added = (manualContacts[name] || []).map(c => ({ phone: c.phone, name: c.name, manual: true }));
+  const allContacts = metabaseContacts.concat(added);
+
+  html += '<div class="contact-list-inline">';
+  allContacts.forEach((c, i) => {
+    const isChecked = selectedContacts[name] && selectedContacts[name].has(c.phone);
+    const cleanPhone = c.phone.replace(/[^0-9]/g, '');
+    const cbId = 'cb_' + cleanPhone + '_' + i;
+    html += '<div class="contact-row ' + (c.manual ? 'manual' : '') + '" onclick="event.stopPropagation()">';
+    html += '<input type="checkbox" id="' + cbId + '" ' + (isChecked ? 'checked' : '') + ' onchange="toggleContact(\'' + escJs(name) + '\',\'' + escJs(c.phone) + '\',this.checked)">';
+    html += '<label for="' + cbId + '" class="contact-row-name">' + escHtml(c.name) + '</label>';
+    html += '<span class="contact-row-phone">' + escHtml(c.phone) + '</span>';
     html += '</div>';
-  }
+  });
+  html += '<button class="add-contact-btn" onclick="event.stopPropagation();addManualContact(\'' + escJs(name) + '\')" title="Add a phone number not in Metabase">+ Add Number</button>';
+  html += '</div>';
 
   html += '</div></div>';
   return html;
@@ -457,9 +464,10 @@ function toggleContact(clientName, phone, checked) {
 function toggleClient(name, checked) {
   if (checked) {
     selectedClients.add(name);
-    // Select all contacts for this client
+    // Select all contacts for this client (Metabase + manually added)
     const phones = allData[name].phones ? allData[name].phones.split(',').map(p => p.trim()).filter(Boolean) : [];
-    selectedContacts[name] = new Set(phones);
+    const added = (manualContacts[name] || []).map(c => c.phone);
+    selectedContacts[name] = new Set(phones.concat(added));
   } else {
     selectedClients.delete(name);
     selectedContacts[name] = new Set();
@@ -483,7 +491,8 @@ function toggleSelectAll(checked) {
     if (checked) {
       selectedClients.add(name);
       const phones = allData[name].phones ? allData[name].phones.split(',').map(p => p.trim()).filter(Boolean) : [];
-      selectedContacts[name] = new Set(phones);
+      const added = (manualContacts[name] || []).map(c => c.phone);
+      selectedContacts[name] = new Set(phones.concat(added));
     } else {
       selectedClients.delete(name);
       selectedContacts[name] = new Set();
@@ -514,6 +523,49 @@ function updateSelectedCount() {
   if (btn) btn.disabled = selectedClients.size === 0;
 }
 
+// ─── ADD MANUAL CONTACT ───
+// Lets support add a phone number not present in Metabase (e.g. CSM, test number,
+// new contact). In-memory only — resets on reload. Tied to a specific client so
+// the WhatsApp message uses that client's name + CTA link.
+function addManualContact(clientName) {
+  const rawName = prompt('Contact name:');
+  if (!rawName || !rawName.trim()) return;
+  const rawPhone = prompt('Phone number with country code (e.g. 919876543210 for India):');
+  if (!rawPhone) return;
+
+  const cleanPhone = rawPhone.replace(/[^0-9]/g, '');
+  if (cleanPhone.length < 10) {
+    alert('Phone number must be at least 10 digits including country code.');
+    return;
+  }
+
+  const phone = '+' + cleanPhone;
+  const name = rawName.trim();
+
+  // Duplicate check across Metabase contacts + already-added manual contacts.
+  const client = allData[clientName];
+  const existing = new Set();
+  if (client.phones) client.phones.split(',').forEach(p => existing.add(p.replace(/[^0-9]/g, '')));
+  (manualContacts[clientName] || []).forEach(c => existing.add(c.phone.replace(/[^0-9]/g, '')));
+  if (existing.has(cleanPhone)) {
+    alert('This phone number is already in the contact list for ' + clientName + '.');
+    return;
+  }
+
+  if (!manualContacts[clientName]) manualContacts[clientName] = [];
+  manualContacts[clientName].push({ name, phone });
+
+  if (!selectedContacts[clientName]) selectedContacts[clientName] = new Set();
+  selectedContacts[clientName].add(phone);
+  selectedClients.add(clientName);
+
+  if (currentView === 'client' && currentClient === clientName) {
+    showClientView(clientName);
+  } else {
+    showAllClientsView();
+  }
+}
+
 // ─── SEND WHATSAPP ───
 function openSendModal() {
   if (selectedClients.size === 0) return;
@@ -522,7 +574,10 @@ function openSendModal() {
     const contactPhones = selectedContacts[name] ? Array.from(selectedContacts[name]) : [];
     const allNames = client.names ? client.names.split(',').map(n => n.trim()).filter(Boolean) : [];
     const allPhones = client.phones ? client.phones.split(',').map(p => p.trim()).filter(Boolean) : [];
+    const manual = manualContacts[name] || [];
     const contacts = contactPhones.map(phone => {
+      const manualMatch = manual.find(c => c.phone === phone);
+      if (manualMatch) return { name: manualMatch.name, phone };
       const idx = allPhones.indexOf(phone);
       return { name: allNames[idx] || 'Contact', phone };
     });
