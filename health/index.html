@@ -188,8 +188,10 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 
 <script>
 // ─── CONFIG ───
-// "All Organisation Health (Github)" public question — returns every active org as a column.
-// Real org names live in the "Organisation Name" row (columns are generic "Org 1", "Org 2", ...).
+// Data source: `health/data.json` (refreshed server-side by fetch-health-data.yml
+// to avoid the CORS block a direct browser fetch from Metabase hits).
+// METABASE_URL is kept as a fallback in case CORS is later enabled on Metabase.
+const DATA_JSON_URL = 'data.json?t=' + Date.now(); // cache-bust
 const METABASE_URL = 'https://metabase-v2.digiqc.com/public/question/b4036adb-7d2e-4878-a501-0294b8f3606c.json';
 const MODULES = ['Instruction', 'Inspection', 'Register'];
 
@@ -218,9 +220,17 @@ let selectedContacts = {}; // { clientName: Set of phone numbers }
   const clientParam = params.get('client');
 
   try {
-    const resp = await fetch(METABASE_URL);
-    if (!resp.ok) throw new Error('Metabase fetch failed: HTTP ' + resp.status);
-    const raw = await resp.json();
+    let raw;
+    try {
+      const resp = await fetch(DATA_JSON_URL);
+      if (!resp.ok) throw new Error('data.json not found (HTTP ' + resp.status + ')');
+      raw = await resp.json();
+    } catch (localErr) {
+      // Try live Metabase (will work only if CORS is enabled there).
+      const resp = await fetch(METABASE_URL);
+      if (!resp.ok) throw new Error('Both data.json and live Metabase failed. Last: HTTP ' + resp.status);
+      raw = await resp.json();
+    }
     allData = parseMetabaseData(raw);
 
     document.getElementById('lastUpdated').textContent = 'Updated: ' + new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });

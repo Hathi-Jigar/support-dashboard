@@ -1,9 +1,7 @@
 name: Fetch Health Data from Metabase
 
 # Auto cron is PAUSED during manual-testing phase.
-# Also: the underlying Metabase question now requires an `organization` filter,
-# so this workflow will need an update before it can run (pass the param or
-# switch to a different API) — see `send-whatsapp-manual.yml` for the new pattern.
+# Runs server-side so it bypasses the browser CORS block the dashboard hits.
 on:
   # schedule:
   #   - cron: '0 3 * * 1'  # Every Monday 8:30 AM IST (3:00 AM UTC)
@@ -19,9 +17,11 @@ jobs:
 
       - name: Fetch Metabase data
         run: |
-          curl -sL "http://metabase-v2.digiqc.com/api/public/card/bc60fa57-69fd-407f-9d77-1193c513a05f/query/json" -o health/data.json
+          curl -sL "https://metabase-v2.digiqc.com/public/question/b4036adb-7d2e-4878-a501-0294b8f3606c.json" -o health/data.json
           echo "Fetched:"
-          cat health/data.json | head -c 500
+          head -c 500 health/data.json
+          echo ""
+          wc -c health/data.json
 
       - name: Commit and push
         run: |
