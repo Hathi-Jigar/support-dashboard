@@ -254,14 +254,14 @@
     },
     {
       "id": 23,
-      "task": "Need to change in the custom dashboard of vascon insted of stage count need to update the EQC count.\nAlso some changes need to be done in the dashboard with register data need to incoperate",
+      "task": "Also some changes need to be done in the dashboard with register data need to incoperate",
       "assignees": [],
       "status": "Open",
       "priority": "Medium",
       "deadline": "",
       "remark": "New register created in live project and EQC count in existing dashboard update dashboard is pending",
       "created": "2026-03-31",
-      "updated": "2026-04-14",
+      "updated": "2026-04-29",
       "overdue": false
     },
     {
